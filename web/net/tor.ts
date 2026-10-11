@@ -48,9 +48,17 @@ export type HttpsRequest = Readonly<{
   method: string;
   url: string;
   headers: HeaderPairs;
-  body?: Uint8Array;
+  /**
+   * The body in memory, or streamed: a function the transport calls for
+   * each next piece (resolving to undefined at the end).
+   */
+  body?: Uint8Array | (() => Promise<Uint8Array | undefined>);
   rootPem: string;
-  /** Until the response head arrives (connecting and sending included). */
+  /**
+   * Until the response head arrives (connecting and sending included); with
+   * a streamed body, the longest wait for any step (a piece to be taken,
+   * the response after the last one).
+   */
   timeoutMs: number;
 }>;
 

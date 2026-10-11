@@ -55,3 +55,8 @@ export function loadDeviceNameDecryptor() {
 export function loadPaddedBackupGenerator() {
   return bundle('paddedBackup', join(WEB, 'e2e/padded-backup.ts'));
 }
+
+/** Desktop's attachment encryption, as a contact's phone uses it (web/e2e/attachments.ts). */
+export function loadAttachmentHelpers() {
+  return bundle('attachments', join(WEB, 'e2e/attachments.ts'));
+}

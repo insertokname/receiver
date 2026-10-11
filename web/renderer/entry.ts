@@ -24,7 +24,7 @@ import { config as configureZod } from 'zod';
 
 import { startCarrier } from '../net/carrier.ts';
 import { installDebugLogLink } from '../shell/debug-log.ts';
-import { showDatabaseError, showRuntimeDatabaseError } from '../shell/errors.ts';
+import { showDatabaseError, showQuotaError, showRuntimeDatabaseError } from '../shell/errors.ts';
 import { installNotificationBanner } from '../shell/notifications.ts';
 import { installConnectionStatus } from '../shell/status.ts';
 import { checkForWipedData, installStorageGuards } from '../shell/storage.ts';
@@ -122,6 +122,8 @@ async function boot(): Promise<void> {
     main = await import('../main/index.ts');
     sql = await import('../main/sql.ts');
     ({ database } = await main.startMain());
+    // A file (attachment, avatar, draft) could not be written: storage full.
+    main.onStorageFull(showQuotaError);
     onRelease(sql.closeDatabase);
   } catch (error) {
     fail('main', error);
@@ -136,7 +138,12 @@ async function boot(): Promise<void> {
     return;
   }
   step('preload');
-  main.onRendererLoaded();
+  try {
+    await main.onRendererLoaded();
+  } catch (error) {
+    fail('main', error);
+    return;
+  }
 
   // Electron's main process waits for the database before the app starts
   // and shows a dialog instead if it failed.

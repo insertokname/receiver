@@ -35,23 +35,30 @@
 //                (resumed with Range; download progress must advance). Each
 //                ends in the inbox with contacts synced (and the history
 //                imported when transferred).
+//   (p)-(z) attachments (e2e/attachments.mjs): receive, view, save, send,
+//                record, interrupted transfers, storage full
 //
 // Fails on CSP violations, uncaught exceptions, network destinations other
 // than the page's origin and the relay, and key-like secrets in the log.
 //
 //   node e2e/run.mjs              (needs web/dist/app-e2e and $CHROMIUM)
 //   ONLY=a,b,c node e2e/run.mjs   only these scenarios ((b)-(g) need (a))
+//   BROWSER=firefox FIREFOX=<firefox> ONLY=... node e2e/run.mjs
+//                                 in Firefox (WebDriver BiDi); scenarios that
+//                                 need Chromium's DevTools protocol are not
+//                                 available there
 
 import { mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { BASE_PATH, LOCAL_ORIGIN, decodeLinkQrCode, launchBrowser, serveSite, watchPage } from '../scripts/harness.mjs';
+import { BASE_PATH, FIREFOX, LOCAL_ORIGIN, decodeLinkQrCode, launchBrowser, serveSite, watchPage } from '../scripts/harness.mjs';
 import { MOCK_HOST, MOCK_PORT, RELAY_PORT, RELAY_URL } from './config.mjs';
 import { startMockServer } from './mock.mjs';
 import { startRelay } from './relay.mjs';
-import { loadBackupGenerator, loadDeviceNameDecryptor, loadPaddedBackupGenerator } from './backup-generator.mjs';
+import { runAttachmentScenarios } from './attachments.mjs';
+import { loadAttachmentHelpers, loadBackupGenerator, loadDeviceNameDecryptor, loadPaddedBackupGenerator } from './backup-generator.mjs';
 
 const WEB = fileURLToPath(new URL('..', import.meta.url));
 const REPO = join(WEB, '..');
@@ -113,7 +120,9 @@ async function scenario(id, name, fn) {
 // sees; `run` acts on the relay (drop, stall) or the mock.
 let faultRules = [];
 const faultLog = [];
+const mockListeners = new Set();
 function onMockEvent(event) {
+  for (const listener of mockListeners) listener(event);
   for (const rule of faultRules) {
     if (!rule.match(event)) continue;
     rule.seen = (rule.seen ?? 0) + 1;
@@ -129,7 +138,9 @@ function onMockEvent(event) {
 
 const tmp = await mkdtemp(join(os.tmpdir(), 'receiver-e2e-'));
 const linkedDeviceNames = [];
+const profileAvatars = new Map();
 const { server, port: mockPort, mock } = await startMockServer({
+  profileAvatars,
   onDeviceLink: attributes => linkedDeviceNames.push(attributes?.name),
   onEvent: onMockEvent,
   maxStorageReadKeys: 2500,
@@ -147,18 +158,41 @@ const relay = await startRelay({
 });
 console.log(`relay on ${RELAY_URL}`);
 
-const site = await serveSite({ siteDir: APP_DIR });
-const browser = await launchBrowser();
+// Local URLs (attachments) are answered by the service worker and the
+// page; any that reaches the site's server is a failure (and a leak).
+const localUrlsOnServer = [];
+const site = await serveSite({
+  siteDir: APP_DIR,
+  onRequest: pathname => {
+    if (pathname.startsWith(`${BASE_PATH}attachment/`)) localUrlsOnServer.push(pathname);
+  },
+});
+// A fake microphone (a tone) for recording voice notes; its permission
+// prompt is answered "allow" when the app asks (scenario (y)).
+if (FIREFOX) process.env.FIREFOX_DOWNLOAD_DIR ??= await mkdtemp(join(tmp, 'firefox-downloads-'));
+const browser = await launchBrowser({ args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'] });
 
 const logLines = [];
 const pageErrors = [];
+// The service worker's console (e.g. local requests it could not answer).
+browser.on('targetcreated', async target => {
+  if (target.type() !== 'service_worker') return;
+  const worker = await target.worker().catch(() => undefined);
+  worker?.on('console', m => {
+    const text = `[sw] ${m.text()}`;
+    logLines.push(text);
+    if (process.env.VERBOSE) console.log(`  | ${text.slice(0, 300)}`);
+  });
+});
 let page;
 const watchers = [];
 
 /** Opens a page in `context` (a fresh browser profile: its own storage). */
 async function openPage(context = browser.defaultBrowserContext()) {
   page = await context.newPage();
-  watchers.push(await watchPage(page, { allowedOrigins: [new URL(RELAY_URL).origin] }));
+  // The relay (Firefox reports the WebSocket's handshake as an http: request).
+  const relayOrigin = new URL(RELAY_URL).origin;
+  watchers.push(await watchPage(page, { allowedOrigins: [relayOrigin, relayOrigin.replace(/^ws/, 'http')] }));
   const quiet = /\[updateSchema\(\d+\)\] success$/;
   page.on('console', m => {
     const text = m.text();
@@ -182,6 +216,15 @@ for (const profileName of contactNames) {
   contacts.push(await server.createPrimaryDevice({ profileName }));
 }
 const [alice, bob] = contacts;
+// Bob has a profile picture (scenario (u)).
+const bobAvatar = await readFile(join(REPO, 'fixtures/kitten-1-64-64.jpg'));
+{
+  const { encryptProfile } = await loadAttachmentHelpers();
+  profileAvatars.set(bob.device.aci, {
+    path: `profiles/${bob.device.aci.slice(0, 8)}avatar`,
+    data: Buffer.from(encryptProfile(new Uint8Array(bobAvatar), bob.profileKey.serialize())),
+  });
+}
 await server.createSecondaryDevice(alice);
 const phone = await server.createPrimaryDevice({ profileName: 'Myself', contacts, hasE164: true });
 
@@ -263,6 +306,7 @@ async function waitForTimelineText(text, what) {
  * none of `secrets` (ids and numbers the log must not show in full).
  */
 async function checkDebugLog(open, secrets) {
+  if (FIREFOX) return 'not checked in Firefox (saving uses a Chromium-only download setting)';
   const dir = await mkdtemp(join(tmp, 'download-'));
   const cdp = await page.createCDPSession();
   await cdp.send('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: dir, eventsEnabled: true });
@@ -543,7 +587,7 @@ try {
     const linkedName = decryptLinkedDeviceName(encryptedName, phone.privateKey.serialize());
     const userAgent = await page.evaluate(() => navigator.userAgent);
     const expectedPlatform = /Macintosh/.test(userAgent) ? 'macOS' : /Windows/.test(userAgent) ? 'Windows' : 'Linux';
-    if (!new RegExp(`^receiver \\((Chrome|Chromium), ${expectedPlatform}\\)$`).test(linkedName) || linkedName.length > 50) {
+    if (!new RegExp(`^receiver \\(${FIREFOX ? 'Firefox' : '(Chrome|Chromium)'}, ${expectedPlatform}\\)$`).test(linkedName) || linkedName.length > 50) {
       throw new Error(`device name "${linkedName}"`);
     }
     console.log(`device name at the phone: "${linkedName}"`);
@@ -750,6 +794,25 @@ try {
     return `permission ${permissionBefore} -> granted via the banner; notification "${shown.title}" for "${text}"; click opened the conversation; debug log: ${helpLog}`;
   });
 
+  // (p)-(w): attachments (e2e/attachments.mjs).
+  await runAttachmentScenarios({
+    scenario,
+    server,
+    mock,
+    alice,
+    bob,
+    relay,
+    REPO,
+    tmp,
+    STEP_TIMEOUT_MS,
+    page: () => page,
+    desktop: () => desktop,
+    openConversation,
+    waitForSelector,
+    bobAvatar,
+    onMockEvent: listener => mockListeners.add(listener),
+  });
+
   await scenario('h', 'link-and-sync: history from the primary\'s ephemeral backup', async () => {
     if (!linkCapabilities.split(',').includes('backup5')) {
       return `QR capabilities ${linkCapabilities}: no link-and-sync offered`;
@@ -951,7 +1014,13 @@ try {
   const secrets = logLines.filter(l => SECRET_PATTERNS.some(p => p.test(l)));
   const unhandled = logLines.filter(l => /Top-level unhandled/.test(l));
   for (const watcher of watchers) problems.push(...(await watcher.report()));
-  for (const e of pageErrors) problems.push(`uncaught exception: ${e}`);
+  // Firefox reports a local URL whose answer failed (a video's preview
+  // while it downloads: STATUS.md, open issues) as a page error; counted,
+  // not failed, in Firefox runs.
+  const firefoxMediaErrors = FIREFOX ? pageErrors.filter(e => /A ServiceWorker intercepted the request and encountered an unexpected error/.test(e)) : [];
+  if (firefoxMediaErrors.length) console.log(`Firefox: ${firefoxMediaErrors.length} failed local media loads (known issue)`);
+  for (const e of pageErrors) if (!firefoxMediaErrors.includes(e)) problems.push(`uncaught exception: ${e}`);
+  if (localUrlsOnServer.length) problems.push(`${localUrlsOnServer.length} local (attachment) URLs reached the site's server`);
   for (const line of unhandled) problems.push(`unhandled error: ${line.slice(0, 200)}`);
   for (const line of secrets) problems.push(`secret-looking log line: ${line.slice(0, 80)}...`);
   console.log(`relay: ${JSON.stringify(relay.stats)}`);

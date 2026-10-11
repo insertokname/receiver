@@ -19,7 +19,7 @@ The app is the site's root; `test/` and `libsignal/` are check pages.
 | `libsignal/test/node.mjs` | Runs libsignal's own TypeScript tests against the WebAssembly build in Node |
 | `libsignal/check/` | libsignal checks page (`libsignal/` on the site) and its headless runner `run.mjs` |
 | `renderer/` | Desktop's main window bundled for the browser (the site's root): `build.sh`, `build.mjs`, module resolution (`resolve.mjs`), Node/Electron/native shims (`shims/`), entry point, page, boot test `run.mjs` |
-| `main/` | In-page replacement for Electron's main process: IPC (`ipc.ts`), config, locale, settings, the database side (`sql.ts`), the app's files (`files.ts`), every other channel the renderer uses (`channels.ts`) |
+| `main/` | In-page replacement for Electron's main process: IPC (`ipc.ts`), config, locale, settings, the database side (`sql.ts`), the app's files (`files.ts`), attachments (`attachments.ts`, `protocols.ts`, `local-urls.ts`, `downloads.ts`), every other channel the renderer uses (`channels.ts`) |
 | `sql/` | The SQL worker: Desktop's `ts/sql/Server.node.ts` and migrations on encrypted SQLite in the origin private file system (see below); `build.sh` fetches SQLite3 Multiple Ciphers and builds `tokenizer/`; `test/run.mjs` is the storage test |
 | `sql/tokenizer/` | Signal's FTS5 tokenizer (Signal-FTS5-Extension, the revision `@signalapp/sqlcipher` uses) as a WebAssembly module (Rust) |
 | `net/` | libsignal's `Net` for the web build (`WebNet`): chat and provisioning connections, the typed chat calls, and HTTPS (`node-fetch` replacement), all through one Tor client (`tor.ts`, chosen in `carrier.ts`); `test/run.mjs` checks it against Signal |
@@ -164,8 +164,48 @@ tree, read at startup and kept up to date. OPFS writes go to a copy that
 replaces the file on close; where Node behaves differently and Desktop
 relies on it, the shim keeps Node's behaviour (opening with `'w'`
 truncates at once; a handle that never wrote changes nothing on close;
-removing an open file works). Paths outside userData fail with `EACCES`.
-Desktop encrypts attachments itself before they are written.
+removing an open file works; `rmSync`/`unlinkSync` change the tree at
+once and OPFS before any later access). Paths outside userData fail with
+`EACCES`. Desktop encrypts attachments itself before they are written. A
+write the browser refuses (quota) fails with Node's `ENOSPC` and the app
+shell shows its "Not enough storage space" screen. Files Desktop's SQL code
+deletes (migrations) are deleted by the page on the worker's request.
+
+## Attachments
+
+- **Showing them.** Desktop's renderer loads decrypted media from
+  `attachment://` URLs, answered by its main process
+  (`app/attachment_channel.main.ts`). The web build runs that module itself,
+  unchanged, in the page (`main/attachments.ts`; the `electron` shim gives it
+  `ipcMain` and `protocol`): it decrypts the locally encrypted file on the
+  fly, verifies it as Desktop does (the whole file's MAC first, then each
+  chunk against an incremental MAC as it is served) and answers Range
+  requests. `ts/util/getLocalAttachmentUrl.web.ts` turns Desktop's URL into
+  `<app>/attachment/<token>`: the original URL (it carries the attachment's
+  keys) sealed with AES-GCM under a key that exists only in the page's
+  memory (`main/local-urls.ts`), so nothing secret is ever in a URL that
+  could reach the network. The service worker (`sw/sw.ts`) sends each such
+  request to the page that made it over a MessageChannel and streams the
+  answer back piece by piece as the browser reads it (`main/protocols.ts`
+  has the protocol): images, video and audio with seeking (206, complete
+  `Content-Range`), avatars, stickers, link preview images.
+- **Saving.** Saving an attachment is a browser download (WhatsApp Web
+  style): a hidden frame loads the attachment's local URL with
+  `Content-Disposition: attachment` and the service worker streams the
+  decrypted file into the download (`ts/util/Attachment.web.ts`,
+  `main/downloads.ts`); data already in memory is saved from a Blob
+  (`ts/windows/main/attachments.web.ts`).
+- **Downloading and uploading** use Desktop's own code (download jobs,
+  resumed with Range; tus uploads to CDN 3, resumed with HEAD + PATCH)
+  over the HTTPS client through Tor. Request bodies are streamed: the
+  transport pulls the file piece by piece (`net/node-fetch.ts`, webtor-rs
+  `RequestBody::Stream`); the request's timeout then bounds each wait.
+- **Voice notes** are recorded with Desktop's MP3 encoder worklet
+  (`bundles/workers/mp3Encoder.js`, LAME compiled to JavaScript); the
+  browser asks for the microphone when recording starts.
+- Not available: playing a video while it downloads (an OPFS file shows
+  its content only once its writer closes; the player waits for the
+  download).
 
 ## Test
 
@@ -206,7 +246,15 @@ decrypted by the mock contact), persistence (reload, reconnect, a dropped
 connection) and link-and-sync (message history imported from the primary's
 ephemeral backup), "Use here" (a second window takes over),
 notifications (the permission banner, a notification for a message while
-the window is not focused, clicking it) and the debug log view. Scenarios
+the window is not focused, clicking it) and the debug log view.
+Scenarios (p)-(z) (`e2e/attachments.mjs`) cover attachments: receiving an
+image, a file (saved as a browser download), a 31 MiB video (Range, 206,
+bounded memory), a voice note, a profile picture, a sticker and a link
+preview image; sending an image, a file and a video and recording a voice
+note (Alice decrypts each); a download and an upload dropped half way and
+resumed; storage full. `BROWSER=firefox FIREFOX=<path>` runs the runner in
+Firefox (WebDriver BiDi), for the scenarios that need no DevTools protocol.
+Scenarios
 (i)-(o) link while every connection drops or stalls (the relay stops
 forwarding without closing, like a hung Tor circuit) at the critical points
 of linking, including half way through a 32 MiB archive download resumed

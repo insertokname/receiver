@@ -19,6 +19,10 @@
 // - setLogger: the WebAssembly build initializes SQLite before the logger
 //   could be configured; errors still surface as exceptions.
 // - scanStats is not available, as in the addon's production builds.
+// - The WebAssembly build lacks SQLITE_ENABLE_UPDATE_DELETE_LIMIT, which the
+//   addon's SQLCipher has: `DELETE ... [ORDER BY ...] LIMIT n` is rewritten
+//   to the equivalent `DELETE ... WHERE rowid IN (SELECT rowid ... LIMIT n)`
+//   (withDeleteLimit), which is what that option does for rowid tables.
 
 import { Buffer } from 'node:buffer';
 
@@ -481,6 +485,18 @@ function stepNative(
   }
 }
 
+const DELETE_WITH_LIMIT =
+  /^(\s*DELETE\s+FROM\s+)([\w$]+)((?:\s+WHERE\s+[\s\S]*?)?)((?:\s+RETURNING\s+[\s\S]*?)?)((?:\s+ORDER\s+BY\s+[\s\S]*?)?)(\s+LIMIT\s+[\w$:@?]+(?:\s+OFFSET\s+[\w$:@?]+)?)(\s*;?\s*)$/i;
+
+/** `DELETE ... [ORDER BY] LIMIT` without SQLITE_ENABLE_UPDATE_DELETE_LIMIT (see above). */
+export function withDeleteLimit(query: string): string {
+  if (!/\bLIMIT\b/i.test(query)) return query;
+  const match = DELETE_WITH_LIMIT.exec(query);
+  if (!match) return query;
+  const [, head, table, where, returning, orderBy, limit, tail] = match;
+  return `${head}${table} WHERE rowid IN (SELECT rowid FROM ${table}${where}${orderBy}${limit})${returning}${tail}`;
+}
+
 class Statement<Options extends StatementOptions = object> {
   #native: NativeStatement | undefined;
   readonly #translateParams: (
@@ -495,7 +511,7 @@ class Statement<Options extends StatementOptions = object> {
     onClose?: () => void
   ) {
     const paramNames = new Array<string | null>();
-    const native = prepareNative(db, query, options, paramNames);
+    const native = prepareNative(db, withDeleteLimit(query), options, paramNames);
     this.#native = native;
     statementRegistry.register(this, native, native);
 

@@ -22,6 +22,8 @@ import type { TransformCallback } from 'node:stream';
 
 import { unavailable } from './unavailable.ts';
 
+const STREAM_PIECE = 1024 * 1024;
+
 type BinaryLike = string | Uint8Array | ArrayBuffer | DataView;
 type Encoding = 'hex' | 'base64' | 'base64url' | 'utf8' | 'utf-8' | 'latin1' | 'binary';
 
@@ -285,15 +287,22 @@ class CipherBase extends Transform {
     return output(this.#process(rest, true), outputEncoding);
   }
 
+  // Large chunks (a whole attachment) are processed and passed on in pieces
+  // of at most STREAM_PIECE bytes, each its own buffer: what follows in a
+  // pipeline may be libsignal (incremental MAC), whose WebAssembly bridge
+  // copies the whole buffer behind a chunk into WebAssembly memory, which
+  // never shrinks.
   override _transform(chunk: Uint8Array, _encoding: BufferEncoding, callback: TransformCallback): void {
-    let out: Buffer;
     try {
-      out = this.update(chunk);
+      for (let offset = 0; offset < chunk.length || offset === 0; offset += STREAM_PIECE) {
+        const out = this.update(chunk.subarray(offset, offset + STREAM_PIECE));
+        if (out.length > 0) this.push(out);
+        if (chunk.length === 0) break;
+      }
     } catch (error) {
       callback(error as Error);
       return;
     }
-    if (out.length > 0) this.push(out);
     callback();
   }
 

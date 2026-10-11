@@ -79,7 +79,41 @@ export function serveSite({ extra = {}, siteDir = SITE_DIR, onRequest } = {}) {
  * resolve to 192.0.2.1 (TEST-NET-1, unroutable): connections to them hang
  * until the caller's timeout, like a blocked bridge.
  */
-export async function launchBrowser({ blackholeHosts = [] } = {}) {
+/** `BROWSER=firefox` (with $FIREFOX): the runners that support it use Firefox over WebDriver BiDi. */
+export const FIREFOX = process.env.BROWSER === 'firefox';
+
+export async function launchBrowser({ blackholeHosts = [], args = [] } = {}) {
+  if (FIREFOX) {
+    if (!process.env.FIREFOX) throw new Error('set FIREFOX to a Firefox executable');
+    return puppeteer.launch({
+      browser: 'firefox',
+      executablePath: process.env.FIREFOX,
+      headless: true,
+      protocolTimeout: 0,
+      extraPrefsFirefox: {
+        'network.dns.localDomains': HOST,
+        'dom.securecontext.allowlist': HOST,
+        // The test server is plain HTTP (GitHub Pages is HTTPS): no upgrades.
+        'dom.security.https_first': false,
+        'dom.security.https_first_pbm': false,
+        'security.mixed_content.upgrade_display_content': false,
+        // A fake microphone, allowed without a prompt (as Chromium's flags).
+        'media.navigator.streams.fake': true,
+        'media.navigator.permission.disabled': true,
+        // Downloads go to $FIREFOX_DOWNLOAD_DIR without asking.
+        ...(process.env.FIREFOX_DOWNLOAD_DIR
+          ? {
+              'browser.download.dir': process.env.FIREFOX_DOWNLOAD_DIR,
+              'browser.download.folderList': 2,
+              'browser.download.useDownloadDir': true,
+              'browser.download.always_ask_before_handling_new_types': false,
+              'browser.helperApps.neverAsk.saveToDisk': 'application/octet-stream,application/pdf,application/zip',
+              'pdfjs.disabled': true,
+            }
+          : {}),
+      },
+    });
+  }
   if (!process.env.CHROMIUM) throw new Error('set CHROMIUM to a Chromium/Chrome executable');
   const rules = [`MAP ${HOST} 127.0.0.1`, ...blackholeHosts.map(h => `MAP ${h} 192.0.2.1`)];
   return puppeteer.launch({
@@ -90,6 +124,7 @@ export async function launchBrowser({ blackholeHosts = [] } = {}) {
       `--host-resolver-rules=${rules.join(', ')}`,
       `--unsafely-treat-insecure-origin-as-secure=${LOCAL_ORIGIN}`,
       ...(process.env.CI ? ['--no-sandbox'] : []),
+      ...args,
     ],
   });
 }
@@ -115,9 +150,12 @@ export async function watchPage(page, { allowedOrigins = ALLOWED_DIRECT_ORIGINS 
     destinations.set(origin, (destinations.get(origin) ?? 0) + 1);
   };
   page.on('request', r => note(r.url()));
-  const cdp = await page.createCDPSession();
-  await cdp.send('Network.enable');
-  cdp.on('Network.webSocketCreated', e => note(e.url));
+  if (!FIREFOX) {
+    // WebSockets (Firefox's BiDi requests do not include them).
+    const cdp = await page.createCDPSession();
+    await cdp.send('Network.enable');
+    cdp.on('Network.webSocketCreated', e => note(e.url));
+  }
   await page.evaluateOnNewDocument(() => {
     window.__cspViolations = [];
     document.addEventListener('securitypolicyviolation', e =>

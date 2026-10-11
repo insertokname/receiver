@@ -210,7 +210,8 @@ export function webResolvePlugin({ overrides = {} } = {}) {
         }
         const base = resolved.id.slice(0, -match[0].length);
         for (const ext of ['.web.ts', '.web.tsx']) {
-          if (existsSync(base + ext)) {
+          // A web sibling may build on the module it replaces.
+          if (existsSync(base + ext) && importer !== base + ext) {
             siblings.add((base + ext).replace(`${REPO}/`, ''));
             return base + ext;
           }

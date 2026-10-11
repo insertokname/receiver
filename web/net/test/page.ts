@@ -255,6 +255,31 @@ async function setUp() {
       };
     },
 
+    /**
+     * A streamed request body (as Desktop's uploads send a file's read
+     * stream): 1 MiB in 64 KiB pieces, unauthenticated, so the server
+     * answers 401; reports how much of the body the transport pulled.
+     */
+    async storageStreamedUpload() {
+      const { Readable } = await import('node:stream');
+      const started = now();
+      let pulled = 0;
+      const pieces = (function* () {
+        for (let i = 0; i < 16; i += 1) {
+          pulled += 64 * 1024;
+          yield new Uint8Array(64 * 1024).fill(i);
+        }
+      })();
+      const response = await fetch('https://storage.signal.org/v1/storage', {
+        method: 'PUT',
+        ca: SIGNAL_CA_PEM,
+        body: Readable.from(pieces),
+        headers: { 'Content-Type': 'application/x-protobuf', 'User-Agent': 'unofficial-web-client/net-test (receiver)' },
+      } as never);
+      await response.arrayBuffer().catch(() => undefined);
+      return { status: response.status, hasTimestamp: response.headers.get('x-signal-timestamp') != null, pulled, ms: now() - started };
+    },
+
     async storageWrongCa(wrongCa: string) {
       try {
         const response = await fetch(STORAGE_MANIFEST, { ca: wrongCa } as never);

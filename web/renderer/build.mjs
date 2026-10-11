@@ -265,6 +265,19 @@ const sqlBundle = await build({
   onLog,
   output: { ...output, dir: SQL_OUT },
 });
+// The voice note recorder's MP3 encoder: an AudioWorklet module that
+// ts/services/audioRecorder.dom.ts loads from bundles/workers/mp3Encoder.js
+// (as rolldown.config.ts builds it for Desktop). LAME is compiled to plain
+// JavaScript (packages/lame), so the worklet needs no WebAssembly.
+await build({
+  cwd: REPO,
+  input: join(REPO, 'ts/workers/mp3Encoder.std.ts'),
+  platform: 'browser',
+  tsconfig: join(REPO, 'tsconfig.json'),
+  transform: { define: { process: 'undefined', require: 'undefined', eval: 'undefined' } },
+  onLog,
+  output: { format: 'esm', file: join(OUT, 'bundles/workers/mp3Encoder.js'), minify, codeSplitting: false, generatedCode: { symbols: false } },
+});
 await cp(join(SQL_DIST, 'sqlite3mc/sqlite3.wasm'), join(SQL_OUT, 'sqlite3.wasm'));
 await cp(join(SQL_DIST, 'signal_tokenizer.wasm'), join(SQL_OUT, 'signal_tokenizer.wasm'));
 if (problems.length) {

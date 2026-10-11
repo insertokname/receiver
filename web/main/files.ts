@@ -30,6 +30,9 @@ const children = new Map<string, Set<string>>();
 const directoryHandles = new Map<string, FileSystemDirectoryHandle>();
 const writers = new Map<string, Set<FileWriter>>();
 let initializing: Promise<void> | undefined;
+// Removals made synchronously (rmSync, unlinkSync): the tree changes at
+// once, OPFS follows in this order; every OPFS access waits for them.
+let removals: Promise<void> = Promise.resolve();
 
 /**
  * A file open for writing. OPFS writes go to a copy that replaces the file
@@ -78,13 +81,15 @@ export class FileWriter {
 
   async write(bytes: Uint8Array, position: number): Promise<void> {
     if (this.#detached || this.#done) return;
-    const writable = await this.#open();
-    await writable.write({ type: 'write', position, data: bytes as Uint8Array<ArrayBuffer> });
+    await storageCall(this.path, 'write', async () => {
+      const writable = await this.#open();
+      await writable.write({ type: 'write', position, data: bytes as Uint8Array<ArrayBuffer> });
+    });
   }
 
   async truncate(size: number): Promise<void> {
     if (this.#detached || this.#done) return;
-    await (await this.#open()).truncate(size);
+    await storageCall(this.path, 'ftruncate', async () => (await this.#open()).truncate(size));
   }
 
   #forget(): void {
@@ -98,7 +103,7 @@ export class FileWriter {
     if (!this.#done) {
       this.#forget();
       const writable = this.#writable;
-      this.#done = writable ? writable.then(w => w.close()) : Promise.resolve();
+      this.#done = writable ? storageCall(this.path, 'close', () => writable.then(w => w.close())) : Promise.resolve();
     }
     return this.#done;
   }
@@ -112,6 +117,30 @@ export class FileWriter {
       this.#done = writable ? writable.then(w => w.abort()).catch(() => undefined) : Promise.resolve();
     }
     return this.#done;
+  }
+}
+
+const storageFullListeners = new Set<() => void>();
+
+/** Called when the browser refuses to store more (quota exceeded) while writing a file. */
+export function onStorageFull(listener: () => void): void {
+  storageFullListeners.add(listener);
+}
+
+/**
+ * Runs an OPFS write: the browser's QuotaExceededError becomes Node's
+ * ENOSPC (what Desktop's code expects from a full disk), and the app shell
+ * is told so it can say why.
+ */
+async function storageCall<T>(path: string, syscall: string, fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+      for (const listener of storageFullListeners) listener();
+      throw fsError('ENOSPC', syscall, path, 'no space left on device (the browser\'s storage quota is used up)');
+    }
+    throw error;
   }
 }
 
@@ -132,6 +161,7 @@ export function fsError(code: string, syscall: string, path: string, detail?: st
     ENOTEMPTY: [-39, 'directory not empty'],
     EACCES: [-13, 'permission denied'],
     EIO: [-5, 'i/o error'],
+    ENOSPC: [-28, 'no space left on device'],
   };
   const [errno, text] = messages[code] ?? [-5, 'i/o error'];
   const error = new Error(`${code}: ${detail ?? text}, ${syscall} '${path}'`);
@@ -227,6 +257,7 @@ export function listDirectory(path: string): Array<string> {
 }
 
 async function directoryHandle(path: string, syscall: string): Promise<FileSystemDirectoryHandle> {
+  await removals;
   const cached = directoryHandles.get(path);
   if (cached) return cached;
   if (path === ROOT) return opfsRoot();
@@ -305,6 +336,58 @@ export async function removePath(
     if (!(error instanceof DOMException && error.name === 'NotFoundError')) throw error;
   }
   removeEntry(path);
+}
+
+/**
+ * Node's rmSync/unlinkSync: checked and applied to the tree now, removed
+ * from OPFS right after (before any other access to the files).
+ */
+export function removePathSync(
+  path: string,
+  { recursive, force, syscall }: { recursive: boolean; force: boolean; syscall: string }
+): void {
+  checkScope(path, syscall);
+  if (path === ROOT) throw fsError('EACCES', syscall, path);
+  const kind = kindOf(path);
+  if (!kind) {
+    if (force) return;
+    throw fsError('ENOENT', syscall, path);
+  }
+  if (kind === 'directory' && !recursive) {
+    throw fsError(syscall === 'unlink' ? 'EISDIR' : 'ERR_FS_EISDIR', syscall, path, 'Path is a directory');
+  }
+  const parentPath = posix.dirname(path);
+  const name = posix.basename(path);
+  const parentHandle = directoryHandles.get(parentPath);
+  removeEntry(path);
+  const previous = removals;
+  removals = (async () => {
+    await previous;
+    await detachWriters(path);
+    try {
+      const parent = parentHandle ?? (await resolveDirectory(parentPath));
+      await parent?.removeEntry(name, { recursive: kind === 'directory' });
+    } catch (error) {
+      if (!(error instanceof DOMException && error.name === 'NotFoundError')) {
+        // oxlint-disable-next-line no-console
+        console.warn(`web files: removing a file failed: ${error instanceof Error ? error.name : String(error)}`);
+      }
+    }
+  })();
+}
+
+/** A directory's OPFS handle by walking from the root (for paths no longer in the tree). */
+async function resolveDirectory(path: string): Promise<FileSystemDirectoryHandle | undefined> {
+  let handle = await opfsRoot();
+  for (const name of path.slice(ROOT.length).split('/').filter(Boolean)) {
+    try {
+      // oxlint-disable-next-line no-await-in-loop
+      handle = await handle.getDirectoryHandle(name);
+    } catch {
+      return undefined;
+    }
+  }
+  return handle;
 }
 
 /** Drops the cached tree under `path` after it was removed outside this module (erase-*). */

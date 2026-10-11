@@ -14,7 +14,7 @@
 // connections until turned off; refuseFor(ms) fails new connections right
 // away for a while (like a Tor client being replaced); afterBytesDown(n,
 // fn) runs fn once n more bytes went to the app (e.g. to drop a download
-// half way).
+// half way), afterBytesUp(n, fn) once n more bytes came from it (an upload).
 
 import { createRequire } from 'node:module';
 import net from 'node:net';
@@ -37,6 +37,7 @@ export async function startRelay({ port, origin, targets, mockPort }) {
   let stallingNew = false;
   let refuseUntil = 0;
   let byteTriggers = [];
+  let upTriggers = [];
 
   const wss = new WebSocketServer({
     host: '127.0.0.1',
@@ -80,6 +81,11 @@ export async function startRelay({ port, origin, targets, mockPort }) {
       if (connection.stalled) return;
       stats.bytesUp += data.length;
       tcp.write(data);
+      if (upTriggers.length) {
+        const due = upTriggers.filter(t => stats.bytesUp >= t.at);
+        upTriggers = upTriggers.filter(t => stats.bytesUp < t.at);
+        for (const trigger of due) setImmediate(trigger.fn);
+      }
     });
     tcp.on('data', chunk => {
       if (connection.stalled) return;
@@ -128,6 +134,10 @@ export async function startRelay({ port, origin, targets, mockPort }) {
     /** Runs `fn` once `bytes` more bytes went from the mock server to the app. */
     afterBytesDown(bytes, fn) {
       byteTriggers.push({ at: stats.bytesDown + bytes, fn });
+    },
+    /** Runs `fn` once `bytes` more bytes went from the app to the mock server. */
+    afterBytesUp(bytes, fn) {
+      upTriggers.push({ at: stats.bytesUp + bytes, fn });
     },
     close() {
       for (const { ws, tcp } of connections) {

@@ -7,11 +7,13 @@
 
 import { createConfig } from './config.ts';
 import { initFiles } from './files.ts';
+
+export { onStorageFull } from './files.ts';
 import { onSync, sendToRenderer } from './ipc.ts';
 import { loadLocale } from './locale.ts';
 import { installSettings } from './settings.ts';
 import { installChannels } from './channels.ts';
-import { installSql } from './sql.ts';
+import { installSql, mainSql } from './sql.ts';
 import type { DatabaseResult } from './sql.ts';
 import { getCarrier } from '../net/carrier.ts';
 
@@ -19,9 +21,17 @@ let markRendererLoaded: () => void = () => undefined;
 const rendererLoaded = new Promise<void>(resolve => {
   markRendererLoaded = resolve;
 });
+let userDataPath = '';
 
-/** Called once Desktop's preload graph has run (Electron's 'ready-to-show'). */
-export function onRendererLoaded(): void {
+/**
+ * Called once Desktop's preload graph has run (Electron's 'ready-to-show').
+ * Desktop's attachment channel (Electron main code) starts here: its
+ * modules share the renderer's, which must be initialized first (e.g.
+ * ts/Crypto.node.ts takes window.SignalContext when it loads).
+ */
+export async function onRendererLoaded(): Promise<void> {
+  const { installAttachments } = await import('./attachments.ts');
+  installAttachments({ configDir: userDataPath, sql: mainSql });
   markRendererLoaded();
 }
 
@@ -40,6 +50,7 @@ export async function startMain(): Promise<{ database: Promise<DatabaseResult> }
   onSync('country-display-names', () => locale.countryDisplayNames);
 
   const sqlSettled = installSql({ configDir: config.userDataPath, appVersion: config.version });
+  userDataPath = config.userDataPath;
   installSettings();
   installChannels({ config });
 

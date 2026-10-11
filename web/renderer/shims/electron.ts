@@ -4,9 +4,24 @@
 // ipcRenderer talks to the in-page main process (web/main/); the window is
 // not sandboxed, so contextBridge simply sets globals.
 
-import { ipcRenderer } from '../../main/ipc.ts';
+import { handle, ipcRenderer } from '../../main/ipc.ts';
+import { registerProtocol } from '../../main/protocols.ts';
 
 export { ipcRenderer };
+
+// For Desktop's main-process modules the web build runs in the page
+// (app/attachment_channel.main.ts): invoke handlers and protocol handlers.
+export const ipcMain = {
+  handle(channel: string, handler: (event: unknown, ...args: Array<any>) => unknown): void {
+    handle(channel, handler);
+  },
+};
+
+export const protocol = {
+  handle(scheme: string, handler: (request: Request) => Promise<Response> | Response): void {
+    registerProtocol(scheme, handler);
+  },
+};
 
 export const contextBridge = {
   exposeInMainWorld(key: string, api: unknown): void {
@@ -35,4 +50,4 @@ export const webUtils = {
   getPathForFile: (_file: File): string => '',
 };
 
-export default { ipcRenderer, contextBridge, webFrame, webUtils };
+export default { ipcRenderer, ipcMain, protocol, contextBridge, webFrame, webUtils };

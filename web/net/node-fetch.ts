@@ -19,6 +19,12 @@
 // Desktop 0 means none: we cap it); after that, each piece of the body must
 // arrive within an idle timeout, so a hung connection fails the body
 // instead of stalling it. Aborting the signal drops the connection.
+//
+// Request bodies that are streams (uploads: Desktop passes a file's read
+// stream) are streamed too: the transport pulls each piece when the
+// connection takes it, so the file is never in memory as a whole and the
+// stream's consumption is the upload's progress (Desktop's tus client
+// counts it). `timeout` then bounds each step instead of the whole upload.
 
 import { Buffer } from 'node:buffer';
 import { Readable } from 'node:stream';
@@ -44,18 +50,33 @@ const MIN_BODY_IDLE_MS = 15_000;
 
 type WebRequestInit = RequestInit & { ca?: string; timeout?: number };
 
-async function bodyBytes(body: unknown): Promise<Uint8Array | undefined> {
+// Pieces of a streamed request body handed to the transport at a time.
+const MAX_PIECE = 256 * 1024;
+
+type RequestBodySource = Uint8Array | (() => Promise<Uint8Array | undefined>) | undefined;
+
+function requestBody(body: unknown, signal: AbortSignal | undefined): RequestBodySource {
   if (body == null) return undefined;
   if (typeof body === 'string') return Buffer.from(body, 'utf8');
   if (body instanceof Uint8Array) return body;
   if (body instanceof ArrayBuffer) return new Uint8Array(body);
   if (ArrayBuffer.isView(body)) return new Uint8Array(body.buffer, body.byteOffset, body.byteLength);
   if (typeof (body as AsyncIterable<unknown>)[Symbol.asyncIterator] === 'function') {
-    const chunks: Array<Buffer> = [];
-    for await (const chunk of body as AsyncIterable<Uint8Array | string>) {
-      chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : Buffer.from(chunk));
-    }
-    return Buffer.concat(chunks);
+    const iterator = (body as AsyncIterable<Uint8Array | string>)[Symbol.asyncIterator]();
+    let rest: Uint8Array | undefined;
+    return async () => {
+      if (signal?.aborted) throw new AbortError('The operation was aborted.');
+      if (!rest?.byteLength) {
+        const { done, value } = await iterator.next();
+        if (done) return undefined;
+        rest = typeof value === 'string' ? Buffer.from(value) : value;
+      }
+      // Copied, at most MAX_PIECE: the transport copies each piece into
+      // WebAssembly memory, which does not shrink.
+      const piece = Uint8Array.prototype.slice.call(rest, 0, MAX_PIECE);
+      rest = rest.subarray(piece.byteLength);
+      return piece;
+    };
   }
   throw new FetchError('unsupported request body in the web build', 'system');
 }
@@ -115,7 +136,7 @@ export default async function fetch(input: RequestInfo, init: WebRequestInit = {
   if (signal?.aborted) throw new AbortError('The operation was aborted.');
 
   const headers: Array<[string, string]> = [...new Headers(init.headers as never)];
-  const body = await bodyBytes(init.body);
+  const body = requestBody(init.body, signal as AbortSignal | undefined);
   const timeout = init.timeout ? Math.min(init.timeout, MAX_TIMEOUT_MS) : init.timeout === 0 ? MAX_TIMEOUT_MS : DEFAULT_TIMEOUT_MS;
 
   let result;

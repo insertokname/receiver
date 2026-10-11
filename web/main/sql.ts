@@ -25,7 +25,7 @@ import type {
   WrappedWorkerRequest,
   WrappedWorkerResponse,
 } from '../sql/protocol.ts';
-import { forgetPath, ROOT } from './files.ts';
+import { forgetPath, normalizePath, removePathSync, ROOT } from './files.ts';
 import { handle, sendToRenderer } from './ipc.ts';
 import { appendLogLine } from './logs.ts';
 import { clearStored } from './storage.ts';
@@ -223,6 +223,14 @@ class WebSQL {
       log(message.level, `MainSQL: ${redactAll(format(fmt, ...rest))}`);
       return;
     }
+    if (message.type === 'removeFile') {
+      try {
+        removePathSync(normalizePath(message.path), { recursive: false, force: true, syscall: 'unlink' });
+      } catch (error) {
+        log('warn', `MainSQL: could not delete a file: ${redactAll(String((error as Error)?.message))}`);
+      }
+      return;
+    }
     if (message.type === 'walCheckpointNeeded') {
       this.#checkpointPendingReason = message.reason;
       this.#maybeRunCheckpoint();
@@ -295,6 +303,18 @@ export type DatabaseResult =
   | { ok: false; error: { name: string; message: string } };
 
 let current: WebSQL | undefined;
+
+/** SQL calls from the in-page main process (Desktop's MainSQL). */
+export const mainSql = {
+  sqlRead(method: string, args: ReadonlyArray<unknown>): Promise<unknown> {
+    if (!current) return Promise.reject(new Error('the database was not started'));
+    return current.sqlRead(method, args);
+  },
+  sqlWrite(method: string, args: ReadonlyArray<unknown>): Promise<unknown> {
+    if (!current) return Promise.reject(new Error('the database was not started'));
+    return current.sqlWrite(method, args);
+  },
+};
 
 /** Closes the database for good (another window takes over). */
 export function closeDatabase(): Promise<void> {
@@ -370,14 +390,8 @@ export function installSql({
   handle('pause-sql-writes', () => sql.pauseWriteAccess());
   handle('resume-sql-writes', () => sql.resumeWriteAccess());
 
-  handle('erase-attachments', () => removeUserDataDirectory('attachments.noindex'));
-  handle('erase-stickers', () => removeUserDataDirectory('stickers.noindex'));
-  handle('erase-temp', () => removeUserDataDirectory('temp'));
-  handle('erase-drafts', () => removeUserDataDirectory('drafts.noindex'));
-  handle('erase-downloads', () => removeUserDataDirectory('downloads.noindex'));
-  // OPFS has no permissions. Orphaned attachment files are not cleaned up
-  // yet (Desktop's cleanup runs in its main process).
-  handle('cleanup-orphaned-attachments', () => undefined);
+  // erase-attachments, erase-stickers, ..., cleanup-orphaned-attachments:
+  // Desktop's attachment channel (attachments.ts). OPFS has no permissions.
   handle('ensure-file-permissions', () => undefined);
 
   window.addEventListener('pagehide', () => void sql.close());

@@ -20,6 +20,11 @@
 // - The Tor directory snapshot (transport/tor/) is data, not code: it is
 //   refreshed daily without a new build, so it comes from the network when
 //   possible and from the cache otherwise, and never prompts an update.
+// - Local URLs (`attachment/<token>`: Desktop's attachment://, see
+//   web/main/local-urls.ts) are answered by the page that made them: the
+//   request goes to it over a MessageChannel and the decrypted body comes
+//   back piece by piece as the browser reads it (web/main/protocols.ts has
+//   the protocol). Never cached, never sent to the network.
 // - Anything else (check pages, other paths) goes to the network untouched.
 
 import manifest from 'virtual:web-sw-manifest';
@@ -33,16 +38,26 @@ type Manifest = Readonly<{
 type ExtendableEvent = Event & { waitUntil(promise: Promise<unknown>): void };
 type FetchEvent = ExtendableEvent & {
   request: Request;
+  clientId: string;
   respondWith(response: Promise<Response> | Response): void;
 };
 type MessageEventWithPorts = ExtendableEvent & {
   data: unknown;
   ports: ReadonlyArray<MessagePort>;
 };
+type WindowClient = {
+  id: string;
+  url: string;
+  postMessage(message: unknown, transfer: Array<Transferable>): void;
+};
 type ServiceWorkerScope = Omit<typeof globalThis, 'addEventListener'> & {
   registration: { scope: string };
   skipWaiting(): Promise<void>;
-  clients: { claim(): Promise<void> };
+  clients: {
+    claim(): Promise<void>;
+    get(id: string): Promise<WindowClient | undefined>;
+    matchAll(options: { type: 'window' }): Promise<ReadonlyArray<WindowClient>>;
+  };
   addEventListener(type: 'install' | 'activate', listener: (event: ExtendableEvent) => void): void;
   addEventListener(type: 'fetch', listener: (event: FetchEvent) => void): void;
   addEventListener(type: 'message', listener: (event: MessageEventWithPorts) => void): void;
@@ -56,6 +71,13 @@ const DATA_CACHE = 'receiver-data';
 const MANIFEST_PATH = '__manifest.json';
 const APPROVED_KEY = 'approved-build';
 const DATA_PREFIX = 'transport/tor/';
+const LOCAL_PREFIX = 'attachment/';
+const LOCAL_REQUEST = 'receiver:local-request';
+const LOCAL_PROTOCOL_VERSION = 1;
+const LOCAL_HEAD_TIMEOUT_MS = 60_000;
+const LOCAL_PIECE_TIMEOUT_MS = 180_000;
+// Pieces (up to 64 KiB each) the browser may have asked for ahead of its reader.
+const LOCAL_READ_AHEAD = 8;
 const DOWNLOAD_CONCURRENCY = 6;
 
 const scopeUrl = new URL(sw.registration.scope);
@@ -242,13 +264,138 @@ async function fromData(request: Request): Promise<Response> {
   }
 }
 
+
+type LocalMessage =
+  | { type: 'head'; status: number; headers: Array<[string, string]> }
+  | { type: 'chunk'; bytes: ArrayBuffer }
+  | { type: 'end' }
+  | { type: 'error'; message: string };
+
+/** One local request answered by one page: its messages, in order. */
+function askPage(client: WindowClient, request: Request): {
+  next(timeoutMs: number): Promise<LocalMessage>;
+  send(message: { type: 'pull' | 'cancel' }): void;
+  close(): void;
+} {
+  const channel = new MessageChannel();
+  const queue: Array<LocalMessage> = [];
+  const waiting: Array<(message: LocalMessage) => void> = [];
+  channel.port1.onmessage = event => {
+    const message = event.data as LocalMessage;
+    const resolve = waiting.shift();
+    if (resolve) resolve(message);
+    else queue.push(message);
+  };
+  client.postMessage(
+    { type: LOCAL_REQUEST, version: LOCAL_PROTOCOL_VERSION, url: request.url, range: request.headers.get('range') },
+    [channel.port2]
+  );
+  return {
+    next(timeoutMs) {
+      const queued = queue.shift();
+      if (queued) return Promise.resolve(queued);
+      return new Promise<LocalMessage>((resolve, reject) => {
+        const timer = setTimeout(() => {
+          const index = waiting.indexOf(done);
+          if (index !== -1) waiting.splice(index, 1);
+          reject(new Error(`the page did not answer within ${timeoutMs / 1000} s`));
+        }, timeoutMs);
+        const done = (message: LocalMessage) => {
+          clearTimeout(timer);
+          resolve(message);
+        };
+        waiting.push(done);
+      });
+    },
+    send(message) {
+      channel.port1.postMessage(message);
+    },
+    close() {
+      channel.port1.close();
+    },
+  };
+}
+
+async function fromPage(client: WindowClient, request: Request): Promise<Response | undefined> {
+  const page = askPage(client, request);
+  const head = await page.next(LOCAL_HEAD_TIMEOUT_MS);
+  if (head.type !== 'head') {
+    page.close();
+    throw new Error('the page answered without a head');
+  }
+  if (head.headers.some(([name]) => name === 'x-receiver-unknown')) {
+    // Not that page's URL: it says so and sends nothing else.
+    page.send({ type: 'cancel' });
+    page.close();
+    return undefined;
+  }
+  const body = new ReadableStream<Uint8Array>(
+    {
+      async pull(controller) {
+        page.send({ type: 'pull' });
+        const message = await page.next(LOCAL_PIECE_TIMEOUT_MS).catch((error: Error) => ({
+          type: 'error' as const,
+          message: error.message,
+        }));
+        if (message.type === 'chunk') {
+          controller.enqueue(new Uint8Array(message.bytes));
+        } else if (message.type === 'end') {
+          page.close();
+          controller.close();
+        } else {
+          page.close();
+          controller.error(new Error(message.type === 'error' ? message.message : 'unexpected message'));
+        }
+      },
+      cancel() {
+        page.send({ type: 'cancel' });
+        page.close();
+      },
+    },
+    { highWaterMark: LOCAL_READ_AHEAD }
+  );
+  const noBody = request.method === 'HEAD' || head.status === 204 || head.status === 304;
+  if (noBody) {
+    page.send({ type: 'cancel' });
+    page.close();
+  }
+  return new Response(noBody ? null : body, { status: head.status, headers: head.headers });
+}
+
+/**
+ * Answers a local URL from the page that made it: the requesting window
+ * first, then the app's other windows (a download started by a click has
+ * no requesting window in some browsers).
+ */
+async function fromLocal(event: FetchEvent): Promise<Response> {
+  const { request } = event;
+  const first = event.clientId ? await sw.clients.get(event.clientId) : undefined;
+  const others = (await sw.clients.matchAll({ type: 'window' })).filter(client => client.id !== first?.id);
+  for (const client of first ? [first, ...others] : others) {
+    try {
+      // oxlint-disable-next-line no-await-in-loop
+      const response = await fromPage(client, request);
+      if (response) return response;
+    } catch (error) {
+      log(`local request: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+  return new Response('Not found', { status: 404, headers: { 'cache-control': 'no-store' } });
+}
+
 sw.addEventListener('fetch', event => {
   const { request } = event;
-  if (request.method !== 'GET') {
-    return;
-  }
   const url = new URL(request.url);
   if (url.origin !== scopeUrl.origin || !url.pathname.startsWith(scopeUrl.pathname)) {
+    return;
+  }
+  if (url.pathname.startsWith(`${scopeUrl.pathname}${LOCAL_PREFIX}`)) {
+    if (request.method === 'GET' || request.method === 'HEAD') {
+      event.respondWith(fromLocal(event));
+    }
+    return;
+  }
+  if (request.method !== 'GET') {
     return;
   }
   let path = decodeURIComponent(url.pathname.slice(scopeUrl.pathname.length));

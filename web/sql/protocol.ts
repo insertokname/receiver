@@ -51,4 +51,7 @@ export type WrappedWorkerResponse =
       response: unknown;
     }>
   | Readonly<{ type: 'walCheckpointNeeded'; reason: string }>
+  // A file of the app's (attachments, avatars, drafts) Desktop's SQL code
+  // deletes: the page owns those files (web/main/files.ts).
+  | Readonly<{ type: 'removeFile'; path: string }>
   | Readonly<{ type: 'log'; level: WorkerLogLevel; args: ReadonlyArray<unknown> }>;

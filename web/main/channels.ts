@@ -25,6 +25,9 @@ function reject(what: string): () => never {
   };
 }
 
+// Stands for the browser's downloads where Desktop expects a folder.
+const BROWSER_DOWNLOADS = 'Downloads';
+
 export function installChannels({ config }: { config: RendererConfigType }): void {
   // Synchronous queries.
   onSync('OS.getClassName', () => 'os-linux');
@@ -114,15 +117,18 @@ export function installChannels({ config }: { config: RendererConfigType }): voi
   onSend('prompt-os-auth', (_event, request: { reason?: string } | undefined) => {
     sendToRenderer(`prompt-os-auth:${String(request?.reason)}`, 'unsupported');
   });
-  stub('invoke', 'cleanup-downloads', undefined, 'downloads are the browser\'s');
   stub('send', 'show-item-in-folder', undefined, 'no file manager in a browser');
   stub('invoke', 'crash-reports:get-count', 0, 'no native crash reports');
   stub('invoke', 'crash-reports:erase', undefined, 'no native crash reports');
   stub('invoke', 'crash-reports:write-to-log', undefined, 'no native crash reports');
 
-  // Files: Phase 5 (downloads via the browser, OPFS for app data).
+  // Files are saved as browser downloads (ts/util/Attachment.web.ts,
+  // ts/windows/main/attachments.web.ts), so nothing asks for a path. Saving
+  // several attachments asks for a folder first: the browser's downloads.
   handle('show-save-dialog', reject('saving files'));
-  handle('show-open-folder-dialog', reject('choosing folders'));
+  handle('show-open-folder-dialog', (_event, options: { useMainWindow?: boolean } | undefined) =>
+    options?.useMainWindow ? { canceled: false, dirPath: BROWSER_DOWNLOADS } : reject('choosing folders')()
+  );
   handle('pdf:generate', reject('PDF export'));
 
   // Logs: kept in memory (logs.ts); Help > Debug log opens the shell's

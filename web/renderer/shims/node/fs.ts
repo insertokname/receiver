@@ -4,10 +4,11 @@
 // through graceful-fs) needs, on the app's files in the origin private file
 // system (web/main/files.ts): callback functions, streams, and the
 // synchronous questions the in-memory directory tree can answer (existsSync,
-// realpathSync). Paths outside userData fail with EACCES. Every other export
-// throws "not available" (renderer/resolve.mjs, 'partial').
+// realpathSync) and synchronous removal (rmSync, unlinkSync). Paths outside
+// userData fail with EACCES. Every other export throws "not available"
+// (renderer/resolve.mjs, 'partial').
 
-import { checkScope, fsError, kindOf, normalizePath } from '../../../main/files.ts';
+import { checkScope, fsError, kindOf, normalizePath, removePathSync } from '../../../main/files.ts';
 import * as promises from './fs-promises.ts';
 import { ReadStream, WriteStream } from './fs-streams.ts';
 import type { ReadStreamOptions, WriteStreamOptions } from './fs-streams.ts';
@@ -83,6 +84,15 @@ function realpathSyncImpl(path: unknown): string {
   return normalized;
 }
 export const realpathSync = Object.assign(realpathSyncImpl, { native: realpathSyncImpl });
+
+/** Removed from the directory tree at once; from OPFS before any later file access. */
+export function rmSync(path: unknown, options: { recursive?: boolean; force?: boolean } = {}): void {
+  removePathSync(normalizePath(path), { recursive: Boolean(options.recursive), force: Boolean(options.force), syscall: 'rm' });
+}
+
+export function unlinkSync(path: unknown): void {
+  removePathSync(normalizePath(path), { recursive: false, force: false, syscall: 'unlink' });
+}
 
 export function createReadStream(path: unknown, options?: ReadStreamOptions | BufferEncoding): ReadStream {
   return new ReadStream(path, options);

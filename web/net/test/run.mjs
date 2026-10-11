@@ -15,7 +15,8 @@
 //       reports onConnectionInterrupted within libsignal's idle timeout
 //       (45 s), and after going online a reconnect succeeds
 //   (e) onNetworkChange on a healthy connection keeps it
-//   (f) HTTPS: an unauthenticated storage service request gets 401 with
+//   (f) HTTPS: an unauthenticated storage service request (and one with a
+//       streamed 1 MiB body, like an upload) gets 401 with
 //       TLS pinned to Signal's CA; a wrong CA is rejected; a request
 //       without a pinned CA is refused
 //   (g) CDSI and SVR2 reject with typed libsignal errors
@@ -142,6 +143,9 @@ try {
   const f1 = await run('storageUnauthenticated');
   console.log(`  ${JSON.stringify(f1)}`);
   check(f1.status === 401 && f1.hasTimestamp, `storage.signal.org without credentials -> ${f1.status} (x-signal-timestamp: ${f1.hasTimestamp}, ${f1.ms} ms)`);
+  const f4 = await run('storageStreamedUpload');
+  console.log(`  ${JSON.stringify(f4)}`);
+  check(f4.status >= 400 && f4.status < 500 && f4.hasTimestamp, `streamed 1 MiB request body -> ${f4.status} (${f4.pulled} bytes pulled, ${f4.ms} ms)`);
   const f2 = await run('storageWrongCa', wrongCa);
   console.log(`  ${JSON.stringify(f2)}`);
   check(f2.rejected && /UnknownIssuer|certificate/i.test(f2.error?.message ?? ''), `wrong CA rejected: ${f2.error?.message}`);

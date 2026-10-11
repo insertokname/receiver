@@ -49,8 +49,10 @@ export function installSettings(): void {
   }
 
   // Camera and microphone permissions are the browser's to grant; the
-  // stored preference only records what the user chose in the app.
-  handle('settings:get:mediaPermissions', () => getStored('mediaPermissions') ?? false);
+  // stored preference only records what the user chose in the app. The
+  // microphone is allowed by default: the browser asks the user when a
+  // voice note is first recorded (Desktop shows its own prompt instead).
+  handle('settings:get:mediaPermissions', () => getStored('mediaPermissions') ?? true);
   handle('settings:get:mediaCameraPermissions', () => getStored('mediaCameraPermissions'));
   handle('settings:set:mediaPermissions', (_event, value: unknown) => {
     setStored('mediaPermissions', value);
