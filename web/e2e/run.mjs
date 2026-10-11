@@ -18,7 +18,13 @@
 //   (e) persist  after a reload the app is still linked (encrypted database
 //                on OPFS), reconnects and receives again; after every
 //                connection drops it reconnects by itself and receives
-//   (f) link-and-sync  the QR code's capabilities; what the app does when
+//   (f) use here a second window shows "open in another window"; its "Use
+//                here" makes the first window close its database and show
+//                the same, and the second one starts, reconnects, receives
+//   (g) notifications  the in-app banner asks for permission; a message
+//                while the window is not focused creates a notification;
+//                clicking it opens the conversation
+//   (h) link-and-sync  the QR code's capabilities; what the app does when
 //                the primary offers a transfer archive (see below)
 //
 // Fails on CSP violations, uncaught exceptions, network destinations other
@@ -36,7 +42,7 @@ import { BASE_PATH, LOCAL_ORIGIN, decodeLinkQrCode, launchBrowser, serveSite, wa
 import { MOCK_HOST, MOCK_PORT, RELAY_PORT, RELAY_URL } from './config.mjs';
 import { startMockServer } from './mock.mjs';
 import { startRelay } from './relay.mjs';
-import { loadBackupGenerator } from './backup-generator.mjs';
+import { loadBackupGenerator, loadDeviceNameDecryptor } from './backup-generator.mjs';
 
 const WEB = fileURLToPath(new URL('..', import.meta.url));
 const REPO = join(WEB, '..');
@@ -91,7 +97,9 @@ async function scenario(id, name, fn) {
 }
 
 const tmp = await mkdtemp(join(os.tmpdir(), 'receiver-e2e-'));
+const linkedDeviceNames = [];
 const { server, port: mockPort, mock } = await startMockServer({
+  onDeviceLink: attributes => linkedDeviceNames.push(attributes?.name),
   maxStorageReadKeys: 2500,
   cdn3Path: join(tmp, 'cdn3'),
   updates2Path: join(REPO, 'ts/test-mock/updates-data'),
@@ -224,6 +232,8 @@ try {
     const qr = await decodeLinkQrCode(page, QR);
     if (!qr.ok) throw new Error(`QR code: ${qr.reason}`);
     console.log(`QR code after ${qrSeconds.toFixed(1)} s: ${qr.summary}`);
+    // Persistent storage is asked for after linking, not on a first visit.
+    if (await page.evaluate(() => window.__webPersist != null)) throw new Error('persistent storage was asked for before linking');
     linkCapabilities = new URL(qr.url).searchParams.get('capabilities') ?? '';
 
     const provision = await withTimeout(provisioning, STEP_TIMEOUT_MS, 'the provisioning socket at the mock');
@@ -250,9 +260,26 @@ try {
     phone.resetSyncState(desktop);
 
     if (!server.webSockets.get(desktop)) throw new Error('no authenticated socket for the linked device at the mock');
+
+    // The device name the phone shows (encrypted to the account's identity
+    // key): the browser's, like WhatsApp Web's.
+    const { decryptLinkedDeviceName } = await loadDeviceNameDecryptor();
+    const encryptedName = linkedDeviceNames.at(-1);
+    if (!encryptedName) throw new Error('the link request had no device name');
+    const linkedName = decryptLinkedDeviceName(encryptedName, phone.privateKey.serialize());
+    const userAgent = await page.evaluate(() => navigator.userAgent);
+    const expectedPlatform = /Macintosh/.test(userAgent) ? 'macOS' : /Windows/.test(userAgent) ? 'Windows' : 'Linux';
+    if (!new RegExp(`^receiver \\((Chrome|Chromium), ${expectedPlatform}\\)$`).test(linkedName) || linkedName.length > 50) {
+      throw new Error(`device name "${linkedName}"`);
+    }
+    console.log(`device name at the phone: "${linkedName}"`);
     await waitForSelector('#LeftPane', 'the inbox (left pane)');
     if (await page.$(QR)) throw new Error('the QR code is still shown');
-    return `QR in ${qrSeconds.toFixed(1)} s (${qr.decoded ? 'decoded by jsQR' : 'jsQR could not read it, link from the QR component'}), capabilities=${linkCapabilities}`;
+    await page.waitForFunction(() => window.__webPersist != null, { timeout: 10_000 }).catch(() => undefined);
+    const persist = await page.evaluate(() => window.__webPersist ?? null);
+    if (!persist?.asked) throw new Error(`persistent storage was not asked for after linking: ${JSON.stringify(persist)}`);
+    console.log(`persistent storage after linking: asked, ${persist.persisted ? 'granted' : 'not granted'}`);
+    return `QR in ${qrSeconds.toFixed(1)} s (${qr.decoded ? 'decoded by jsQR' : 'jsQR could not read it, link from the QR component'}), capabilities=${linkCapabilities}, device name "${linkedName}"`;
   });
 
   await scenario('b', 'sync: contacts and groups arrive, a conversation opens', async () => {
@@ -323,6 +350,8 @@ try {
     await page.reload({ waitUntil: 'domcontentloaded' });
     await waitForSelector('#LeftPane', 'the inbox after reload', 120_000);
     if (await page.$('[class*="module-InstallScreen"]')) throw new Error('the install screen is shown after reload');
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    if (await page.evaluate(() => window.__webPersist?.asked === true)) throw new Error('persistent storage was asked for again after a reload');
     await waitForNewSocket(before, 'after reload');
     const text = `Welcome back ${Date.now()}`;
     await alice.sendText(desktop, text);
@@ -346,7 +375,103 @@ try {
   // CDN 3) while linking; the app downloads and imports it, like WhatsApp
   // Web's history sync. As ts/test-mock/backups ("imports ephemeral
   // backup"), in a fresh browser profile with a second primary device.
-  await scenario('f', 'link-and-sync: history from the primary\'s ephemeral backup', async () => {
+  await scenario('f', 'use here: a second window takes over', async () => {
+    const first = page;
+    const before = server.webSockets.get(desktop);
+    await openPage();
+    const second = page;
+    const opened = Date.now();
+    await second.goto(appUrl, { waitUntil: 'domcontentloaded' });
+    await waitForSelector('[data-web-screen="open-elsewhere"] [data-testid="use-here"]', 'the "open in another window" screen');
+    const screenSeconds = (Date.now() - opened) / 1000;
+    const secondBoot = await second.evaluate(() => ({ boot: document.documentElement.dataset.boot, storage: window.__webStorage ?? null }));
+    if (secondBoot.boot !== 'start' || secondBoot.storage) throw new Error(`the second window started anyway: ${JSON.stringify(secondBoot)}`);
+
+    const clicked = Date.now();
+    await second.click('[data-testid="use-here"]');
+    await first
+      .waitForSelector('[data-web-screen="open-elsewhere"]', { timeout: STEP_TIMEOUT_MS })
+      .catch(() => {
+        throw new Error('the first window does not show "open in another window"');
+      });
+    const firstState = await first.evaluate(() => ({ boot: document.documentElement.dataset.boot, storage: window.__webStorage ?? null }));
+    if (firstState.boot !== 'start' || firstState.storage) throw new Error(`the first window kept running: ${JSON.stringify(firstState)}`);
+    await waitForSelector('#LeftPane', 'the inbox in the second window', 120_000);
+    const inboxSeconds = (Date.now() - clicked) / 1000;
+    const releaseMs = await second.evaluate(() => document.documentElement.dataset.webUseHereMs);
+    const deadline = Date.now() + STEP_TIMEOUT_MS;
+    while (!server.webSockets.get(desktop) || server.webSockets.get(desktop) === before) {
+      if (Date.now() > deadline) throw new Error('the second window did not connect');
+      // eslint-disable-next-line no-await-in-loop
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
+    const text = `Hello second window ${Date.now()}`;
+    await alice.sendText(desktop, text);
+    await openConversation(alice);
+    await waitForTimelineText(text, 'the message in the second window');
+    await first.close();
+    return `screen after ${screenSeconds.toFixed(1)} s; after "Use here": database released in ${releaseMs} ms, inbox in ${inboxSeconds.toFixed(1)} s; received "${text}"`;
+  });
+
+  await scenario('g', 'notifications: permission banner, a notification, clicking it opens the conversation', async () => {
+    const banner = '[data-web-banner="notifications"] [data-testid="notifications-turn-on"]';
+    await waitForSelector(banner, 'the "Turn on desktop notifications" banner');
+    const permissionBefore = await page.evaluate(() => Notification.permission);
+    await browser.defaultBrowserContext().overridePermissions(LOCAL_ORIGIN, ['notifications']);
+    await page.click(banner);
+    await page.waitForFunction(() => !document.querySelector('[data-web-banner="notifications"]'), { timeout: 10_000 }).catch(() => {
+      throw new Error('the banner stayed after permission was granted');
+    });
+    const permission = await page.evaluate(() => Notification.permission);
+    if (permission !== 'granted') throw new Error(`permission is ${permission}`);
+
+    // Record the notifications Desktop creates, and close the conversation
+    // (no conversation open). With another conversation open, Desktop's
+    // ChatsTab calls scrollToMessage(<open conversation>, <new message>)
+    // and throws: an upstream race, independent of the web build.
+    await page.evaluate(() => {
+      const Original = window.Notification;
+      window.__notifications = [];
+      window.Notification = class extends Original {
+        constructor(title, options) {
+          super(title, options);
+          window.__notifications.push({ title, body: options?.body ?? '', notification: this });
+        }
+      };
+      window.reduxActions.conversations.showConversation({ conversationId: undefined });
+    });
+    await page.waitForFunction(() => !document.querySelector('.module-ConversationHeader'), { timeout: STEP_TIMEOUT_MS }).catch(() => {
+      throw new Error('the conversation did not close');
+    });
+    // The window loses focus (as when the user switches to another window).
+    await page.evaluate(() => {
+      document.hasFocus = () => false;
+      window.dispatchEvent(new Event('blur'));
+    });
+
+    const text = `Notify me ${Date.now()}`;
+    await alice.sendText(desktop, text);
+    await page
+      .waitForFunction(t => window.__notifications.some(n => n.body.includes(t)), { timeout: STEP_TIMEOUT_MS }, text)
+      .catch(() => {
+        throw new Error('no notification for the message');
+      });
+    const shown = await page.evaluate(t => {
+      const n = window.__notifications.find(x => x.body.includes(t));
+      n.notification.onclick();
+      return { title: n.title, count: window.__notifications.length };
+    }, text);
+    await page.waitForFunction(() => document.querySelector('.module-ConversationHeader')?.textContent.includes('Alice'), { timeout: STEP_TIMEOUT_MS }).catch(() => {
+      throw new Error("clicking the notification did not open Alice's conversation");
+    });
+    await page.evaluate(() => {
+      delete document.hasFocus;
+      window.dispatchEvent(new Event('focus'));
+    });
+    return `permission ${permissionBefore} -> granted via the banner; notification "${shown.title}" for "${text}"; click opened the conversation`;
+  });
+
+  await scenario('h', 'link-and-sync: history from the primary\'s ephemeral backup', async () => {
     if (!linkCapabilities.split(',').includes('backup5')) {
       return `QR capabilities ${linkCapabilities}: no link-and-sync offered`;
     }

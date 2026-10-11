@@ -262,6 +262,14 @@ jobs:
       - name: Web app boot, local (to the link QR code, decoded)
         run: node web/renderer/run.mjs
 
+      - name: Service worker, local (cache, offline, updates only with the user's consent, manifest)
+        run: node web/sw/test/run.mjs
+
+      - name: App shell, local (database error screens, wiped data, a hung second window)
+        run: |
+          node web/shell/test/device-name.mjs
+          node web/shell/test/run.mjs
+
       - name: Network layer checks, local (WebNet and HTTPS through Tor against Signal)
         run: node web/net/test/run.mjs
 

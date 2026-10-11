@@ -14,6 +14,8 @@
 import { Buffer } from 'node:buffer';
 
 import { Aci } from '@signalapp/libsignal-client';
+
+import { ConnectTimeoutError } from '../../ts/textsecure/Errors.std.ts';
 import type {
   ChatServiceListener,
   ConnectionEventsListener,
@@ -219,14 +221,26 @@ export class WebNet {
     options?: { abortSignal?: AbortSignal }
   ): Promise<Net.ProvisioningConnection> {
     const operation = 'ProvisioningChatConnection_connect';
-    const connected = await connectChatSocket({
-      carrier: this.#carrier,
-      rootPem: this.#rootPem,
-      url: this.#url('/v1/websocket/provisioning/'),
-      headers: this.#headers([]),
-      operation,
-      abortSignal: options?.abortSignal,
-    });
+    let connected: Awaited<ReturnType<typeof connectChatSocket>>;
+    try {
+      connected = await connectChatSocket({
+        carrier: this.#carrier,
+        rootPem: this.#rootPem,
+        url: this.#url('/v1/websocket/provisioning/'),
+        headers: this.#headers([]),
+        operation,
+        abortSignal: options?.abortSignal,
+      });
+    } catch (error) {
+      // SocketManager aborts the provisioning connection when its timeout
+      // runs out. Reported as Desktop's connect timeout, so that the
+      // Provisioner retries with its longer timeouts (10, 20, 30, 60 s):
+      // over Tor a first connection can take longer than 10 s.
+      if (options?.abortSignal?.aborted) {
+        throw new ConnectTimeoutError();
+      }
+      throw error;
+    }
     const logTag = 'provisioning';
     let socket: ChatSocket | undefined;
     socket = new ChatSocket({

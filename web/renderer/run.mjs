@@ -18,13 +18,20 @@
 // points), and on key-like secrets in the log.
 //
 // Prints `qr-seconds: <n>` (page load to QR code) for the timing reports.
+// While waiting, the link screen must never show an error (Desktop's QR
+// code attempts time out after 10 s; the app waits for Tor first and shows
+// "Connecting...", see web/shell/status.ts): the states seen are printed.
+// SCREENSHOT=<file.png> saves the final screen.
 
 import { BASE_PATH, LOCAL_ORIGIN, decodeLinkQrCode, launchBrowser, serveSite, watchPage } from '../scripts/harness.mjs';
 
 const target = process.argv[2];
 const SETTLE_MS = Number(process.env.SETTLE_MS ?? 5000);
 const server = target ? null : await serveSite();
-const browser = await launchBrowser();
+// BLACKHOLE=host1,host2 makes those hosts unreachable (e.g. the Snowflake
+// WebSocket bridge, forcing the slower WebRTC fallback).
+const blackholeHosts = (process.env.BLACKHOLE ?? '').split(',').filter(Boolean);
+const browser = await launchBrowser({ blackholeHosts });
 
 // Desktop's install screen (React), and on it the rendered link QR code.
 const INSTALL_SCREEN = '[class^="module-InstallScreen"], [class*=" module-InstallScreen"]';
@@ -66,18 +73,46 @@ try {
     () => ['startApp', 'failed'].includes(document.documentElement.dataset.boot),
     { timeout: 120_000 }
   );
-  // Let startApp run until Desktop shows the QR code (or gives up).
+  // Sample what the link screen shows while Tor connects.
+  const seen = { status: new Set(), errors: new Set() };
+  let sampling = true;
+  const sampler = (async () => {
+    while (sampling) {
+      // eslint-disable-next-line no-await-in-loop
+      const sample = await page
+        .evaluate(() => ({
+          status: document.documentElement.dataset.webStatus ?? null,
+          // Visible: the shell covers an error it is retrying with "Connecting...".
+          error: document.querySelector('.web-shell-status--card')
+            ? null
+            : (document.querySelector('.module-InstallScreenErrorStep, [class*="qr-code__error-message"]')?.textContent?.trim() ??
+              null),
+          retrying: Boolean(document.querySelector('.web-shell-status--card')) &&
+            Boolean(document.querySelector('.module-InstallScreenErrorStep, [class*="qr-code__error-message"]')),
+        }))
+        .catch(() => null);
+      if (sample?.status) seen.status.add(sample.status);
+      if (sample?.error) seen.errors.add(sample.error.slice(0, 120));
+      if (sample?.retrying) seen.status.add('retrying the link screen');
+      // eslint-disable-next-line no-await-in-loop
+      await new Promise(resolve => setTimeout(resolve, 250));
+    }
+  })();
+  // Let startApp run until Desktop shows the QR code (or an error the shell
+  // does not retry).
   await page
     .waitForFunction(
       selector =>
         document.documentElement.dataset.boot === 'failed' ||
         document.querySelector(selector) ||
-        document.querySelector('.module-InstallScreenErrorStep'),
+        (document.querySelector('.module-InstallScreenErrorStep') && !document.querySelector('.web-shell-status--card')),
       { timeout: QR_TIMEOUT_MS },
       EXPECTED_STOP
     )
     .catch(() => undefined);
   const qrSeconds = (Date.now() - started) / 1000;
+  sampling = false;
+  await sampler;
   const qr = await decodeLinkQrCode(page, EXPECTED_STOP);
   await new Promise(resolve => setTimeout(resolve, SETTLE_MS));
 
@@ -119,6 +154,9 @@ try {
   console.log(`install screen: ${state.installScreen ? JSON.stringify(state.installScreen) : '(none)'}`);
   console.log(`tor: ${state.tor}`);
   console.log(`qr code: ${qr.ok ? qr.summary : `(none: ${qr.reason})`}`);
+  console.log(`connection status shown while waiting: ${[...seen.status].join(', ') || '(none)'}`);
+  console.log(`link screen errors seen: ${seen.errors.size}${seen.errors.size ? ` (${[...seen.errors].join(' | ')})` : ''}`);
+  if (process.env.SCREENSHOT) await page.screenshot({ path: process.env.SCREENSHOT });
   if (qr.ok) console.log(`qr-seconds: ${qrSeconds.toFixed(1)}`);
   const ipcStubs = logLines.filter(l => l.startsWith('web main:'));
   console.log(`web main notes (${ipcStubs.length}):`);
@@ -139,6 +177,7 @@ try {
   if (!state.storage?.info) problems.push(`database not open: ${state.storage?.error ?? 'no storage status'}`);
   if (!state.installScreen) problems.push('the install screen (React) was not rendered');
   if (!qr.ok) problems.push(`no valid link QR code: ${qr.reason}`);
+  for (const error of seen.errors) problems.push(`the link screen showed an error: ${error}`);
   if (state.loadingScreenVisible) problems.push('the loading screen is still visible');
   for (const e of pageErrors) problems.push(`uncaught exception: ${e.message}`);
   for (const line of unhandled) problems.push(`unhandled error: ${line.slice(0, 200)}`);

@@ -37,6 +37,7 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { build } from 'rolldown';
 
+import { buildServiceWorker } from '../sw/build.mjs';
 import { netAssetsPlugin, transportWasm } from './net-assets.mjs';
 import { webResolvePlugin, LIBSIGNAL_PACKAGE } from './resolve.mjs';
 
@@ -85,16 +86,16 @@ async function staticConfig() {
   const sourceDateEpoch = process.env.SOURCE_DATE_EPOCH;
   const buildCreation =
     1000 * Number(sourceDateEpoch ?? execSync('git show -s --format=%ct', { cwd: REPO }).toString().trim());
-  // The site is rebuilt and redeployed daily, so each build is valid for 30
-  // days from when it was built: the limit Desktop accepts whatever the
-  // auto-update setting (ts/util/buildExpiration.std.ts).
-  const builtAt = sourceDateEpoch ? buildCreation : Date.now();
   return {
     name: 'receiver',
     version: packageJson.version,
     environment: 'production',
     buildCreation,
-    buildExpiration: builtAt + 30 * 24 * 3600 * 1000,
+    // As a packaged Desktop build: 90 days after the commit it was built
+    // from (ts/util/buildExpiration.std.ts). Derived from the commit, not
+    // the build time, so that the daily redeployment builds the same files
+    // and the service worker does not offer an "update" every day.
+    buildExpiration: buildCreation + 90 * 24 * 3600 * 1000,
     serverUrl: merged.serverUrl,
     storageUrl: merged.storageUrl,
     updatesUrl: merged.updatesUrl,
@@ -278,6 +279,11 @@ if (!html.includes(PRODUCTION_CONNECT_SRC)) throw new Error('index.html: connect
 if (E2E) html = html.replace(PRODUCTION_CONNECT_SRC, `connect-src 'self' ${new URL(e2e.RELAY_URL).origin.replace(/^http/, 'ws')};`);
 await writeFile(join(OUT, 'index.html'), html);
 await cp(join(HERE, 'favicon.svg'), join(OUT, 'favicon.svg'));
+// The app shell's own pieces (web/shell): its stylesheet, the web app
+// manifest and receiver's icons.
+await cp(join(WEB, 'shell/shell.css'), join(OUT, 'shell.css'));
+await cp(join(HERE, 'manifest.webmanifest'), join(OUT, 'manifest.webmanifest'));
+await cp(join(HERE, 'brand'), join(OUT, 'brand'), { recursive: true });
 
 await mkdir(join(OUT, 'stylesheets'));
 for (const name of ['manifest.css', 'quill.css', 'tailwind.css']) {
@@ -296,6 +302,15 @@ for (const name of ['manifest.css', 'quill.css', 'tailwind.css']) {
 }
 for (const dir of ['fonts', 'images', 'sounds']) {
   await cp(join(REPO, dir), join(OUT, dir), { recursive: true });
+}
+// receiver's logo in place of Signal's (trademark): the splash screen, the
+// link screen and the empty inbox use these files.
+for (const [name, brand] of [
+  ['signal-logo.svg', 'logo.svg'],
+  ['signal-logo-and-wordmark.svg', 'wordmark.svg'],
+  ['signal-logo-with-text.svg', 'wordmark.svg'],
+]) {
+  await cp(join(HERE, 'brand', brand), join(OUT, 'images', name));
 }
 
 await mkdir(join(OUT, 'locales'));
@@ -326,6 +341,10 @@ if (!E2E) {
   if (found.length) throw new Error(`production build contains test-only code:\n  ${found.join('\n  ')}`);
   console.log(`production check: no test relay code (${markers.length} markers), connect-src unchanged`);
 }
+
+// The service worker, with the list of every file above (web/sw).
+const sw = await buildServiceWorker(OUT, { minify });
+console.log(`service worker: build ${sw.build.slice(0, 16)}, ${sw.files} files, ${sw.core} core (${(sw.coreBytes / 1e6).toFixed(1)} MB)`);
 
 // Report.
 const chunks = bundle.output.filter(o => o.type === 'chunk');

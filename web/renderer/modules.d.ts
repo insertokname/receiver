@@ -38,3 +38,15 @@ declare module 'virtual:web-net-assets' {
   };
   export default assets;
 }
+
+declare module 'virtual:web-sw-manifest' {
+  const manifest: {
+    /** Digest of the file list: changes exactly when a file changes. */
+    build: string;
+    /** Every file of the app (path relative to the site) and its SHA-256. */
+    files: Record<string, string>;
+    /** The files downloaded when the service worker installs. */
+    core: Array<string>;
+  };
+  export default manifest;
+}

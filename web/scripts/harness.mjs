@@ -30,6 +30,7 @@ const TYPES = {
   '.pem': 'text/plain',
   '.br': 'application/octet-stream',
   '.json': 'application/json',
+  '.webmanifest': 'application/manifest+json',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
   '.gif': 'image/gif',
@@ -41,14 +42,17 @@ const TYPES = {
 };
 
 /**
- * Static server for `siteDir` (default SITE_DIR) under BASE_PATH; anything
- * else is 404. `extra` maps paths to [content type, body] served in addition
- * (test pages that are not part of the site).
+ * Static server for `siteDir` (default SITE_DIR; a function is asked on
+ * every request) under BASE_PATH; anything else is 404. `extra` maps paths
+ * to [content type, body] served in addition (test pages that are not part
+ * of the site). `onRequest` sees every request's path.
  */
-export function serveSite({ extra = {}, siteDir = SITE_DIR } = {}) {
+export function serveSite({ extra = {}, siteDir = SITE_DIR, onRequest } = {}) {
   const server = http.createServer(async (req, res) => {
     try {
       const { pathname } = new URL(req.url, 'http://x');
+      onRequest?.(pathname);
+      const root = typeof siteDir === 'function' ? siteDir() : siteDir;
       if (Object.hasOwn(extra, pathname)) {
         const [type, body] = extra[pathname];
         res.writeHead(200, { 'content-type': type });
@@ -56,8 +60,8 @@ export function serveSite({ extra = {}, siteDir = SITE_DIR } = {}) {
         return;
       }
       if (!pathname.startsWith(BASE_PATH)) throw new Error('outside base path');
-      let path = normalize(join(siteDir, decodeURIComponent(pathname.slice(BASE_PATH.length))));
-      if (!path.startsWith(siteDir)) throw new Error('path traversal');
+      let path = normalize(join(root, decodeURIComponent(pathname.slice(BASE_PATH.length))));
+      if (!path.startsWith(root)) throw new Error('path traversal');
       if (path.endsWith('/')) path = join(path, 'index.html');
       const body = await readFile(path);
       res.writeHead(200, { 'content-type': TYPES[extname(path)] ?? 'application/octet-stream' });

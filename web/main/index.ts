@@ -12,6 +12,8 @@ import { loadLocale } from './locale.ts';
 import { installSettings } from './settings.ts';
 import { installChannels } from './channels.ts';
 import { installSql } from './sql.ts';
+import type { DatabaseResult } from './sql.ts';
+import { getCarrier } from '../net/carrier.ts';
 
 let markRendererLoaded: () => void = () => undefined;
 const rendererLoaded = new Promise<void>(resolve => {
@@ -23,7 +25,8 @@ export function onRendererLoaded(): void {
   markRendererLoaded();
 }
 
-export async function startMain(): Promise<void> {
+/** Starts the in-page main process; resolves with how the database opened. */
+export async function startMain(): Promise<{ database: Promise<DatabaseResult> }> {
   // The app's files (attachments, avatars, ...): Desktop's code asks
   // synchronous questions about them, answered from the tree read here.
   const files = initFiles();
@@ -40,10 +43,23 @@ export async function startMain(): Promise<void> {
   installSettings();
   installChannels({ config });
 
+  // Focus, as Electron's main process reports it for the window: Desktop
+  // shows notifications only while the app is not active.
+  const sendFocus = () =>
+    sendToRenderer('set-window-focus', document.visibilityState === 'visible' && document.hasFocus());
+  window.addEventListener('focus', sendFocus);
+  window.addEventListener('blur', sendFocus);
+  document.addEventListener('visibilitychange', sendFocus);
+  void rendererLoaded.then(sendFocus);
+
   // Electron's main process shows the window once it is ready to show and
   // the database is ready (or failed to open); the window's 'show' events
   // become 'activate'. The browser's equivalent is the tab being visible.
-  void Promise.all([sqlSettled, rendererLoaded]).then(() => {
+  // The web build also waits for Tor: the first 'activate' starts the link
+  // screen's QR code, whose first attempt has only 10 s, and Tor can take a
+  // minute on a slow network. Until then the shell shows "Connecting..."
+  // (web/shell/status.ts).
+  void Promise.all([sqlSettled, rendererLoaded, getCarrier().ready()]).then(() => {
     const onVisible = () => {
       if (document.visibilityState === 'visible') {
         sendToRenderer('activate');
@@ -53,4 +69,6 @@ export async function startMain(): Promise<void> {
     onVisible();
     document.addEventListener('visibilitychange', onVisible);
   });
+
+  return { database: sqlSettled };
 }

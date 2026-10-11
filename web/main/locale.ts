@@ -38,6 +38,20 @@ function getDirection(locale: string): 'ltr' | 'rtl' {
   return info.getTextInfo?.().direction ?? info.textInfo?.direction ?? 'ltr';
 }
 
+// The app's name (trademark): Desktop's strings call the app "Signal
+// Desktop"; this app is receiver. "Signal" alone stays where it names the
+// Signal service or the phone app ("Open Signal on your phone"); these keys
+// use it for the app itself.
+const APP_NAME_KEYS = new Set(['icu:welcomeToSignal']);
+
+function withAppName(key: string, text: string | null | undefined): string | undefined {
+  if (text == null) {
+    return undefined;
+  }
+  const renamed = text.replaceAll('Signal Desktop', 'receiver');
+  return APP_NAME_KEYS.has(key) ? renamed.replaceAll('Signal', 'receiver') : renamed;
+}
+
 export async function loadLocale(): Promise<WebLocale> {
   const availableLocales = await fetchJson<Array<string>>('available-locales.json');
   const preferredSystemLocales = navigator.languages?.length
@@ -71,7 +85,7 @@ export async function loadLocale(): Promise<WebLocale> {
   const messages: LocaleMessagesType = Object.create(null);
   for (const [i, key] of keys.entries()) {
     messages[key] = {
-      messageformat: matched?.[i] ?? english[i] ?? undefined,
+      messageformat: withAppName(key, matched?.[i] ?? english[i]),
     } as LocaleMessagesType[string];
   }
 

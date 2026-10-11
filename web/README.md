@@ -23,6 +23,9 @@ The app is the site's root; `test/` and `libsignal/` are check pages.
 | `sql/` | The SQL worker: Desktop's `ts/sql/Server.node.ts` and migrations on encrypted SQLite in the origin private file system (see below); `build.sh` fetches SQLite3 Multiple Ciphers and builds `tokenizer/`; `test/run.mjs` is the storage test |
 | `sql/tokenizer/` | Signal's FTS5 tokenizer (Signal-FTS5-Extension, the revision `@signalapp/sqlcipher` uses) as a WebAssembly module (Rust) |
 | `net/` | libsignal's `Net` for the web build (`WebNet`): chat and provisioning connections, the typed chat calls, and HTTPS (`node-fetch` replacement), all through one Tor client (`tor.ts`, chosen in `carrier.ts`); `test/run.mjs` checks it against Signal |
+| `shell/` | The app shell around Desktop's UI: one window at a time ("Use here", `tabs.ts`), connection status (`status.ts`), the database error screens (`errors.ts`), storage persistence and wipe detection (`storage.ts`), the notification banner (`notifications.ts`), the service worker's update prompt (`update.ts`); `test/run.mjs` tests the recovery paths |
+| `sw/` | The service worker (`sw.ts`, built by `build.mjs` with the app's file list into `sw.js`); `test/run.mjs` tests caching, offline and updates |
+| `renderer/brand/`, `renderer/manifest.webmanifest` | receiver's logo and icons (in place of Signal's), the web app manifest |
 | `e2e/` | End-to-end tests against Desktop's mock server (test-only, never deployed): `run.mjs` (scenarios), `mock.mjs`, `relay.mjs`, the test carrier `relay-carrier.ts`, `config.mjs` |
 | `transport-test/` | Transport checks page (`test/` on the site) and its headless runner `run.mjs` |
 | `lib/signal.js` | Signal WebSocket framing shared by the pages |
@@ -138,14 +141,15 @@ with its own `fs`, `worker_threads` and `@signalapp/sqlcipher`):
 - One tab at a time: the worker holds the Web Lock `receiver:database` while
   it has the database; another tab waits up to 5 s (a reload's old worker
   shutting down), then fails with `DatabaseInUseError` without touching the
-  files.
+  files ("Use here", see "App shell").
 - The worker loads libsignal too (Desktop's SQL code imports it): the same
   `libsignal_node.wasm` as the page, checked against the same digest. All
   WebAssembly the worker loads is fetched with SRI digests recorded at build
   time.
 - `web/main/sql.ts` is the page side (Electron's MainSQL): the SQL IPC
-  channels, paused writes, `remove-db` / `erase-*`, `navigator.storage.persist()`
-  when the database is created, and closing the database on `pagehide`.
+  channels, paused writes, `remove-db` / `erase-*`, closing the database on
+  `pagehide` or for another window, and reporting database failures to the
+  app shell.
 
 ## Files
 
@@ -184,6 +188,10 @@ node renderer/test/crypto-shim.mjs                    # node:crypto shim against
 node renderer/test/fs-shim.mjs                        # node:fs on the origin private file system, in the browser
 node net/test/run.mjs                                 # WebNet + HTTPS through Tor against Signal (bogus credentials only)
 node e2e/run.mjs                                      # end-to-end against Desktop's mock server (see below)
+node sw/test/run.mjs                                  # service worker: cache, offline, updates only with consent, manifest
+node shell/test/run.mjs                               # app shell: database error screens, wiped data, a hung second window, Mac shortcuts
+node shell/test/device-name.mjs                       # the linked device's name for common browsers (Node)
+BLACKHOLE=snowflake.torproject.net node renderer/run.mjs   # link screen while Tor falls back to WebRTC (~50 s): "Connecting...", no error
 ```
 
 ### End-to-end tests
@@ -195,7 +203,9 @@ dependencies must be installed) and runs scenarios modelled on
 inbox), sync (contacts, a group), receive, send (typed into the composer,
 decrypted by the mock contact), persistence (reload, reconnect, a dropped
 connection) and link-and-sync (message history imported from the primary's
-ephemeral backup). It needs the e2e build:
+ephemeral backup), "Use here" (a second window takes over) and
+notifications (the permission banner, a notification for a message while
+the window is not focused, clicking it). It needs the e2e build:
 
 - `transport/build.sh --test-relay` compiles webtor-rs with its
   `test-relay` feature (`Carrier::Relay`: TLS carried by a WebSocket to a
@@ -212,6 +222,65 @@ ephemeral backup). It needs the e2e build:
 
 `ONLY=a,b` runs the first scenarios, `VERBOSE=1` prints the app's log,
 `E2E_ARTIFACTS=<dir>` saves a screenshot when a scenario fails.
+
+## App shell
+
+What Electron and the operating system give Desktop, and what a web app
+needs on top (`shell/`, started by `renderer/entry.ts`), modelled on
+WhatsApp Web:
+
+- **Service worker** (`sw/`): `sw.js` lists every file of the app with its
+  SHA-256 and a build id (the digest of that list). Installing stores the
+  core files (code, WebAssembly, styles, English strings), each checked
+  against its digest; images, sounds, fonts and other languages are stored
+  when first used. The worker serves the *approved* build: a new
+  deployment's worker downloads its files in the background, then the page
+  shows "A new version of receiver is available - Click to reload"; only
+  that click switches. The Tor directory snapshot (`transport/tor/`) is
+  data: fetched from the network when possible, from the cache offline,
+  and not part of the build id, so the daily redeployment offers no update.
+  Builds are deterministic (the build expiration comes from the commit's
+  date: 90 days, as a packaged Desktop build).
+- **One window at a time** ("Use here", `shell/tabs.ts`): the window using
+  the app holds the Web Lock `receiver:window`; a new window that finds it
+  held asks on the BroadcastChannel `receiver:tabs` and, if answered, shows
+  "receiver is open in another window" without starting anything. "Use
+  here" asks the other window to close its database (the SQL worker's
+  close, which releases `receiver:database`); it confirms and reloads into
+  the same screen. A window that does not answer (hung, or a reload's old
+  page) gets the database lock wait, then the same screen.
+- **Connection status**: while Tor connects, the link screen waits (its
+  first QR code attempt has only 10 s) and shows "Connecting..." instead;
+  on the link screen a banner shows reconnects. In the inbox, Desktop's own
+  network status applies.
+- **Database errors** (Electron's dialogs): another window -> "Use here";
+  missing key or corrupted file -> "Delete data and link again" (Desktop's
+  remove-db / erase-sql-key paths); storage full -> say so.
+- **Storage**: `navigator.storage.persist()` is asked once, right after
+  linking (never on a first visit: Firefox prompts for it); refused is
+  remembered and not asked again. A linked app whose database disappeared
+  explains that and goes to the link screen. Safari: the link screen asks
+  to add the app to the Dock / Home Screen (7-day storage limit).
+- **Notifications**: Desktop's notification service uses the browser's
+  Notification API (its Linux path). Permission is asked from a dismissible
+  banner in the chat list, never on load. Focus is reported to Desktop
+  (`set-window-focus`), so notifications appear while the window is not
+  focused, like Desktop.
+- **Branding**: receiver's logo replaces Signal's in the splash screen, link
+  screen and empty inbox (`renderer/brand/`, copied over `images/signal-logo*.svg`
+  at build time); the title is "receiver"; the link screen and the shell's
+  screens say that receiver is unofficial and link to the source (AGPL).
+- **Device name**: the phone lists the linked device as "receiver
+  (Chrome, Linux)", "receiver (Safari, iOS)", ... (`shell/device-name.ts`,
+  from client hints or the user agent), through `ts/util/os/osMain.web.ts`
+  / `osPreload.web.ts` (Desktop names a linked device `OS.getName()`).
+- **Link screen retries**: Desktop gives up on the QR code after a
+  connection error or timeout; over Tor the shell retries its installer
+  with backoff behind "Connecting...", and the provisioning connection's
+  timeout is reported as Desktop's `ConnectTimeoutError` so its timeouts
+  grow (10, 20, 30, 60 s).
+- **Mac**: Desktop runs its Linux code paths (`process.platform`), but on a
+  Mac `window.platform` is `darwin`, so shortcuts and their labels use Cmd.
 
 ## Network
 

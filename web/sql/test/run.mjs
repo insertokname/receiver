@@ -201,7 +201,9 @@ try {
   console.log(`  ${JSON.stringify(storage)}`);
   check(storage.info?.created === true, 'database created');
   check(storage.info?.schemaVersion >= 1830, `all migrations ran (schema version ${storage.info?.schemaVersion})`);
-  check(typeof storage.persisted === 'boolean' || storage.persisted === undefined, `navigator.storage.persist() asked (granted: ${storage.persisted})`);
+  // Asked once the app is linked (web/shell/storage.ts), never when the
+  // database is created (Firefox would prompt on the first visit).
+  check(!('persisted' in storage), 'navigator.storage.persist() not asked when the database is created');
 
   let r = await invoke(page, 'sql-channel:write', 'createOrUpdateItem', [{ id: 'webStorageTest', value: MARKER }]);
   check(r.ok, `createOrUpdateItem ${r.ok ? '' : r.error?.message}`);

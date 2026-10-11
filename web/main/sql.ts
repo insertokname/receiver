@@ -10,6 +10,8 @@
 //   it, no key, no storage), so Desktop shows that error instead of hanging.
 // - Writes wait while paused (pause-sql-writes), as in MainSQL.
 // - On pagehide writes stop and the database is closed (checkpointed).
+// - Persistent storage is asked for once the app is linked (web/shell/storage.ts),
+//   not when the database is created.
 //
 // Nothing here logs SQL arguments or results.
 
@@ -37,7 +39,6 @@ type Pending = {
 type StorageStatus = {
   info?: StorageInfo;
   error?: string;
-  persisted?: boolean;
 };
 
 declare global {
@@ -56,12 +57,15 @@ function log(level: keyof typeof LOG_LEVELS, message: string): void {
 }
 
 class WebSQL {
+  /** The database became unusable while the app runs. */
+  onFailure: ((error: { name: string; message: string }) => void) | undefined;
   readonly #worker: Worker;
   readonly #pending = new Map<number, Pending>();
   #seq = 0;
   #ready: Promise<StorageInfo>;
   #pauseWaiters: Array<() => void> | undefined;
   #closed = false;
+  #closing: Promise<void> | undefined;
   #checkpointPendingReason: string | null = null;
   #inFlight = 0;
   #started = false;
@@ -144,13 +148,18 @@ class WebSQL {
     await this.#send({ type: 'eraseKey' });
   }
 
-  close(): void {
-    if (this.#closed) {
-      return;
+  /** Closes the database (checkpointed) and releases its lock. */
+  close(): Promise<void> {
+    if (this.#closing) {
+      return this.#closing;
     }
     this.#closed = true;
     this.#pauseWaiters ??= [];
-    void this.#send({ type: 'close' }).catch(() => undefined);
+    this.#closing = this.#send({ type: 'close' }).then(
+      () => undefined,
+      () => undefined
+    );
+    return this.#closing;
   }
 
   #send(request: WorkerRequest): Promise<unknown> {
@@ -162,7 +171,10 @@ class WebSQL {
       return Promise.reject(new Error(`${errorId}: ${this.#failed.message}`));
     }
     if (this.#closed && request.type !== 'close') {
-      return Promise.reject(new Error(`${errorId}: the database was closed (the page is unloading)`));
+      // The page is unloading, or reloading because another window took
+      // over: what Desktop still asks for never completes (rejecting would
+      // only make it report errors in its last moments).
+      return new Promise(() => undefined);
     }
     const seq = this.#seq;
     this.#seq = (this.#seq + 1) >>> 0;
@@ -229,8 +241,12 @@ class WebSQL {
       if (this.#started) {
         if (message.errorKind === SqliteErrorKind.Corrupted || message.errorKind === SqliteErrorKind.Readonly) {
           // Electron's main process shows its database error dialog here
-          // (delete and restart); the web build's comes with the app shell.
+          // (delete and restart); so does the web app shell.
           log('error', `MainSQL: database ${message.errorKind}: ${redactAll(message.error.message)}`);
+          this.onFailure?.({ name: error.name, message: message.error.message });
+        } else if (/SQLITE_FULL|database or disk is full|QuotaExceeded/.test(message.error.message)) {
+          log('error', `MainSQL: out of storage: ${redactAll(message.error.message)}`);
+          this.onFailure?.({ name: 'QuotaExceededError', message: message.error.message });
         } else {
           // Desktop's renderer shows a toast for unknown SQL errors (not in
           // production builds).
@@ -274,6 +290,41 @@ async function removeUserDataDirectory(name: string): Promise<void> {
   }
 }
 
+export type DatabaseResult =
+  | { ok: true; info: StorageInfo }
+  | { ok: false; error: { name: string; message: string } };
+
+let current: WebSQL | undefined;
+
+/** Closes the database for good (another window takes over). */
+export function closeDatabase(): Promise<void> {
+  return current?.close() ?? Promise.resolve();
+}
+
+/**
+ * Desktop's "delete all data" from Electron's database error dialog: the
+ * database and its key, the app's files and settings.
+ */
+export async function deleteAllData(): Promise<void> {
+  if (!current) {
+    throw new Error('the database was not started');
+  }
+  await current.removeDB();
+  await current.eraseKey();
+  for (const name of ['attachments.noindex', 'stickers.noindex', 'temp', 'drafts.noindex', 'downloads.noindex']) {
+    // oxlint-disable-next-line no-await-in-loop
+    await removeUserDataDirectory(name);
+  }
+  clearStored();
+}
+
+/** Called when the database fails while the app runs (corrupted, read-only, full). */
+export function onDatabaseFailure(listener: (error: { name: string; message: string }) => void): void {
+  if (current) {
+    current.onFailure = listener;
+  }
+}
+
 /** Starts the SQL worker; resolves when it opened the database or failed. */
 export function installSql({
   configDir,
@@ -281,11 +332,12 @@ export function installSql({
 }: {
   configDir: string;
   appVersion: string;
-}): Promise<void> {
+}): Promise<DatabaseResult> {
   const status: StorageStatus = {};
   window.__webStorage = status;
 
   const sql = new WebSQL(new URL('sql/worker.js', document.baseURI), { configDir, appVersion });
+  current = sql;
   const started = performance.now();
   sql.ready.then(
     info => {
@@ -296,18 +348,6 @@ export function installSql({
           `(schema ${info.schemaVersion}, ${info.cipherVersion}, SQLite ${info.sqliteVersion}, ` +
           `steps ${JSON.stringify(info.timings)})`
       );
-      if (info.created) {
-        // Ask the browser not to evict the database under storage pressure.
-        void (navigator.storage?.persist?.() ?? Promise.resolve(false)).then(
-          persisted => {
-            status.persisted = persisted;
-            log('info', `MainSQL: persistent storage ${persisted ? 'granted' : 'not granted'}`);
-          },
-          () => {
-            status.persisted = false;
-          }
-        );
-      }
     },
     error => {
       status.error = `${error.name}: ${error.message}`;
@@ -340,7 +380,7 @@ export function installSql({
   handle('cleanup-orphaned-attachments', () => undefined);
   handle('ensure-file-permissions', () => undefined);
 
-  window.addEventListener('pagehide', () => sql.close());
+  window.addEventListener('pagehide', () => void sql.close());
   window.addEventListener('pageshow', event => {
     // Back from the back/forward cache: the database was closed on pagehide.
     if (event.persisted) {
@@ -349,7 +389,7 @@ export function installSql({
   });
 
   return sql.ready.then(
-    () => undefined,
-    () => undefined
+    info => ({ ok: true, info }),
+    error => ({ ok: false, error: { name: String(error?.name ?? 'Error'), message: String(error?.message ?? error) } })
   );
 }

@@ -44,8 +44,10 @@ export function loadMockServer() {
 /**
  * Creates and starts a mock Server (`options` as in Server's constructor) on
  * 127.0.0.1 with the extensions above. Resolves to { server, port }.
+ * `onDeviceLink` sees the account attributes of every device link request
+ * (PUT /v1/devices/link), e.g. its encrypted device name.
  */
-export async function startMockServer(options) {
+export async function startMockServer({ onDeviceLink, ...options } = {}) {
   const { mock, Connection, WebSocketServer } = loadMockServer();
   const server = new mock.Server(options);
   await server.listen(0, '127.0.0.1');
@@ -66,6 +68,21 @@ export async function startMockServer(options) {
     }
     wss.handleUpgrade(req, socket, head, ws => {
       const connection = new Connection(req, ws, server);
+      if (onDeviceLink) {
+        for (const route of connection.router.routes) {
+          if (route.method === 'PUT' && route.pattern.match('/v1/devices/link')) {
+            const { handler } = route;
+            route.handler = (params, body, headers) => {
+              try {
+                onDeviceLink(JSON.parse(Buffer.from(body).toString()).accountAttributes);
+              } catch {
+                // The mock's handler reports a malformed body.
+              }
+              return handler(params, body, headers);
+            };
+          }
+        }
+      }
       connection.start(ws).catch(error => {
         console.log(`mock: WebSocket handling error: ${error?.stack ?? error}`);
         ws.close();

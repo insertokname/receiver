@@ -16,6 +16,7 @@
             media-src 'self' blob:;
             connect-src 'self' wss://snowflake.torproject.net https://snowflake-broker.torproject.net;
             worker-src 'self';
+            manifest-src 'self';
             child-src 'self';
             frame-src 'none';
             object-src 'none';
@@ -23,8 +24,12 @@
             form-action 'none';"
     />
     <meta name="referrer" content="no-referrer" />
+    <meta name="theme-color" content="#0d7c66" />
+    <meta name="description" content="receiver: an unofficial Signal client in the browser, connected through Tor. Not affiliated with Signal." />
     <title>receiver</title>
     <link rel="icon" href="./favicon.svg" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./brand/apple-touch-icon.png" />
     <link rel="preload" href="fonts/inter-v3.19/Inter-Regular.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="fonts/inter-v3.19/Inter-Medium.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="fonts/inter-v3.19/Inter-SemiBold.woff2" as="font" type="font/woff2" crossorigin />
@@ -32,6 +37,7 @@
     <link href="stylesheets/quill.css" rel="stylesheet" type="text/css" />
     <link href="stylesheets/manifest.css" rel="stylesheet" type="text/css" />
     <link href="stylesheets/tailwind.css" rel="stylesheet" type="text/css" />
+    <link href="shell.css" rel="stylesheet" type="text/css" />
     <script type="module" src="./app.js"></script>
   </head>
   <body class="overflow-hidden">

@@ -11,7 +11,7 @@ import { installSql } from '../../main/sql.ts';
 declare global {
   interface Window {
     storageTest: {
-      ready: Promise<void>;
+      ready: Promise<unknown>;
       invoke(channel: string, ...args: Array<unknown>): Promise<unknown>;
     };
   }

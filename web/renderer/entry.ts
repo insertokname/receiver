@@ -3,14 +3,18 @@
 // Entry point of the web app (index.html loads this, no inline scripts).
 //
 // Order matters, as in Electron:
-//   0. Tor starts bootstrapping (web/net/carrier.ts), in the background;
+//   0. the app shell (web/shell) makes sure no other window uses the app
+//      ("Use here"); then Tor starts bootstrapping (web/net/carrier.ts), in
+//      the background;
 //   1. libsignal's WebAssembly is instantiated (it must be ready before any
 //      module that imports @signalapp/libsignal-client is evaluated);
 //   2. the in-page main process starts: config, locale, IPC handlers;
 //   3. Desktop's preload graph runs (ts/windows/main/preload.preload.ts:
 //      context, phase1-ipc, phase2-dependencies, phase3-post-signal), all
 //      imported dynamically so steps 1-2 come first;
-//   4. window.startApp(), as background.html's last script does.
+//   4. once the database is open, window.startApp(), as background.html's
+//      last script does; if it could not be opened, the shell's screens
+//      take the place of Electron's database error dialogs.
 //
 // Progress is recorded in <html data-boot="..."> and window.__webBoot (read
 // by the browser tests); a failure stops the boot with a visible error.
@@ -19,6 +23,12 @@ import { initLibsignal } from '@signalapp/libsignal-client/wasm/index.js';
 import { config as configureZod } from 'zod';
 
 import { startCarrier } from '../net/carrier.ts';
+import { showDatabaseError, showRuntimeDatabaseError } from '../shell/errors.ts';
+import { installNotificationBanner } from '../shell/notifications.ts';
+import { installConnectionStatus } from '../shell/status.ts';
+import { checkForWipedData, installStorageGuards } from '../shell/storage.ts';
+import { claimTab, onRelease } from '../shell/tabs.ts';
+import { installServiceWorker } from '../shell/update.ts';
 
 // zod probes `new Function` (a CSP violation under script-src 'self') unless
 // told not to compile validators.
@@ -65,8 +75,30 @@ function fail(name: string, error: unknown): void {
   }
 }
 
+// Keyboard shortcuts: the web build runs Desktop's Linux code paths
+// (process.platform), but on a Mac Desktop's shortcuts and their labels
+// should use Cmd. Only window.platform, which picks shortcuts and their
+// labels, says 'darwin' there.
+function isMac(): boolean {
+  const platform =
+    (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData?.platform ??
+    navigator.platform;
+  return /^mac/i.test(platform);
+}
+
 async function boot(): Promise<void> {
   step('start');
+
+  // The app shell: its service worker (updates only with the user's
+  // consent), connection status and banners. They show only when relevant.
+  window.addEventListener('load', () => setTimeout(installServiceWorker, 1000), { once: true });
+  installConnectionStatus();
+  installNotificationBanner();
+  installStorageGuards();
+
+  // One window at a time: nothing starts while another window uses the app.
+  await claimTab();
+  step('tab');
 
   // Tor bootstraps while the app starts, so that Signal is reachable by the
   // time Desktop asks for the link QR code (WhatsApp Web shows its code as
@@ -82,9 +114,13 @@ async function boot(): Promise<void> {
   step('libsignal');
 
   let main: typeof import('../main/index.ts');
+  let sql: typeof import('../main/sql.ts');
+  let database: Awaited<ReturnType<typeof main.startMain>>['database'];
   try {
     main = await import('../main/index.ts');
-    await main.startMain();
+    sql = await import('../main/sql.ts');
+    ({ database } = await main.startMain());
+    onRelease(sql.closeDatabase);
   } catch (error) {
     fail('main', error);
     return;
@@ -99,6 +135,23 @@ async function boot(): Promise<void> {
   }
   step('preload');
   main.onRendererLoaded();
+
+  // Electron's main process waits for the database before the app starts
+  // and shows a dialog instead if it failed.
+  const result = await database;
+  const recovery = { deleteAllData: sql.deleteAllData };
+  if (!result.ok) {
+    document.documentElement.dataset.boot = 'database-error';
+    // oxlint-disable-next-line no-console
+    console.error(`web boot: the database did not open: ${result.error.name}`);
+    showDatabaseError(result.error, recovery);
+    return;
+  }
+  checkForWipedData(result.info.created);
+  sql.onDatabaseFailure(error => showRuntimeDatabaseError(error, recovery));
+  if (isMac()) {
+    window.platform = 'darwin';
+  }
 
   // From background.html.
   document
