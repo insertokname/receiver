@@ -3,7 +3,7 @@
 # receiver
 
 **receiver is Signal Desktop running in your browser, as a static website.**
-Open https://insertokname.github.io/receiver/, scan the code with Signal on
+Open https://receiver.insertokname.com/, scan the code with Signal on
 your phone, and message from any computer, like WhatsApp Web. Nothing to
 install, no account besides your Signal account.
 
@@ -109,7 +109,7 @@ own apps.
 
 ## Quick start
 
-1. Open https://insertokname.github.io/receiver/ (Chromium-based browsers
+1. Open https://receiver.insertokname.com/ (Chromium-based browsers
    offer "Install receiver as an app"; on Safari, add it to the Dock or Home
    Screen).
 2. Wait for "Connecting..." to finish, then scan the QR code with Signal on

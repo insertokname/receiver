@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 #
 # Builds the static web app in web/ and deploys it to GitHub Pages
-# (https://insertokname.github.io/receiver/), then checks the live site.
+# (https://receiver.insertokname.com/), then checks the live site.
 # Runs daily as well, so the Tor directory snapshot shipped with the site
 # stays fresh.
 
@@ -26,7 +26,7 @@ env:
   WASM_PACK_SHA256: c09f971ecaed9a2efc80fdcea7a00ef6b53c7fadc8c57d1f61b53a6aa66b668a
   BINARYEN_VERSION: '132'
   BINARYEN_SHA256: 195ddc94f9bc89f45abdabb0b9eea86023d727ba90eac8b35b80f2544fc30572
-  LIVE_URL: https://insertokname.github.io/receiver/
+  LIVE_URL: https://receiver.insertokname.com/
 
 jobs:
   # libsignal (web/libsignal/libsignal) compiled to WebAssembly, plus
