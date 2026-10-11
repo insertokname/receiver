@@ -73,9 +73,10 @@ async function boot(): Promise<void> {
   }
   step('libsignal');
 
+  let main: typeof import('../main/index.ts');
   try {
-    const { startMain } = await import('../main/index.ts');
-    await startMain();
+    main = await import('../main/index.ts');
+    await main.startMain();
   } catch (error) {
     fail('main', error);
     return;
@@ -89,6 +90,7 @@ async function boot(): Promise<void> {
     return;
   }
   step('preload');
+  main.onRendererLoaded();
 
   // From background.html.
   document

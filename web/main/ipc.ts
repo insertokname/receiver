@@ -26,7 +26,7 @@ const sendHandlers = new Map<string, SendHandler>();
 const syncHandlers = new Map<string, SyncHandler>();
 
 const logged = new Set<string>();
-function logOnce(key: string, message: string): void {
+export function logOnce(key: string, message: string): void {
   if (logged.has(key)) {
     return;
   }

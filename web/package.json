@@ -19,6 +19,7 @@
     "test:libsignal": "node libsignal/test/node.mjs",
     "check:libsignal": "node libsignal/check/run.mjs",
     "check:app": "node renderer/run.mjs",
+    "test:storage": "node sql/test/run.mjs",
     "test:crypto-shim": "node renderer/test/crypto-shim.mjs"
   },
   "devDependencies": {

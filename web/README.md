@@ -19,7 +19,9 @@ The site is deployed to https://insertokname.github.io/receiver/ by
 | `libsignal/check/` | libsignal checks page (`libsignal/` on the site) and its headless runner `run.mjs` |
 | `app/` | Start page: bootstraps Tor and opens Signal's provisioning socket; `smoke.mjs` checks it in headless Chromium |
 | `renderer/` | Desktop's main window bundled for the browser (`app/` on the site): `build.sh`, `build.mjs`, module resolution (`resolve.mjs`), Node/Electron/native shims (`shims/`), entry point, page, boot test `run.mjs` |
-| `main/` | In-page replacement for Electron's main process: IPC (`ipc.ts`), config, locale, settings, every channel the renderer uses (`channels.ts`) |
+| `main/` | In-page replacement for Electron's main process: IPC (`ipc.ts`), config, locale, settings, the database side (`sql.ts`), every other channel the renderer uses (`channels.ts`) |
+| `sql/` | The SQL worker: Desktop's `ts/sql/Server.node.ts` and migrations on encrypted SQLite in the origin private file system (see below); `build.sh` fetches SQLite3 Multiple Ciphers and builds `tokenizer/`; `test/run.mjs` is the storage test |
+| `sql/tokenizer/` | Signal's FTS5 tokenizer (Signal-FTS5-Extension, the revision `@signalapp/sqlcipher` uses) as a WebAssembly module (Rust) |
 | `net/` | Stand-in for libsignal's `Net` (libsignal-net is not in the WebAssembly build); the network layer implements it over the Tor transport |
 | `transport-test/` | Transport checks page (`test/` on the site) and its headless runner `run.mjs` |
 | `lib/signal.js` | Signal WebSocket framing shared by the pages |
@@ -33,7 +35,8 @@ Needs the Rust toolchain pinned in `transport/webtor-rs/rust-toolchain.toml`
 able to target wasm32 (for ring), node 24, pnpm 11, brotli and curl. For
 libsignal also the toolchain pinned in `libsignal/libsignal/rust-toolchain`
 with the `wasm32-wasip1` target and the `rust-src` component, protoc and
-wasm-opt (binaryen).
+wasm-opt (binaryen); for the app the toolchain in
+`sql/tokenizer/rust-toolchain.toml` (`wasm32-wasip1`) and unzip.
 
 ```bash
 git submodule update --init web/transport/webtor-rs web/libsignal/libsignal
@@ -42,7 +45,7 @@ pnpm install --frozen-lockfile
 bash transport/build.sh          # -> transport/dist/
 bash libsignal/build.sh          # -> libsignal/dist/package/
 (cd .. && pnpm install --frozen-lockfile --ignore-scripts)   # Desktop's dependencies, for the app
-bash renderer/build.sh           # -> dist/app/ (Desktop's renderer for the browser)
+bash renderer/build.sh           # -> dist/app/ (Desktop's renderer and SQL worker; runs sql/build.sh)
 bash scripts/build-site.sh       # -> dist/site/ (fetches a fresh Tor directory snapshot)
 ```
 
@@ -103,6 +106,43 @@ the CSP `script-src 'self' 'wasm-unsafe-eval'`. `renderer/entry.ts` awaits
 `initLibsignal()`, starts the in-page main process, imports the preload graph
 and calls `window.startApp()`; progress is in `<html data-boot>`.
 
+## Storage
+
+Desktop's database code runs unchanged in a dedicated Web Worker
+(`app/sql/worker.js`, built from `sql/worker.ts` by `renderer/build.mjs`
+with its own `fs`, `worker_threads` and `@signalapp/sqlcipher`):
+
+- SQLite is [SQLite3 Multiple Ciphers](https://github.com/utelle/SQLite3MultipleCiphers)'
+  WebAssembly build (release pinned and checked by SHA-256 in `sql/build.sh`),
+  in SQLCipher 4 format with Desktop's raw 32-byte key (`PRAGMA key =
+  "x'...'"`): the file is the same format Desktop's SQLCipher writes.
+  Its encrypting VFS wraps `opfs-sahpool`, SQLite's VFS on the origin private
+  file system that needs no cross-origin isolation. The pool is
+  OPFS `/userData/sql/` (Desktop: `<userData>/sql/db.sqlite`). Database,
+  journal and WAL are encrypted; temporary tables stay in memory
+  (`temp_store = MEMORY`), since temporary files would not be.
+- `sql/sqlcipher.ts` has `@signalapp/sqlcipher`'s API and semantics (its
+  Node addon's `lib/index.ts` and `src/addon.cc`) on SQLite's C API.
+  Connections use exclusive locking (one connection owns the files), which
+  also makes WAL work without shared memory.
+- Full-text search uses Signal's own tokenizer, `signal_tokenizer`, compiled
+  from Signal-FTS5-Extension (`sql/tokenizer/`) and registered with FTS5
+  (`sql/tokenizer.ts`); search behaves as in Desktop (CJK, URLs, diacritics).
+- The key (in place of Electron's safeStorage): 32 random bytes, stored in
+  IndexedDB (`receiver-sql-key`) encrypted with AES-GCM under a
+  non-extractable WebCrypto key; it only exists in the worker.
+- One tab at a time: the worker holds the Web Lock `receiver:database` while
+  it has the database; another tab waits up to 5 s (a reload's old worker
+  shutting down), then fails with `DatabaseInUseError` without touching the
+  files.
+- The worker loads libsignal too (Desktop's SQL code imports it): the same
+  `libsignal_node.wasm` as the page, checked against the same digest. All
+  WebAssembly the worker loads is fetched with SRI digests recorded at build
+  time.
+- `web/main/sql.ts` is the page side (Electron's MainSQL): the SQL IPC
+  channels, paused writes, `remove-db` / `erase-*`, `navigator.storage.persist()`
+  when the database is created, and closing the database on `pagehide`.
+
 ## Test
 
 `CHROMIUM` must point at a Chromium or Chrome executable. The runners serve
@@ -119,7 +159,8 @@ node transport-test/run.mjs 'suites=ws&only=bulk,hold&hold=30'                  
 node libsignal/check/run.mjs                          # libsignal in the browser under the site's CSP
 node libsignal/check/run.mjs https://insertokname.github.io/receiver/
 node libsignal/test/node.mjs                          # libsignal's TypeScript tests (Node, no browser)
-node renderer/run.mjs                                 # web app boots to the database step under the app's CSP
+node sql/test/run.mjs                                 # storage: create/migrate, reopen, encrypted at rest, second tab, erase
+node renderer/run.mjs                                 # web app boots to Desktop's install screen under the app's CSP
 node renderer/run.mjs https://insertokname.github.io/receiver/
 node renderer/test/crypto-shim.mjs                    # node:crypto shim against Node's node:crypto
 ```

@@ -46,3 +46,17 @@ export function setStored(key: string, value: unknown): void {
     warn(error);
   }
 }
+
+/** Removes every stored setting (Desktop deletes its config files). */
+export function clearStored(): void {
+  memory.clear();
+  try {
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith(PREFIX)) {
+        localStorage.removeItem(key);
+      }
+    }
+  } catch (error) {
+    warn(error);
+  }
+}

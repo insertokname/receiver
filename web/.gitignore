@@ -3,3 +3,5 @@ node_modules/
 /transport/dist/
 /libsignal/dist/
 /libsignal/target/
+/sql/dist/
+/sql/tokenizer/target/

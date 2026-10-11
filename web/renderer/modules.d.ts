@@ -2,7 +2,7 @@
 // Types for modules the web build resolves itself (see resolve.mjs).
 
 declare module '@signalapp/libsignal-client/wasm/index.js' {
-  export function initLibsignal(): Promise<void>;
+  export function initLibsignal(options?: { wasm?: WebAssembly.Module | BufferSource }): Promise<void>;
 }
 
 declare module 'process/browser.js' {

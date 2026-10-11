@@ -106,11 +106,18 @@ const JUMBOMOJI_MANIFEST = join(REPO, 'build/jumbomoji.json');
 
 const UNAVAILABLE_PREFIX = '\0web-unavailable:';
 
+const PARTIAL_PREFIX = '\0web-partial:';
+
 /**
- * Records which shims were used, for the build report.
+ * Records which shims were used, for the build report. `overrides` maps
+ * builtins (without `node:`) or packages to [kind, target] for one bundle
+ * (the SQL worker has its own fs, worker_threads and sqlcipher). Kind
+ * 'partial' is a builtin shim that implements some functions: every other
+ * export of the Node module throws "not available".
+ * @param {{ overrides?: Record<string, [string, string]> }} [options]
  * @returns {{ plugin: import('rolldown').Plugin, used: Map<string, string>, siblings: Set<string> }}
  */
-export function webResolvePlugin() {
+export function webResolvePlugin({ overrides = {} } = {}) {
   const used = new Map();
   const siblings = new Set();
   const note = (name, kind, target) =>
@@ -127,6 +134,11 @@ export function webResolvePlugin() {
       async resolveId(source, importer, options) {
         const bare = source.startsWith('node:') ? source.slice(5) : source;
 
+        if (Object.hasOwn(overrides, bare)) {
+          const [kind, target] = overrides[bare];
+          note(bare, kind, target);
+          return kind === 'partial' ? `${PARTIAL_PREFIX}${bare}:${target}` : target;
+        }
         if (Object.hasOwn(BUILTINS, bare)) {
           const [kind, target] = BUILTINS[bare];
           note(bare, kind, target);
@@ -192,6 +204,22 @@ export function webResolvePlugin() {
         return resolved;
       },
       async load(id) {
+        if (id.startsWith(PARTIAL_PREFIX)) {
+          const rest = id.slice(PARTIAL_PREFIX.length);
+          const name = rest.slice(0, rest.indexOf(':'));
+          const target = rest.slice(name.length + 1);
+          const real = await import(`node:${name}`);
+          const keys = Object.keys(real).filter(k => k !== 'default' && /^[A-Za-z_$][\w$]*$/.test(k));
+          // CommonJS, like the unavailable modules below (graceful-fs patches it).
+          return [
+            `const impl = require(${JSON.stringify(target)});`,
+            `const { unavailable } = require(${JSON.stringify(join(SHIMS, 'node/unavailable.ts'))});`,
+            `const pick = k => (Object.hasOwn(impl, k) ? impl[k] : unavailable(${JSON.stringify(name)}, k));`,
+            'module.exports = {',
+            ...keys.map(k => `  ${k}: pick(${JSON.stringify(k)}),`),
+            '};',
+          ].join('\n');
+        }
         if (!id.startsWith(UNAVAILABLE_PREFIX)) {
           return null;
         }

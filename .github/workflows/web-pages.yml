@@ -173,6 +173,20 @@ jobs:
           echo "CC_wasm32_unknown_unknown=clang" >> "$GITHUB_ENV"
           echo "AR_wasm32_unknown_unknown=llvm-ar" >> "$GITHUB_ENV"
 
+      - name: Install the Rust toolchain for the search tokenizer
+        working-directory: web/sql/tokenizer
+        run: |
+          channel=$(sed -n 's/^channel = "\(.*\)"$/\1/p' rust-toolchain.toml)
+          rustup toolchain install "$channel" --profile minimal --target wasm32-wasip1
+          rustc --version
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            web/sql/dist/sqlite3mc
+            web/sql/tokenizer/target
+          key: sql-${{ runner.os }}-${{ hashFiles('web/sql/build.sh', 'web/sql/tokenizer/Cargo.lock', 'web/sql/tokenizer/Cargo.toml', 'web/sql/tokenizer/rust-toolchain.toml') }}
+
       - name: Install brotli
         run: command -v brotli || (sudo apt-get update && sudo apt-get install -y --no-install-recommends brotli)
 
@@ -209,7 +223,7 @@ jobs:
       - name: Install Desktop's dependencies (no install scripts)
         run: pnpm install --frozen-lockfile --ignore-scripts
 
-      - name: Build the web app (Desktop's renderer for the browser)
+      - name: Build the web app (Desktop's renderer and SQL worker for the browser)
         run: bash web/renderer/build.sh
 
       - name: node:crypto shim against Node's node:crypto
@@ -230,7 +244,10 @@ jobs:
       - name: libsignal checks, local (WebAssembly under the site's CSP)
         run: node web/libsignal/check/run.mjs
 
-      - name: Web app boot, local (to the database step)
+      - name: Storage test, local (encrypted database in the browser)
+        run: node web/sql/test/run.mjs
+
+      - name: Web app boot, local (to the install screen)
         run: node web/renderer/run.mjs
 
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
@@ -282,5 +299,5 @@ jobs:
       - name: libsignal checks, live site
         run: node web/libsignal/check/run.mjs "$LIVE_URL"
 
-      - name: Web app boot, live site
+      - name: Web app boot, live site (to the install screen)
         run: node web/renderer/run.mjs "$LIVE_URL"

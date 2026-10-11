@@ -9,12 +9,17 @@
 //   stylesheets/          Desktop's compiled SCSS + Tailwind (asset:/// -> ../)
 //   fonts/ images/ sounds/
 //   locales/              compact locale messages + display names
+//   sql/worker.js, sql/chunks/   the SQL worker (web/sql/: Desktop's
+//                         ts/sql/Server.node.ts on SQLite3 Multiple Ciphers)
+//   sql/sqlite3.wasm, sql/signal_tokenizer.wasm
 //
 // Expects Desktop's generated sources (protobuf, emoji data, styles, compact
-// locales); renderer/build.sh runs those generators first.
+// locales) and web/sql/dist/; renderer/build.sh runs those generators and
+// sql/build.sh first.
 //
 // Usage: node renderer/build.mjs [--out DIR] [--no-minify] [--report FILE]
 
+import { createHash } from 'node:crypto';
 import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { existsSync, readdirSync } from 'node:fs';
 import { execSync } from 'node:child_process';
@@ -48,9 +53,12 @@ for (const generated of [
   'stylesheets/tailwind.css',
   'stylesheets/quill.css',
   'build/compact-locales/keys.json',
+  'web/sql/dist/sqlite3mc/sqlite3.mjs',
+  'web/sql/dist/sqlite3mc/sqlite3.wasm',
+  'web/sql/dist/signal_tokenizer.wasm',
 ]) {
   if (!existsSync(join(REPO, generated))) {
-    throw new Error(`${generated} is missing: run renderer/build.sh (Desktop's generators)`);
+    throw new Error(`${generated} is missing: run renderer/build.sh (Desktop's generators, sql/build.sh)`);
   }
 }
 
@@ -109,25 +117,50 @@ const started = Date.now();
 await rm(OUT, { recursive: true, force: true });
 await mkdir(OUT, { recursive: true });
 
+// Shared by the page bundle and the SQL worker bundle.
+const transform = {
+  jsx: 'react-jsx',
+  define: {
+    'process.env.IS_BUNDLED': 'true',
+    'process.env.NODE_ENV': '"production"',
+    global: 'globalThis',
+  },
+  inject: {
+    process: 'node:process',
+    Buffer: ['node:buffer', 'Buffer'],
+    setImmediate: ['node:timers', 'setImmediate'],
+    clearImmediate: ['node:timers', 'clearImmediate'],
+  },
+};
+function onLog(level, log) {
+  // Every import must resolve: to a dependency, a web sibling or a shim.
+  if (['UNRESOLVED_IMPORT', 'MISSING_EXPORT', 'IMPORT_IS_UNDEFINED'].includes(log.code)) {
+    problems.push(log.message);
+    return;
+  }
+  if (log.code === 'EVAL' || log.code === 'CIRCULAR_DEPENDENCY') {
+    return;
+  }
+  if (level === 'warn') {
+    console.warn(`warning: ${log.code}: ${log.message.split('\n')[0]}`);
+  }
+}
+const output = {
+  format: 'esm',
+  entryFileNames: '[name].js',
+  chunkFileNames: 'chunks/[name]-[hash].js',
+  minify,
+  sourcemap: false,
+  generatedCode: { symbols: false },
+  comments: { legal: false },
+};
+
 const bundle = await build({
   cwd: REPO,
   input: { app: join(HERE, 'entry.ts') },
   platform: 'browser',
   tsconfig: join(REPO, 'tsconfig.json'),
-  transform: {
-    jsx: 'react-jsx',
-    define: {
-      'process.env.IS_BUNDLED': 'true',
-      'process.env.NODE_ENV': '"production"',
-      global: 'globalThis',
-    },
-    inject: {
-      process: 'node:process',
-      Buffer: ['node:buffer', 'Buffer'],
-      setImmediate: ['node:timers', 'setImmediate'],
-      clearImmediate: ['node:timers', 'clearImmediate'],
-    },
-  },
+  transform,
   plugins: [
     resolver.plugin,
     {
@@ -136,29 +169,8 @@ const bundle = await build({
       load: id => (id === STATIC_CONFIG_ID ? `export default ${JSON.stringify(config)};` : null),
     },
   ],
-  onLog(level, log) {
-    // Every import must resolve: to a dependency, a web sibling or a shim.
-    if (['UNRESOLVED_IMPORT', 'MISSING_EXPORT', 'IMPORT_IS_UNDEFINED'].includes(log.code)) {
-      problems.push(log.message);
-      return;
-    }
-    if (log.code === 'EVAL' || log.code === 'CIRCULAR_DEPENDENCY') {
-      return;
-    }
-    if (level === 'warn') {
-      console.warn(`warning: ${log.code}: ${log.message.split('\n')[0]}`);
-    }
-  },
-  output: {
-    dir: OUT,
-    format: 'esm',
-    entryFileNames: '[name].js',
-    chunkFileNames: 'chunks/[name]-[hash].js',
-    minify,
-    sourcemap: false,
-    generatedCode: { symbols: false },
-    comments: { legal: false },
-  },
+  onLog,
+  output: { ...output, dir: OUT },
 });
 
 if (problems.length) {
@@ -173,6 +185,51 @@ const loaderChunk = bundle.output.find(
 if (!loaderChunk) throw new Error('libsignal loader not found in the bundle');
 const wasmTarget = join(OUT, loaderChunk.fileName, '..', 'libsignal_node.wasm');
 await cp(join(LIBSIGNAL_PACKAGE, 'wasm/libsignal_node.wasm'), wasmTarget);
+
+// The SQL worker: its own bundle with its own fs, worker_threads and
+// @signalapp/sqlcipher (web/sql/). It fetches its WebAssembly modules
+// (relative to itself) and checks them against these digests.
+const SQL_DIST = join(WEB, 'sql/dist');
+const SQL_OUT = join(OUT, 'sql');
+const SQL_ASSETS_ID = '\0web-sql-assets';
+const sri = async path => `sha384-${createHash('sha384').update(await readFile(path)).digest('base64')}`;
+const sqlAssets = {
+  sqlite: { path: 'sqlite3.wasm', integrity: await sri(join(SQL_DIST, 'sqlite3mc/sqlite3.wasm')) },
+  tokenizer: { path: 'signal_tokenizer.wasm', integrity: await sri(join(SQL_DIST, 'signal_tokenizer.wasm')) },
+  // The page's copy (same URL, so the browser cache serves it).
+  libsignal: { path: relative(SQL_OUT, wasmTarget), integrity: await sri(wasmTarget) },
+};
+const sqlResolver = webResolvePlugin({
+  overrides: {
+    fs: ['partial', join(WEB, 'sql/shims/fs.ts')],
+    worker_threads: ['shim', join(WEB, 'sql/shims/worker-threads.ts')],
+    '@signalapp/sqlcipher': ['real', join(WEB, 'sql/sqlcipher.ts')],
+    sqlite3mc: ['real', join(SQL_DIST, 'sqlite3mc/sqlite3.mjs')],
+  },
+});
+const sqlBundle = await build({
+  cwd: REPO,
+  input: { worker: join(WEB, 'sql/worker.ts') },
+  platform: 'browser',
+  tsconfig: join(REPO, 'tsconfig.json'),
+  transform,
+  plugins: [
+    sqlResolver.plugin,
+    {
+      name: 'web-sql-assets',
+      resolveId: id => (id === 'virtual:web-sql-assets' ? SQL_ASSETS_ID : null),
+      load: id => (id === SQL_ASSETS_ID ? `export default ${JSON.stringify(sqlAssets)};` : null),
+    },
+  ],
+  onLog,
+  output: { ...output, dir: SQL_OUT },
+});
+await cp(join(SQL_DIST, 'sqlite3mc/sqlite3.wasm'), join(SQL_OUT, 'sqlite3.wasm'));
+await cp(join(SQL_DIST, 'signal_tokenizer.wasm'), join(SQL_OUT, 'signal_tokenizer.wasm'));
+if (problems.length) {
+  for (const p of problems) console.error(`error: ${p.split('\n')[0]}`);
+  throw new Error(`${problems.length} unresolved imports or missing exports`);
+}
 
 // Page and static assets.
 const html = await readFile(join(HERE, 'index.html'), 'utf8');
@@ -220,6 +277,13 @@ console.log(`renderer: ${chunks.length} chunks, ${(jsBytes / 1e6).toFixed(2)} MB
 console.log('shims:');
 for (const [name, target] of Object.entries(report.shims)) console.log(`  ${name.padEnd(40)} ${target}`);
 console.log(`web siblings: ${report.webSiblings.join(', ') || '(none)'}`);
+const sqlChunks = sqlBundle.output.filter(o => o.type === 'chunk');
+const sqlModules = new Set(sqlChunks.flatMap(c => c.moduleIds));
+console.log(
+  `sql worker: ${sqlChunks.length} chunks, ${(sqlChunks.reduce((sum, c) => sum + Buffer.byteLength(c.code), 0) / 1e6).toFixed(2)} MB JS, ${sqlModules.size} modules`
+);
+console.log('sql worker shims:');
+for (const [name, target] of [...sqlResolver.used].sort()) console.log(`  ${name.padEnd(40)} ${target}`);
 if (args.report) {
   report.moduleIds = [...modules].map(id => (id.startsWith(REPO) ? relative(REPO, id) : id)).sort();
   await writeFile(args.report, JSON.stringify(report, null, 2));

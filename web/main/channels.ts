@@ -6,11 +6,11 @@
 // need no handler; the web main sends the ones that apply.
 //
 // "stub" channels are explicit: they answer a safe value (or reject with a
-// clear error) and log once that they were used. The SQL channels belong to
-// Phase 3 (storage), the network-backed ones to Phase 4.
+// clear error) and log once that they were used. The database channels are
+// in sql.ts; the network-backed ones belong to Phase 4.
 
 import type { RendererConfigType } from '../../ts/types/RendererConfig.std.ts';
-import { handle, onSend, onSync, sendToRenderer, stub } from './ipc.ts';
+import { handle, logOnce, onSend, onSync, sendToRenderer, stub } from './ipc.ts';
 import { clearLog } from './logs.ts';
 
 class NotAvailableError extends Error {
@@ -23,37 +23,10 @@ function reject(what: string): () => never {
   };
 }
 
-// The SQL channels of ts/sql/channels.preload.ts and ts/sql/Client.preload.ts.
-// Phase 3 replaces these with the SQL worker (see .web-port notes).
-export const SQL_CHANNELS = [
-  'sql-channel:read',
-  'sql-channel:write',
-  'sql-channel:remove-db',
-  'erase-sql-key',
-  'erase-attachments',
-  'erase-stickers',
-  'erase-temp',
-  'erase-drafts',
-  'erase-downloads',
-  'cleanup-orphaned-attachments',
-  'ensure-file-permissions',
-  'pause-sql-writes',
-  'resume-sql-writes',
-];
-
 export function installChannels({ config }: { config: RendererConfigType }): void {
   // Synchronous queries.
   onSync('OS.getClassName', () => 'os-linux');
   onSync('get-user-data-path', () => config.userDataPath);
-
-  // Storage: Phase 3.
-  for (const channel of SQL_CHANNELS) {
-    handle(channel, () => {
-      throw new NotAvailableError(
-        `SQL (${channel}) is not available in the web build yet: the database comes with the storage layer`
-      );
-    });
-  }
 
   // Window and app shell. The browser owns the window: these are no-ops.
   handle('getMainWindowStats', () => ({
@@ -158,8 +131,16 @@ export function installChannels({ config }: { config: RendererConfigType }): voi
 
   // Optional resources (large emoji font, localized emoji search, calling
   // sounds) are downloaded by Electron's main process from Signal's update
-  // server; the web build will ship or fetch them through Tor later.
-  handle('OptionalResourceService:getData', reject('optional resources'));
+  // server; the web build will ship or fetch them through Tor later. Until
+  // then the localized emoji search index is empty (emoji search uses the
+  // built-in English names) and everything else is unavailable.
+  handle('OptionalResourceService:getData', (_event, name: unknown) => {
+    if (typeof name === 'string' && /^emoji-index-[\w-]+\.json$/.test(name)) {
+      logOnce('optional-resources:emoji-index', 'localized emoji search data is not in the web build yet; emoji search uses English names');
+      return new TextEncoder().encode('[]');
+    }
+    return reject('optional resources')();
+  });
 
   // Secondary windows and calling: not in the web build yet.
   for (const channel of [

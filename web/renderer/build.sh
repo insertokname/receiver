@@ -4,7 +4,8 @@
 # Builds the web app (Desktop's main window for the browser) into
 # web/dist/app/. Runs Desktop's own generators first (protobuf code, emoji
 # data, compiled stylesheets, compact locales; all git-ignored outputs inside
-# the repository), then bundles with renderer/build.mjs.
+# the repository) and sql/build.sh (SQLite WebAssembly, search tokenizer),
+# then bundles the page and the SQL worker with renderer/build.mjs.
 #
 # Needs Desktop's dependencies at the repository root
 # (pnpm install --frozen-lockfile --ignore-scripts) and web/'s own.
@@ -30,5 +31,7 @@ fi
     pnpm run --silent "$script"
   done
 )
+
+bash "$WEB/sql/build.sh"
 
 node "$WEB/renderer/build.mjs" "$@"

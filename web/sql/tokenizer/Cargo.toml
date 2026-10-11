@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+#
+# Signal's FTS5 tokenizer (the one @signalapp/sqlcipher links into SQLCipher
+# for Desktop) as a small WebAssembly module for the web build's SQL worker.
+
+[package]
+name = "receiver-signal-tokenizer"
+version = "0.1.0"
+edition = "2021"
+license = "AGPL-3.0-only"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+path = "src/lib.rs"
+
+[dependencies]
+# Same revision as @signalapp/sqlcipher 4.1.0 (deps/extension/Cargo.toml),
+# the version Desktop pins.
+signal-tokenizer = { git = "https://github.com/signalapp/Signal-FTS5-Extension", rev = "bcd1cbcd306a3ef10822dec3f80c340b8c1754c3" }
+
+[profile.release]
+lto = true
+opt-level = "s"
+panic = "abort"
+codegen-units = 1
+strip = true
+
+[workspace]

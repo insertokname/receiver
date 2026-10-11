@@ -39,11 +39,21 @@ const TYPES = {
   '.ogg': 'audio/ogg',
 };
 
-/** Static server for SITE_DIR under BASE_PATH; anything else is 404. */
-export function serveSite() {
+/**
+ * Static server for SITE_DIR under BASE_PATH; anything else is 404.
+ * `extra` maps paths to [content type, body] served in addition (test pages
+ * that are not part of the site).
+ */
+export function serveSite({ extra = {} } = {}) {
   const server = http.createServer(async (req, res) => {
     try {
       const { pathname } = new URL(req.url, 'http://x');
+      if (Object.hasOwn(extra, pathname)) {
+        const [type, body] = extra[pathname];
+        res.writeHead(200, { 'content-type': type });
+        res.end(body);
+        return;
+      }
       if (!pathname.startsWith(BASE_PATH)) throw new Error('outside base path');
       let path = normalize(join(SITE_DIR, decodeURIComponent(pathname.slice(BASE_PATH.length))));
       if (!path.startsWith(SITE_DIR)) throw new Error('path traversal');
