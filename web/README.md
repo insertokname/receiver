@@ -6,23 +6,24 @@ repository root's `package.json` and lockfile belong to upstream.
 
 The site is deployed to https://insertokname.github.io/receiver/ by
 `.github/workflows/web-pages.yml` (on push to `main`, daily, and on demand).
+The app is the site's root; `test/` and `libsignal/` are check pages.
 
 | Path | What |
 |---|---|
 | `transport/webtor-rs/` | Tor client in Rust/WASM: git submodule, [insertokname/webtor-rs](https://github.com/insertokname/webtor-rs) branch `signal-web-transport` |
 | `transport/src/index.js` | Connection policy: Snowflake WebSocket first, then Snowflake WebRTC, retried with backoff; Signal sockets pinned to Signal's CA |
-| `transport/build.sh` | Builds `transport/dist/` (WASM, `signal-ca.js` from `config/default.json`, policy) |
+| `transport/build.sh` | Builds `transport/dist/` (WASM, `signal-ca.js` from `config/default.json`, policy); `--test-relay` builds the end-to-end tests' variant into `transport/dist-e2e/` |
 | `libsignal/libsignal/` | libsignal 0.103.0 (the version Desktop pins): git submodule, [insertokname/libsignal](https://github.com/insertokname/libsignal) branch `web-wasm` |
 | `libsignal/build.sh` | Builds `libsignal/dist/package/`: `@signalapp/libsignal-client` with its native addon replaced by WebAssembly (see below) |
 | `libsignal/loader.js` | Loads the WebAssembly module on emnapi; provides `initLibsignal()` |
 | `libsignal/test/node.mjs` | Runs libsignal's own TypeScript tests against the WebAssembly build in Node |
 | `libsignal/check/` | libsignal checks page (`libsignal/` on the site) and its headless runner `run.mjs` |
-| `app/` | Start page: bootstraps Tor and opens Signal's provisioning socket; `smoke.mjs` checks it in headless Chromium |
-| `renderer/` | Desktop's main window bundled for the browser (`app/` on the site): `build.sh`, `build.mjs`, module resolution (`resolve.mjs`), Node/Electron/native shims (`shims/`), entry point, page, boot test `run.mjs` |
-| `main/` | In-page replacement for Electron's main process: IPC (`ipc.ts`), config, locale, settings, the database side (`sql.ts`), every other channel the renderer uses (`channels.ts`) |
+| `renderer/` | Desktop's main window bundled for the browser (the site's root): `build.sh`, `build.mjs`, module resolution (`resolve.mjs`), Node/Electron/native shims (`shims/`), entry point, page, boot test `run.mjs` |
+| `main/` | In-page replacement for Electron's main process: IPC (`ipc.ts`), config, locale, settings, the database side (`sql.ts`), the app's files (`files.ts`), every other channel the renderer uses (`channels.ts`) |
 | `sql/` | The SQL worker: Desktop's `ts/sql/Server.node.ts` and migrations on encrypted SQLite in the origin private file system (see below); `build.sh` fetches SQLite3 Multiple Ciphers and builds `tokenizer/`; `test/run.mjs` is the storage test |
 | `sql/tokenizer/` | Signal's FTS5 tokenizer (Signal-FTS5-Extension, the revision `@signalapp/sqlcipher` uses) as a WebAssembly module (Rust) |
-| `net/` | libsignal's `Net` for the web build (`WebNet`): chat and provisioning connections, the typed chat calls, and HTTPS (`node-fetch` replacement), all through one Tor client (`tor.ts`); `test/run.mjs` checks it against Signal |
+| `net/` | libsignal's `Net` for the web build (`WebNet`): chat and provisioning connections, the typed chat calls, and HTTPS (`node-fetch` replacement), all through one Tor client (`tor.ts`, chosen in `carrier.ts`); `test/run.mjs` checks it against Signal |
+| `e2e/` | End-to-end tests against Desktop's mock server (test-only, never deployed): `run.mjs` (scenarios), `mock.mjs`, `relay.mjs`, the test carrier `relay-carrier.ts`, `config.mjs` |
 | `transport-test/` | Transport checks page (`test/` on the site) and its headless runner `run.mjs` |
 | `lib/signal.js` | Signal WebSocket framing shared by the pages |
 | `protos/SubProtocol.proto` | Signal's WebSocket message definitions (restored from upstream history) |
@@ -47,6 +48,7 @@ bash libsignal/build.sh          # -> libsignal/dist/package/
 (cd .. && pnpm install --frozen-lockfile --ignore-scripts)   # Desktop's dependencies, for the app
 bash renderer/build.sh           # -> dist/app/ (Desktop's renderer and SQL worker; runs sql/build.sh)
 bash scripts/build-site.sh       # -> dist/site/ (fetches a fresh Tor directory snapshot)
+bash transport/build.sh --test-relay && node renderer/build.mjs --e2e   # -> dist/app-e2e/ (end-to-end tests only)
 ```
 
 ## libsignal
@@ -93,15 +95,17 @@ browser ESM. `renderer/resolve.mjs` decides what every import becomes:
 - Node builtins map to browser polyfills (`buffer`, `events`,
   `path-browserify`, `readable-stream`, `assert`, `browserify-zlib`, ...),
   small shims (`crypto` on @noble/hashes + @noble/ciphers + Web Crypto
-  randomness, `process`, `os`, `timers`, `v8`, ...), or modules whose every
-  export throws "not available in the web build: <module>.<name>" (`fs`,
-  `net`, `http(s)`, `worker_threads`, ...). An unmapped builtin, an
-  unresolved import or a missing export fails the build.
+  randomness, its hashes and ciphers also streams; `fs` and `fs/promises`
+  on the origin private file system, see "Files"; `process`, `os`,
+  `timers`, `v8`, ...), or modules whose every export throws "not
+  available in the web build: <module>.<name>" (`net`, `http(s)`,
+  `worker_threads`, ...). An unmapped builtin, an unresolved import or a
+  missing export fails the build.
 - libsignal is `libsignal/dist/package`; RingRTC's TypeScript is used with
   its native addon stubbed (calling is disabled); other native modules are
   stubs.
 
-`app/index.html` (from Desktop's `background.html`) has no inline script and
+The page (`renderer/index.html`, from Desktop's `background.html`) has no inline script and
 the CSP `script-src 'self' 'wasm-unsafe-eval'`. `renderer/entry.ts` awaits
 `initLibsignal()`, starts the in-page main process, imports the preload graph
 and calls `window.startApp()`; progress is in `<html data-boot>`.
@@ -143,6 +147,22 @@ with its own `fs`, `worker_threads` and `@signalapp/sqlcipher`):
   channels, paused writes, `remove-db` / `erase-*`, `navigator.storage.persist()`
   when the database is created, and closing the database on `pagehide`.
 
+## Files
+
+Desktop keeps attachments, avatars, drafts, stickers, downloads and temp
+files under userData; the web build keeps them in the origin private file
+system under `/userData/` (`main/files.ts`), next to the database's
+`/userData/sql/`, which only the SQL worker touches. The renderer's `fs`
+and `fs/promises` (`renderer/shims/node/fs*.ts`) implement what Desktop
+and fs-extra use: callbacks, promises, `FileHandle`, read and write streams,
+and `existsSync` / `realpathSync` from an in-memory copy of the directory
+tree, read at startup and kept up to date. OPFS writes go to a copy that
+replaces the file on close; where Node behaves differently and Desktop
+relies on it, the shim keeps Node's behaviour (opening with `'w'`
+truncates at once; a handle that never wrote changes nothing on close;
+removing an open file works). Paths outside userData fail with `EACCES`.
+Desktop encrypts attachments itself before they are written.
+
 ## Test
 
 `CHROMIUM` must point at a Chromium or Chrome executable. The runners serve
@@ -150,8 +170,6 @@ with its own `fs`, `worker_threads` and `@signalapp/sqlcipher`):
 127.0.0.1), like GitHub Pages.
 
 ```bash
-node app/smoke.mjs                                    # start page reaches "provisioning address received"
-node app/smoke.mjs https://insertokname.github.io/receiver/
 node transport-test/run.mjs 'suites=ws'               # basic checks over Snowflake WebSocket
 node transport-test/run.mjs 'suites=webrtc'           # same over Snowflake WebRTC
 BLACKHOLE=snowflake.torproject.net node transport-test/run.mjs 'suites=chain'   # fallback to WebRTC
@@ -163,8 +181,37 @@ node sql/test/run.mjs                                 # storage: create/migrate,
 node renderer/run.mjs                                 # web app boots to Desktop's link QR code (decoded) under the app's CSP
 node renderer/run.mjs https://insertokname.github.io/receiver/
 node renderer/test/crypto-shim.mjs                    # node:crypto shim against Node's node:crypto
+node renderer/test/fs-shim.mjs                        # node:fs on the origin private file system, in the browser
 node net/test/run.mjs                                 # WebNet + HTTPS through Tor against Signal (bogus credentials only)
+node e2e/run.mjs                                      # end-to-end against Desktop's mock server (see below)
 ```
+
+### End-to-end tests
+
+`e2e/run.mjs` links the app to Desktop's own mock server
+(`packages/mock-server`, built in place on first use; Desktop's root
+dependencies must be installed) and runs scenarios modelled on
+`ts/test-mock/`: link (QR code, registration, keys, authenticated socket,
+inbox), sync (contacts, a group), receive, send (typed into the composer,
+decrypted by the mock contact), persistence (reload, reconnect, a dropped
+connection) and link-and-sync (message history imported from the primary's
+ephemeral backup). It needs the e2e build:
+
+- `transport/build.sh --test-relay` compiles webtor-rs with its
+  `test-relay` feature (`Carrier::Relay`: TLS carried by a WebSocket to a
+  local relay) into `transport/dist-e2e/`.
+- `renderer/build.mjs --e2e` builds `dist/app-e2e/`: the same app with
+  `net/carrier.ts` (Tor) replaced by `e2e/relay-carrier.ts`, the mock
+  server's URLs (`https://localhost`), CA, zkgroup parameters and trust
+  root (`e2e/config.mjs`), and a CSP that allows the relay
+  (`ws://127.0.0.1:18791`, `E2E_RELAY_PORT`). The choice is made at build
+  time: the production build has no relay code and no switch, and fails
+  if any is found in its output.
+- `e2e/relay.mjs` (Node) relays the app's WebSockets to the mock server's
+  TCP port; TLS runs end to end, pinned to the mock's CA.
+
+`ONLY=a,b` runs the first scenarios, `VERBOSE=1` prints the app's log,
+`E2E_ARTIFACTS=<dir>` saves a screenshot when a scenario fails.
 
 ## Network
 
@@ -199,5 +246,10 @@ headers, timeouts and error codes from libsignal-net's Rust code):
   attestation), SVR2, registration, key transparency, backups.
 - The User-Agent is `unofficial-web-client/<version> (receiver)`.
 - The carrier under TLS is an interface (`Carrier` in `net/tor.ts`, the
-  `Carrier` enum in webtor-rs `signal_socket.rs`) so tests can replace Tor.
+  `Carrier` enum in webtor-rs `signal_socket.rs`), chosen at build time in
+  `net/carrier.ts`: Tor in every deployed build; the end-to-end tests'
+  build replaces the module (see "End-to-end tests").
+- The chat server's host and its trust root come from the app's config
+  (`serverUrl`, `certificateAuthority`), as for Desktop: Signal's in
+  production builds.
 

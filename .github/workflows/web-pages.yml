@@ -208,6 +208,11 @@ jobs:
       - name: Build the transport (webtor-rs to WASM)
         run: bash web/transport/build.sh
 
+      # Same code plus webtor's test-relay feature, for the end-to-end tests
+      # only (web/e2e); never part of the site.
+      - name: Build the transport's end-to-end test variant
+        run: bash web/transport/build.sh --test-relay
+
       # Desktop's own dependencies (repository root) for the web app: no
       # install scripts, so no Electron download and no native builds.
       - id: desktop-store
@@ -232,11 +237,15 @@ jobs:
       - name: Build the site (with a fresh Tor directory snapshot)
         run: bash web/scripts/build-site.sh
 
+      - name: The site contains no test relay code
+        run: |
+          if grep -rlE 'openRelay|relay-carrier|web-e2e-config|ws://127\.0\.0\.1' web/dist/site; then
+            echo '::error::test-only relay code in the site'
+            exit 1
+          fi
+
       - name: Select the browser for the tests
         run: echo "CHROMIUM=$(command -v google-chrome || command -v chromium)" >> "$GITHUB_ENV"
-
-      - name: Smoke test, local (start page under /receiver/)
-        run: node web/app/smoke.mjs
 
       - name: Transport checks, local (Snowflake WebSocket)
         run: node web/transport-test/run.mjs 'suites=ws'
@@ -247,11 +256,35 @@ jobs:
       - name: Storage test, local (encrypted database in the browser)
         run: node web/sql/test/run.mjs
 
+      - name: File system test, local (the renderer's node:fs on the origin private file system)
+        run: node web/renderer/test/fs-shim.mjs
+
       - name: Web app boot, local (to the link QR code, decoded)
         run: node web/renderer/run.mjs
 
       - name: Network layer checks, local (WebNet and HTTPS through Tor against Signal)
         run: node web/net/test/run.mjs
+
+      # The app linked to Desktop's mock server (packages/mock-server), reached
+      # through a local relay instead of Tor: link, sync, receive, send,
+      # reload, link-and-sync. A separate build (web/dist/app-e2e), not deployed.
+      - name: Build the end-to-end test variant of the app
+        run: node web/renderer/build.mjs --e2e
+
+      - name: End-to-end tests against Desktop's mock server
+        env:
+          E2E_ARTIFACTS: ${{ runner.temp }}/e2e
+        run: |
+          mkdir -p "$E2E_ARTIFACTS"
+          node web/e2e/run.mjs 2>&1 | tee "$E2E_ARTIFACTS/e2e.log"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure()
+        with:
+          name: e2e-failure
+          path: ${{ runner.temp }}/e2e
+          retention-days: 7
+          if-no-files-found: ignore
 
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
@@ -295,9 +328,6 @@ jobs:
 
       - name: Select the browser for the test
         run: echo "CHROMIUM=$(command -v google-chrome || command -v chromium)" >> "$GITHUB_ENV"
-
-      - name: Smoke test, live site
-        run: node web/app/smoke.mjs "$LIVE_URL"
 
       - name: libsignal checks, live site
         run: node web/libsignal/check/run.mjs "$LIVE_URL"

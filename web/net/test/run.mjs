@@ -2,7 +2,7 @@
 //
 // WebNet test in headless Chromium: the web build's libsignal Net and its
 // HTTPS client, through real Tor, against Signal's real servers, under the
-// app's CSP, at the deployment's path (http://pages.example:8080/receiver/app/).
+// app's CSP, at the deployment's path (http://pages.example:8080/receiver/).
 // No real account is involved: authenticated checks use a random ACI and a
 // bogus password.
 //
@@ -42,9 +42,9 @@ const REPO = join(WEB, '..');
 const DROP_DETECTION_LIMIT_MS = 47_000;
 const SECRET_PATTERNS = [/bogus-password-for-tests/, /Authorization: Basic/i];
 
-const appHtml = await readFile(join(SITE_DIR, 'app/index.html'), 'utf8');
+const appHtml = await readFile(join(SITE_DIR, 'index.html'), 'utf8');
 const csp = appHtml.match(/<meta\s+http-equiv="Content-Security-Policy"[\s\S]*?\/>/)?.[0];
-if (!csp) throw new Error('app/index.html has no CSP meta tag');
+if (!csp) throw new Error('index.html has no CSP meta tag');
 const wrongCa = await readFile(join(WEB, 'transport-test/wrong-ca.pem'), 'utf8');
 
 const resolver = webResolvePlugin();
@@ -69,9 +69,9 @@ const bundle = await build({
 });
 const pageJs = bundle.output[0].code;
 
-// The page and its script live in app/, where libsignal's loader finds its
-// WebAssembly (next to app.js, which contains the app's loader).
-const app = `${BASE_PATH}app/`;
+// The page and its script live next to app.js, where libsignal's loader
+// finds its WebAssembly.
+const app = BASE_PATH;
 const server = await serveSite({
   extra: {
     [`${app}net-test.html`]: [

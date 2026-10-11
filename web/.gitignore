@@ -1,6 +1,7 @@
 node_modules/
 /dist/
 /transport/dist/
+/transport/dist-e2e/
 /libsignal/dist/
 /libsignal/target/
 /sql/dist/

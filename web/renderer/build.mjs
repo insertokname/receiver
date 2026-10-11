@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //
 // Builds Desktop's main window for the browser into OUT_DIR (default
-// web/dist/app/, deployed at /receiver/app/):
+// web/dist/app/, deployed at the site's root, /receiver/):
 //
 //   index.html            from background.html, strict CSP, no inline script
 //   app.js, chunks/       the renderer bundle (entry.ts -> preload graph)
 //   transport/webtor_wasm_bg.wasm   the Tor transport (web/transport), for web/net
+//                         (the Tor directory snapshot is the site's transport/tor/)
 //   chunks/libsignal_node.wasm   next to libsignal's loader
 //   stylesheets/          Desktop's compiled SCSS + Tailwind (asset:/// -> ../)
 //   fonts/ images/ sounds/
@@ -18,18 +19,25 @@
 // locales) and web/sql/dist/; renderer/build.sh runs those generators and
 // sql/build.sh first.
 //
-// Usage: node renderer/build.mjs [--out DIR] [--no-minify] [--report FILE]
+// Usage: node renderer/build.mjs [--out DIR] [--no-minify] [--report FILE] [--e2e]
+//
+// --e2e builds the end-to-end test variant into web/dist/app-e2e/ (never
+// deployed): config pointing at Desktop's mock server (web/e2e/config.mjs),
+// the transport's test-relay build (transport/build.sh --test-relay) and
+// web/e2e/relay-carrier.ts in place of web/net/carrier.ts (Tor), with a CSP
+// that allows the local relay. The production build checks that none of
+// that is in its output.
 
 import { createHash } from 'node:crypto';
 import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { existsSync, readdirSync } from 'node:fs';
 import { execSync } from 'node:child_process';
-import { join, relative } from 'node:path';
+import { dirname, join, relative, resolve as resolvePath } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { build } from 'rolldown';
 
-import { netAssetsPlugin, TRANSPORT_WASM } from './net-assets.mjs';
+import { netAssetsPlugin, transportWasm } from './net-assets.mjs';
 import { webResolvePlugin, LIBSIGNAL_PACKAGE } from './resolve.mjs';
 
 const HERE = fileURLToPath(new URL('.', import.meta.url));
@@ -38,12 +46,14 @@ const REPO = join(WEB, '..');
 
 const { values: args } = parseArgs({
   options: {
-    out: { type: 'string', default: join(WEB, 'dist/app') },
+    out: { type: 'string' },
     'no-minify': { type: 'boolean', default: false },
     report: { type: 'string' },
+    e2e: { type: 'boolean', default: false },
   },
 });
-const OUT = args.out;
+const E2E = args.e2e;
+const OUT = args.out ?? join(WEB, E2E ? 'dist/app-e2e' : 'dist/app');
 const minify = !args['no-minify'];
 
 const readJson = async path => JSON.parse(await readFile(join(REPO, path), 'utf8'));
@@ -109,12 +119,30 @@ async function staticConfig() {
   };
 }
 
-const config = await staticConfig();
+// The end-to-end test variant: Desktop's mock server instead of Signal,
+// reached through the local test relay.
+const e2e = E2E ? await import('../e2e/config.mjs') : undefined;
+const TRANSPORT_DIR = join(WEB, E2E ? 'transport/dist-e2e' : 'transport/dist');
+const config = { ...(await staticConfig()), ...e2e?.mockServerConfig() };
+const E2E_CONFIG_ID = '\0web-e2e-config';
+const e2ePlugin = {
+  name: 'web-e2e',
+  resolveId(source, importer) {
+    if (source === 'virtual:web-e2e-config') return E2E_CONFIG_ID;
+    if (!importer || !source.startsWith('.') || importer.startsWith('\0')) return null;
+    const target = resolvePath(dirname(importer), source);
+    if (target === join(WEB, 'net/carrier.ts')) return join(WEB, 'e2e/relay-carrier.ts');
+    const prodTransport = join(WEB, 'transport/dist') + '/';
+    if (target.startsWith(prodTransport)) return join(TRANSPORT_DIR, target.slice(prodTransport.length));
+    return null;
+  },
+  load: id => (id === E2E_CONFIG_ID ? `export default ${JSON.stringify({ relayUrl: e2e.RELAY_URL })};` : null),
+};
 const STATIC_CONFIG_ID = '\0web-static-config';
 
 // The network layer (web/net): the transport's WebAssembly, fetched by the
 // page from app/transport/ and checked against its digest.
-const netAssets = await netAssetsPlugin();
+const netAssets = await netAssetsPlugin({ transportDir: TRANSPORT_DIR });
 
 const resolver = webResolvePlugin();
 const problems = [];
@@ -168,6 +196,7 @@ const bundle = await build({
   tsconfig: join(REPO, 'tsconfig.json'),
   transform,
   plugins: [
+    ...(E2E ? [e2ePlugin] : []),
     resolver.plugin,
     {
       name: 'web-static-config',
@@ -194,7 +223,7 @@ const wasmTarget = join(OUT, loaderChunk.fileName, '..', 'libsignal_node.wasm');
 await cp(join(LIBSIGNAL_PACKAGE, 'wasm/libsignal_node.wasm'), wasmTarget);
 
 await mkdir(join(OUT, 'transport'));
-await cp(TRANSPORT_WASM, join(OUT, netAssets.assets.transport.wasmUrl));
+await cp(transportWasm(TRANSPORT_DIR), join(OUT, netAssets.assets.transport.wasmUrl));
 
 // The SQL worker: its own bundle with its own fs, worker_threads and
 // @signalapp/sqlcipher (web/sql/). It fetches its WebAssembly modules
@@ -212,6 +241,7 @@ const sqlAssets = {
 const sqlResolver = webResolvePlugin({
   overrides: {
     fs: ['partial', join(WEB, 'sql/shims/fs.ts')],
+    'fs/promises': ['unavailable'],
     worker_threads: ['shim', join(WEB, 'sql/shims/worker-threads.ts')],
     '@signalapp/sqlcipher': ['real', join(WEB, 'sql/sqlcipher.ts')],
     sqlite3mc: ['real', join(SQL_DIST, 'sqlite3mc/sqlite3.mjs')],
@@ -242,7 +272,10 @@ if (problems.length) {
 }
 
 // Page and static assets.
-const html = await readFile(join(HERE, 'index.html'), 'utf8');
+let html = await readFile(join(HERE, 'index.html'), 'utf8');
+const PRODUCTION_CONNECT_SRC = "connect-src 'self' wss://snowflake.torproject.net https://snowflake-broker.torproject.net;";
+if (!html.includes(PRODUCTION_CONNECT_SRC)) throw new Error('index.html: connect-src changed, update build.mjs');
+if (E2E) html = html.replace(PRODUCTION_CONNECT_SRC, `connect-src 'self' ${new URL(e2e.RELAY_URL).origin.replace(/^http/, 'ws')};`);
 await writeFile(join(OUT, 'index.html'), html);
 await cp(join(HERE, 'favicon.svg'), join(OUT, 'favicon.svg'));
 
@@ -269,6 +302,29 @@ await mkdir(join(OUT, 'locales'));
 await cp(join(REPO, 'build/compact-locales'), join(OUT, 'locales'), { recursive: true });
 for (const name of ['available-locales.json', 'locale-display-names.json', 'country-display-names.json']) {
   await cp(join(REPO, 'build', name), join(OUT, 'locales', name));
+}
+
+// The production build must not contain the test carrier or anything that
+// could reach the test relay: no relay code in the JavaScript or in the
+// transport's WebAssembly (built without webtor's test-relay feature), and
+// the CSP's connect-src unchanged.
+if (!E2E) {
+  const markers = ['openRelay', 'relay-carrier', 'web-e2e-config', 'test relay', 'ws://127.0.0.1', 'ws://localhost'];
+  const found = [];
+  const scan = async dir => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) await scan(path);
+      else if (/\.(js|html|wasm)$/.test(entry.name)) {
+        const text = (await readFile(path)).toString('latin1');
+        for (const marker of markers) if (text.includes(marker)) found.push(`${relative(OUT, path)}: ${marker}`);
+      }
+    }
+  };
+  await scan(OUT);
+  if (!html.includes(PRODUCTION_CONNECT_SRC)) found.push('index.html: connect-src changed');
+  if (found.length) throw new Error(`production build contains test-only code:\n  ${found.join('\n  ')}`);
+  console.log(`production check: no test relay code (${markers.length} markers), connect-src unchanged`);
 }
 
 // Report.

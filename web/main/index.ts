@@ -6,6 +6,7 @@
 // the web build handles it.
 
 import { createConfig } from './config.ts';
+import { initFiles } from './files.ts';
 import { onSync, sendToRenderer } from './ipc.ts';
 import { loadLocale } from './locale.ts';
 import { installSettings } from './settings.ts';
@@ -23,7 +24,11 @@ export function onRendererLoaded(): void {
 }
 
 export async function startMain(): Promise<void> {
+  // The app's files (attachments, avatars, ...): Desktop's code asks
+  // synchronous questions about them, answered from the tree read here.
+  const files = initFiles();
   const locale = await loadLocale();
+  await files;
   const config = createConfig(locale);
 
   onSync('get-config', () => config);

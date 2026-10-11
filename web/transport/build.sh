@@ -10,11 +10,25 @@
 # wasm32-unknown-unknown target, wasm-pack, clang + llvm-ar that can target
 # wasm32 (for ring; override with CC_wasm32_unknown_unknown /
 # AR_wasm32_unknown_unknown), node.
+#
+# Usage: transport/build.sh [--test-relay]
+#   --test-relay builds the end-to-end test variant into dist-e2e/ instead:
+#   the same code plus webtor's `test-relay` feature (TLS carried by a
+#   WebSocket to a local relay in front of a mock server, see web/e2e/).
+#   Production builds never enable it.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$HERE/../.." && pwd)"
 OUT="$HERE/dist"
+FEATURES=()
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --test-relay) OUT="$HERE/dist-e2e"; FEATURES=(--features test-relay); shift ;;
+    *) echo "unknown argument: $1" >&2; exit 2 ;;
+  esac
+done
 
 if [ ! -f "$HERE/webtor-rs/Cargo.toml" ]; then
   echo "webtor-rs submodule missing: git submodule update --init web/transport/webtor-rs" >&2
@@ -24,7 +38,7 @@ fi
 rm -rf "$OUT"
 mkdir -p "$OUT"
 
-(cd "$HERE/webtor-rs/webtor-wasm" && wasm-pack build --target web --release --no-pack --out-dir "$OUT/pkg")
+(cd "$HERE/webtor-rs/webtor-wasm" && wasm-pack build --target web --release --no-pack --out-dir "$OUT/pkg" -- "${FEATURES[@]}")
 rm -f "$OUT/pkg/.gitignore"
 
 # shellcheck disable=SC2016 # JavaScript, not shell

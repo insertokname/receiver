@@ -15,12 +15,14 @@
     "build:site": "bash scripts/build-site.sh",
     "build": "bash transport/build.sh && bash libsignal/build.sh && bash renderer/build.sh && bash scripts/build-site.sh",
     "test:transport": "node transport-test/run.mjs",
-    "smoke": "node app/smoke.mjs",
+    "smoke": "node renderer/run.mjs",
     "test:libsignal": "node libsignal/test/node.mjs",
     "check:libsignal": "node libsignal/check/run.mjs",
     "check:app": "node renderer/run.mjs",
     "test:storage": "node sql/test/run.mjs",
-    "test:crypto-shim": "node renderer/test/crypto-shim.mjs"
+    "test:crypto-shim": "node renderer/test/crypto-shim.mjs",
+    "build:e2e": "bash transport/build.sh --test-relay && node renderer/build.mjs --e2e",
+    "test:e2e": "node e2e/run.mjs"
   },
   "devDependencies": {
     "@emnapi/core": "1.11.3",

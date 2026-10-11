@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //
 // Storage test in headless Chromium, on the built site (web/dist/site) at
-// the deployment's path (http://pages.example:8080/receiver/app/):
+// the deployment's path (http://pages.example:8080/receiver/, the app's):
 //
 //   (a) first start creates the database and runs all of Desktop's
 //       migrations (schema version, timings)
@@ -38,9 +38,9 @@ const BODY_MARKER = 'Zanzibarquokka';
 const SECRET_PATTERNS = [/\b[0-9a-f]{64}\b/i, /PRAGMA key/i];
 
 // The test page: same CSP as the app (read from the built page).
-const appHtml = await readFile(join(SITE_DIR, 'app/index.html'), 'utf8');
+const appHtml = await readFile(join(SITE_DIR, 'index.html'), 'utf8');
 const csp = appHtml.match(/<meta\s+http-equiv="Content-Security-Policy"[\s\S]*?\/>/)?.[0];
-if (!csp) throw new Error('app/index.html has no CSP meta tag');
+if (!csp) throw new Error('index.html has no CSP meta tag');
 
 const resolver = webResolvePlugin();
 const bundle = await build({
@@ -93,7 +93,7 @@ window.readKeyStore = () => new Promise((resolve, reject) => {
 });
 `;
 
-const app = `${BASE_PATH}app/`;
+const app = BASE_PATH;
 const server = await serveSite({
   extra: {
     [`${app}storage-test.html`]: [

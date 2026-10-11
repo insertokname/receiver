@@ -19,7 +19,7 @@ import type { RequestInfo, RequestInit, ResponseInit } from 'node-fetch';
 
 import { createLogger } from '../../ts/logging/log.std.ts';
 import { errorReason } from '../transport/dist/index.js';
-import { getTorCarrier } from './tor.ts';
+import { getCarrier } from './carrier.ts';
 
 export * from 'node-fetch';
 
@@ -70,7 +70,7 @@ export default async function fetch(input: RequestInfo, init: WebRequestInit = {
 
   let result;
   try {
-    result = await getTorCarrier().request(
+    result = await getCarrier().request(
       {
         method: (init.method ?? 'GET').toUpperCase(),
         url: url.href,

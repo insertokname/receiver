@@ -36,8 +36,9 @@ import {
   WebUnauthenticatedChatConnection,
 } from './connections.ts';
 import { notAvailable } from './errors.ts';
+import { getCarrier } from './carrier.ts';
 import type { Carrier } from './tor.ts';
-import { getTorCarrier } from './tor.ts';
+import { SIGNAL_CA_PEM } from './tor.ts';
 
 const log = createLogger('webnet');
 
@@ -48,8 +49,12 @@ const LIVENESS_CHECK_TIMEOUT_MS = 10_000;
 export type WebNetOptions = Readonly<{
   env: 'production' | 'staging';
   userAgent: string;
-  /** Where connections are carried; the app's Tor client by default. */
+  /** Where connections are carried; the app's carrier (Tor) by default. */
   carrier?: Carrier;
+  /** The chat server's host[:port]; Signal's for `env` by default. */
+  chatHost?: string;
+  /** The only root the chat server's TLS certificate may chain to; Signal's CA by default. */
+  rootPem?: string;
 }>;
 
 type Languages = { languages?: Array<string>; abortSignal?: AbortSignal };
@@ -58,14 +63,17 @@ export class WebNet {
   readonly options: WebNetOptions;
   readonly #carrier: Carrier;
   readonly #chatHost: string;
+  readonly #rootPem: string;
   readonly #sockets = new Set<ChatSocket>();
   #remoteConfig: ReadonlyMap<string, string> = new Map();
   #networkChangeTimer: ReturnType<typeof setTimeout> | undefined;
 
   constructor(options: WebNetOptions) {
     this.options = options;
-    this.#carrier = options.carrier ?? getTorCarrier();
-    this.#chatHost = options.env === 'staging' ? 'chat.staging.signal.org' : 'chat.signal.org';
+    this.#carrier = options.carrier ?? getCarrier();
+    this.#chatHost =
+      options.chatHost ?? (options.env === 'staging' ? 'chat.staging.signal.org' : 'chat.signal.org');
+    this.#rootPem = options.rootPem ?? SIGNAL_CA_PEM;
   }
 
   // Configuration.
@@ -132,6 +140,7 @@ export class WebNet {
     const languages = languageHeader(options?.languages);
     const connected = await connectChatSocket({
       carrier: this.#carrier,
+      rootPem: this.#rootPem,
       url: this.#url('/v1/websocket/'),
       headers: this.#headers(languages),
       operation,
@@ -174,6 +183,7 @@ export class WebNet {
     ];
     const connected = await connectChatSocket({
       carrier: this.#carrier,
+      rootPem: this.#rootPem,
       url: this.#url('/v1/websocket/'),
       headers: this.#headers(headers),
       operation,
@@ -211,6 +221,7 @@ export class WebNet {
     const operation = 'ProvisioningChatConnection_connect';
     const connected = await connectChatSocket({
       carrier: this.#carrier,
+      rootPem: this.#rootPem,
       url: this.#url('/v1/websocket/provisioning/'),
       headers: this.#headers([]),
       operation,

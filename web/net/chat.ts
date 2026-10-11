@@ -392,6 +392,10 @@ export class ChatSocket {
   }
 
   async disconnect(): Promise<void> {
+    // Disconnecting is asynchronous in libsignal: what the caller does in
+    // the same turn still goes out first (Desktop's provisioner disconnects
+    // from inside the envelope callback, then acks the envelope).
+    await Promise.resolve();
     if (this.#closed) return;
     this.#finish(null, false);
     await this.#connection.close(1000, 'Normal Closure').catch(() => undefined);
@@ -460,12 +464,14 @@ export type ConnectedSocket = Readonly<{
 /** Opens a chat WebSocket, with libsignal's error semantics. */
 export async function connectChatSocket({
   carrier,
+  rootPem,
   url,
   headers,
   operation,
   abortSignal,
 }: {
   carrier: Carrier;
+  rootPem: string;
   url: string;
   headers: HeaderPairs;
   operation: string;
@@ -476,6 +482,7 @@ export async function connectChatSocket({
     if (abortSignal?.aborted) throw cancelled(operation);
     try {
       const opened = await carrier.openSocket(url, {
+        rootPem,
         headers,
         timeoutMs: CONNECT_ATTEMPT_TIMEOUT_MS,
         signal: abortSignal,

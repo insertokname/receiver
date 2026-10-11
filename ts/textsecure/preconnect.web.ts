@@ -27,9 +27,13 @@ if (window.SignalContext.config?.serverUrl) {
   const env = isStagingServer(config.serverUrl) ? 'staging' : 'production';
   log.info(`web net environment: ${env}`);
 
+  // Like Desktop's libsignal Net: the chat server and its trust root come
+  // from the config (Signal's in production builds).
   libsignalNet = new WebNet({
     env,
     userAgent: getUserAgent(config.version),
+    chatHost: new URL(config.serverUrl).host,
+    rootPem: config.certificateAuthority,
   }) as unknown as Net.Net;
 
   drop(

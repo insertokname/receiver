@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //
-// Boots the web app (web/dist/site/app/) in headless Chromium and reports
+// Boots the web app (web/dist/site/, the site's root) in headless Chromium and reports
 // how far Desktop's startup gets.
 //
 //   node renderer/run.mjs                       serve web/dist/site under /receiver/
@@ -19,9 +19,7 @@
 //
 // Prints `qr-seconds: <n>` (page load to QR code) for the timing reports.
 
-import jsQR from 'jsqr';
-
-import { BASE_PATH, LOCAL_ORIGIN, launchBrowser, serveSite, watchPage } from '../scripts/harness.mjs';
+import { BASE_PATH, LOCAL_ORIGIN, decodeLinkQrCode, launchBrowser, serveSite, watchPage } from '../scripts/harness.mjs';
 
 const target = process.argv[2];
 const SETTLE_MS = Number(process.env.SETTLE_MS ?? 5000);
@@ -58,7 +56,7 @@ try {
     if (!r.url().startsWith('data:')) console.log(`  REQUESTFAILED ${r.url()} ${r.failure()?.errorText}`);
   });
 
-  const url = new URL('app/', target ?? `${LOCAL_ORIGIN}${BASE_PATH}`).href;
+  const url = new URL(target ?? `${LOCAL_ORIGIN}${BASE_PATH}`).href;
   console.log(`web app: ${url}`);
   const started = Date.now();
   const response = await page.goto(url, { waitUntil: 'domcontentloaded' });
@@ -80,7 +78,7 @@ try {
     )
     .catch(() => undefined);
   const qrSeconds = (Date.now() - started) / 1000;
-  const qr = await decodeQrCode(page);
+  const qr = await decodeLinkQrCode(page, EXPECTED_STOP);
   await new Promise(resolve => setTimeout(resolve, SETTLE_MS));
 
   const state = await page.evaluate(selector => {
@@ -158,61 +156,3 @@ if (!ok && process.env.GITHUB_ACTIONS) {
   console.log('::error title=web app boot failed::the web app did not show the link QR code');
 }
 process.exit(ok ? 0 : 1);
-
-/**
- * Draws the rendered QR code (an inline SVG) onto a canvas with a white quiet
- * zone, decodes it with jsQR and checks it is Desktop's link URL
- * (ts/util/signalRoutes.std.ts linkDeviceRoute, ts/textsecure/Provisioner).
- */
-async function decodeQrCode(page) {
-  const pixels = await page
-    .evaluate(async selector => {
-      const svg = document.querySelector(selector);
-      if (!svg) return null;
-      const img = new Image();
-      img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(new XMLSerializer().serializeToString(svg))}`;
-      await img.decode();
-      const size = 400;
-      const margin = 40;
-      const canvas = document.createElement('canvas');
-      canvas.width = size + 2 * margin;
-      canvas.height = size + 2 * margin;
-      const context = canvas.getContext('2d');
-      context.fillStyle = '#fff';
-      context.fillRect(0, 0, canvas.width, canvas.height);
-      context.imageSmoothingEnabled = false;
-      context.drawImage(img, margin, margin, size, size);
-      const { data, width, height } = context.getImageData(0, 0, canvas.width, canvas.height);
-      let binary = '';
-      for (let i = 0; i < data.length; i += 0x8000) binary += String.fromCharCode(...data.subarray(i, i + 0x8000));
-      return { data: btoa(binary), width, height };
-    }, EXPECTED_STOP)
-    .catch(error => ({ error: error.message }));
-  if (!pixels) return { ok: false, reason: 'not rendered' };
-  if (pixels.error) return { ok: false, reason: `could not read the image: ${pixels.error}` };
-  const decoded = jsQR(new Uint8ClampedArray(Buffer.from(pixels.data, 'base64')), pixels.width, pixels.height);
-  if (!decoded) return { ok: false, reason: 'jsQR could not decode it' };
-  let url;
-  try {
-    url = new URL(decoded.data);
-  } catch {
-    return { ok: false, reason: 'not a URL' };
-  }
-  const uuid = url.searchParams.get('uuid');
-  const pubKey = url.searchParams.get('pub_key');
-  const capabilities = url.searchParams.get('capabilities');
-  const key = pubKey ? Buffer.from(pubKey, 'base64') : Buffer.alloc(0);
-  const problems = [];
-  if (url.protocol !== 'sgnl:' || url.host !== 'linkdevice') problems.push(`unexpected URL ${url.protocol}//${url.host}`);
-  // The provisioning address the server pushed: an opaque base64 token.
-  if (!uuid || !/^[A-Za-z0-9+/_=-]{16,}$/.test(uuid)) {
-    problems.push(`missing or malformed uuid (provisioning address): ${uuid ? `${uuid.length} chars, ${uuid.replace(/[A-Za-z0-9]/g, '')}` : 'absent'}`);
-  }
-  if (key.length !== 33 || key[0] !== 0x05) problems.push(`pub_key is not a 33-byte Curve25519 public key (${key.length} bytes)`);
-  if (capabilities == null) problems.push('missing capabilities');
-  if (problems.length) return { ok: false, reason: problems.join('; ') };
-  return {
-    ok: true,
-    summary: `sgnl://linkdevice?uuid=<${uuid.length} chars>&pub_key=<33-byte key>&capabilities=${capabilities}`,
-  };
-}

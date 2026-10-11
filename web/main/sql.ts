@@ -23,6 +23,7 @@ import type {
   WrappedWorkerRequest,
   WrappedWorkerResponse,
 } from '../sql/protocol.ts';
+import { forgetPath, ROOT } from './files.ts';
 import { handle, sendToRenderer } from './ipc.ts';
 import { appendLogLine } from './logs.ts';
 import { clearStored } from './storage.ts';
@@ -253,9 +254,8 @@ async function wrapResult(fn: () => Promise<unknown>): Promise<Result> {
   }
 }
 
-// OPFS directories under /userData that hold files outside the database;
-// the web build does not store attachments yet (see .web-port notes), so
-// erasing them only removes what may exist.
+// OPFS directories under /userData that hold the app's files outside the
+// database (web/main/files.ts).
 async function removeUserDataDirectory(name: string): Promise<void> {
   let userData: FileSystemDirectoryHandle;
   try {
@@ -269,6 +269,8 @@ async function removeUserDataDirectory(name: string): Promise<void> {
     if (!(error instanceof DOMException && error.name === 'NotFoundError')) {
       throw error;
     }
+  } finally {
+    forgetPath(`${ROOT}/${name}`);
   }
 }
 
@@ -333,8 +335,8 @@ export function installSql({
   handle('erase-temp', () => removeUserDataDirectory('temp'));
   handle('erase-drafts', () => removeUserDataDirectory('drafts.noindex'));
   handle('erase-downloads', () => removeUserDataDirectory('downloads.noindex'));
-  // Nothing to clean or chmod: no attachment files yet, and OPFS has no
-  // permissions.
+  // OPFS has no permissions. Orphaned attachment files are not cleaned up
+  // yet (Desktop's cleanup runs in its main process).
   handle('cleanup-orphaned-attachments', () => undefined);
   handle('ensure-file-permissions', () => undefined);
 

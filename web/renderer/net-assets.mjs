@@ -14,21 +14,23 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const WEB = fileURLToPath(new URL('..', import.meta.url));
-export const TRANSPORT_WASM = join(WEB, 'transport/dist/pkg/webtor_wasm_bg.wasm');
+export const transportWasm = (transportDir = join(WEB, 'transport/dist')) => join(transportDir, 'pkg/webtor_wasm_bg.wasm');
 
 const ID = '\0web-net-assets';
 
 /**
- * `wasmUrl` and `torDirectory` are relative to the page. The app copies the
- * WebAssembly to app/transport/; build-site.sh puts the snapshot at the
- * site's transport/tor/.
+ * `wasmUrl` and `torDirectory` are relative to the page (the app, at the
+ * site's root). The app copies the WebAssembly to transport/; build-site.sh
+ * puts the snapshot at the site's transport/tor/.
  */
 export async function netAssetsPlugin({
   wasmUrl = 'transport/webtor_wasm_bg.wasm',
-  torDirectory = '../transport/tor',
+  torDirectory = 'transport/tor',
+  transportDir,
 } = {}) {
-  if (!existsSync(TRANSPORT_WASM)) {
-    throw new Error('transport not built: run web/transport/build.sh first');
+  const wasm = transportWasm(transportDir);
+  if (!existsSync(wasm)) {
+    throw new Error(`transport not built: run web/transport/build.sh first (${wasm} missing)`);
   }
   await mkdir(join(WEB, 'net/generated'), { recursive: true });
   execFileSync(
@@ -42,7 +44,7 @@ export async function netAssetsPlugin({
     ],
     { stdio: 'inherit' }
   );
-  const integrity = `sha384-${createHash('sha384').update(await readFile(TRANSPORT_WASM)).digest('base64')}`;
+  const integrity = `sha384-${createHash('sha384').update(await readFile(wasm)).digest('base64')}`;
   const assets = { transport: { wasmUrl, integrity }, torDirectory };
   return {
     assets,

@@ -6,8 +6,9 @@
 // only: Node's incremental update()/final() interface over those one-shot
 // primitives. No cryptographic algorithm is implemented here.
 //
-// Differences from Node: Hash/Hmac/Cipher objects are not streams (use
-// update/digest/final), and AES-GCM returns all output from final() (Node
+// Hash, Hmac, Cipheriv and Decipheriv are also Transform streams, as in
+// Node (attachments are encrypted and hashed by piping through them).
+// Difference from Node: AES-GCM returns all output from final() (Node
 // returns it incrementally from update()).
 
 import { Buffer } from 'buffer';
@@ -16,6 +17,8 @@ import { equalBytes } from '@noble/ciphers/utils.js';
 import { hmac } from '@noble/hashes/hmac.js';
 import { md5, sha1 } from '@noble/hashes/legacy.js';
 import { sha224, sha256, sha384, sha512 } from '@noble/hashes/sha2.js';
+import { Transform } from 'node:stream';
+import type { TransformCallback } from 'node:stream';
 
 import { unavailable } from './unavailable.ts';
 
@@ -122,13 +125,34 @@ type IncrementalHash = {
   digest(): Uint8Array;
 };
 
-class HashBase {
+class HashBase extends Transform {
   readonly #state: IncrementalHash;
 
   #done = false;
 
   constructor(state: IncrementalHash) {
+    super();
     this.#state = state;
+  }
+
+  override _transform(chunk: Uint8Array, _encoding: BufferEncoding, callback: TransformCallback): void {
+    try {
+      this.update(chunk);
+    } catch (error) {
+      callback(error as Error);
+      return;
+    }
+    callback();
+  }
+
+  override _flush(callback: TransformCallback): void {
+    try {
+      this.push(this.digest());
+    } catch (error) {
+      callback(error as Error);
+      return;
+    }
+    callback();
   }
 
   update(data: BinaryLike, encoding?: Encoding): this {
@@ -207,7 +231,7 @@ function parseAlgorithm(algorithm: string, key: Uint8Array): Mode {
   return match[2] as Mode;
 }
 
-class CipherBase {
+class CipherBase extends Transform {
   readonly #mode: Mode;
   readonly #encrypt: boolean;
   readonly #key: Uint8Array;
@@ -219,6 +243,7 @@ class CipherBase {
   #finished = false;
 
   constructor(encrypt: boolean, algorithm: string, key: BinaryLike, iv: BinaryLike) {
+    super();
     this.#encrypt = encrypt;
     this.#key = Uint8Array.from(toBytes(key));
     this.#iv = Uint8Array.from(toBytes(iv));
@@ -258,6 +283,30 @@ class CipherBase {
     const rest = this.#pending;
     this.#pending = new Uint8Array(0);
     return output(this.#process(rest, true), outputEncoding);
+  }
+
+  override _transform(chunk: Uint8Array, _encoding: BufferEncoding, callback: TransformCallback): void {
+    let out: Buffer;
+    try {
+      out = this.update(chunk);
+    } catch (error) {
+      callback(error as Error);
+      return;
+    }
+    if (out.length > 0) this.push(out);
+    callback();
+  }
+
+  override _flush(callback: TransformCallback): void {
+    let out: Buffer;
+    try {
+      out = this.final();
+    } catch (error) {
+      callback(error as Error);
+      return;
+    }
+    if (out.length > 0) this.push(out);
+    callback();
   }
 
   setAutoPadding(autoPadding = true): this {

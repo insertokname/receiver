@@ -1,0 +1,13 @@
+diff --git a/lib/binding.js b/lib/binding.js
+index e0578b3addf5e8ed7dcd5c1ee2e096387bf48370..fe89662e81a1686a1cd94ec197c02b6d4e80d078 100644
+--- a/lib/binding.js
++++ b/lib/binding.js
+@@ -214,7 +214,7 @@ Zlib.prototype._process = function () {
+           this.err = exports.Z_NEED_DICT;
+         }
+       }
+-      while (this.strm.avail_in > 0 && this.mode === exports.GUNZIP && this.err === exports.Z_STREAM_END && this.strm.next_in[0] !== 0x00) {
++      while (this.strm.avail_in > 0 && this.mode === exports.GUNZIP && this.err === exports.Z_STREAM_END && this.strm.input[this.strm.next_in] !== 0x00) {
+         // Bytes remain in input buffer. Perhaps this is another compressed
+         // member in the same archive, or just trailing garbage.
+         // Trailing zero bytes are okay, though, since they are frequently

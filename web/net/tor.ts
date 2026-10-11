@@ -78,13 +78,18 @@ export type CarrierStatus = Readonly<{
   detail?: string;
 }>;
 
+export type OpenSocketOptions = Readonly<{
+  rootPem: string;
+  headers: HeaderPairs;
+  timeoutMs: number;
+  signal?: AbortSignal;
+}>;
+
 export interface Carrier {
   /** Resolves once the carrier can open connections. */
   ready(signal?: AbortSignal): Promise<void>;
-  openSocket(
-    url: string,
-    options: { headers: HeaderPairs; timeoutMs: number; signal?: AbortSignal }
-  ): Promise<OpenedSocket>;
+  /** Opens a WebSocket whose TLS trusts only `rootPem`. */
+  openSocket(url: string, options: OpenSocketOptions): Promise<OpenedSocket>;
   request(request: HttpsRequest, signal?: AbortSignal): Promise<HttpsResponse>;
   /** A connection on this carrier stalled or failed in transit. */
   reportStall(session: number): void;
@@ -298,16 +303,9 @@ class TorCarrier implements Carrier {
     if (!this.#session) this.start();
   }
 
-  async openSocket(
-    url: string,
-    {
-      headers,
-      timeoutMs,
-      signal,
-    }: { headers: HeaderPairs; timeoutMs: number; signal?: AbortSignal }
-  ): Promise<OpenedSocket> {
+  async openSocket(url: string, { rootPem, headers, timeoutMs, signal }: OpenSocketOptions): Promise<OpenedSocket> {
     const session = await this.#current(signal);
-    const opening = openSignalSocket(session.client, url, { headers, timeoutMs });
+    const opening = openSignalSocket(session.client, url, { rootPem, headers, timeoutMs });
     try {
       const connection = await waitFor(opening, signal);
       this.#succeeded();

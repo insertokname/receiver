@@ -5,6 +5,8 @@
 // Desktop uses, fed in randomly sized chunks. Run: node renderer/test/crypto-shim.mjs
 
 import * as node from 'node:crypto';
+import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import * as shim from '../shims/node/crypto.ts';
 
 let checks = 0;
@@ -69,6 +71,24 @@ for (const size of [0, 1, 15, 16, 17, 31, 32, 33, 1000, 4096, 65537]) {
   }
   if (!rejected) throw new Error('gcm accepted a bad tag');
   checks += 1;
+}
+// As streams (Desktop pipes attachments through ciphers and hashes).
+async function viaStream(transform, data) {
+  const out = [];
+  await pipeline(Readable.from(chunks(data)), transform, async function* (source) {
+    for await (const chunk of source) out.push(Buffer.from(chunk));
+  });
+  return Buffer.concat(out);
+}
+for (const size of [0, 17, 4096, 100_001]) {
+  const data = node.randomBytes(size);
+  const key = node.randomBytes(32);
+  const iv = node.randomBytes(16);
+  const enc = await viaStream(shim.createCipheriv('aes-256-cbc', key, iv), data);
+  eq(enc, run(node, i => i.createCipheriv('aes-256-cbc', key, iv), data).out, `cbc stream enc ${size}`);
+  eq(await viaStream(shim.createDecipheriv('aes-256-cbc', key, iv), enc), data, `cbc stream dec ${size}`);
+  eq(await viaStream(shim.createHash('sha256'), data), node.createHash('sha256').update(data).digest(), `sha256 stream ${size}`);
+  eq(await viaStream(shim.createHmac('sha256', key), data), node.createHmac('sha256', key).update(data).digest(), `hmac stream ${size}`);
 }
 let badPad = false;
 try {

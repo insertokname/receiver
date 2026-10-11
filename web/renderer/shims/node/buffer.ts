@@ -11,6 +11,13 @@ const base = bufferModule as typeof bufferModule & {
 };
 
 export const { Buffer, SlowBuffer, INSPECT_MAX_BYTES, kMaxLength } = base;
+
+// Node's lower-case aliases the package has for the other methods but not
+// for the 64-bit ones.
+const proto = Buffer.prototype as unknown as Record<string, unknown>;
+for (const name of ['readBigUInt64BE', 'readBigUInt64LE', 'writeBigUInt64BE', 'writeBigUInt64LE']) {
+  proto[name.replace('UInt', 'Uint')] ??= proto[name];
+}
 export const kStringMaxLength = 2 ** 29 - 24; // V8's limit
 export const constants = {
   MAX_LENGTH: kMaxLength,

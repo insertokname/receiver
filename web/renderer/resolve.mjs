@@ -44,6 +44,9 @@ const BUILTINS = {
   crypto: ['shim', join(SHIMS, 'node/crypto.ts')],
   diagnostics_channel: ['shim', join(SHIMS, 'node/diagnostics-channel.ts')],
   events: ['polyfill', pkgMain('events')],
+  // The app's files in the origin private file system (web/main/files.ts).
+  fs: ['partial', join(SHIMS, 'node/fs.ts')],
+  'fs/promises': ['partial', join(SHIMS, 'node/fs-promises.ts')],
   http: ['partial', join(SHIMS, 'node/http.ts')],
   os: ['shim', join(SHIMS, 'node/os.ts')],
   path: ['polyfill', pkgMain('path-browserify')],
@@ -62,9 +65,8 @@ const BUILTINS = {
   zlib: ['polyfill', pkgMain('browserify-zlib')],
 };
 
-// Builtins whose every export throws when used. Storage (fs) comes with the
-// OPFS layer, networking with the Tor transport; the rest has no browser
-// equivalent.
+// Builtins whose every export throws when used. Networking goes through the
+// Tor transport; the rest has no browser equivalent.
 const UNAVAILABLE_BUILTINS = [
   'child_process',
   'cluster',
@@ -72,8 +74,6 @@ const UNAVAILABLE_BUILTINS = [
   'dgram',
   'dns',
   'dns/promises',
-  'fs',
-  'fs/promises',
   'http2',
   'https',
   'inspector',
@@ -118,7 +118,8 @@ const PARTIAL_PREFIX = '\0web-partial:';
  * builtins (without `node:`) or packages to [kind, target] for one bundle
  * (the SQL worker has its own fs, worker_threads and sqlcipher). Kind
  * 'partial' is a builtin shim that implements some functions: every other
- * export of the Node module throws "not available".
+ * export of the Node module throws "not available". Kind 'unavailable'
+ * (no target) makes every export throw.
  * @param {{ overrides?: Record<string, [string, string]> }} [options]
  * @returns {{ plugin: import('rolldown').Plugin, used: Map<string, string>, siblings: Set<string> }}
  */
@@ -141,6 +142,10 @@ export function webResolvePlugin({ overrides = {} } = {}) {
 
         if (Object.hasOwn(overrides, bare)) {
           const [kind, target] = overrides[bare];
+          if (kind === 'unavailable') {
+            note(bare, 'stub', 'throws "not available in the web build"');
+            return UNAVAILABLE_PREFIX + bare;
+          }
           note(bare, kind, target);
           return kind === 'partial' ? `${PARTIAL_PREFIX}${bare}:${target}` : target;
         }
