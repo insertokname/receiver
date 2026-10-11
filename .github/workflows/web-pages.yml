@@ -24,17 +24,111 @@ concurrency:
 env:
   WASM_PACK_VERSION: 0.15.0
   WASM_PACK_SHA256: c09f971ecaed9a2efc80fdcea7a00ef6b53c7fadc8c57d1f61b53a6aa66b668a
+  BINARYEN_VERSION: '132'
+  BINARYEN_SHA256: 195ddc94f9bc89f45abdabb0b9eea86023d727ba90eac8b35b80f2544fc30572
   LIVE_URL: https://insertokname.github.io/receiver/
 
 jobs:
-  build:
+  # libsignal (web/libsignal/libsignal) compiled to WebAssembly, plus
+  # libsignal's own TypeScript tests against it. The output only depends on
+  # the submodule revision and the build files, so it is cached as a whole
+  # and the daily runs don't rebuild it.
+  libsignal:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          submodules: true
           persist-credentials: false
+
+      - name: Fetch the libsignal submodule
+        run: git submodule update --init --depth 1 web/libsignal/libsignal
+
+      - id: libsignal-rev
+        run: echo "rev=$(git -C web/libsignal/libsignal rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - id: libsignal-dist
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: web/libsignal/dist/package
+          key: libsignal-dist-${{ runner.os }}-binaryen${{ env.BINARYEN_VERSION }}-${{ steps.libsignal-rev.outputs.rev }}-${{ hashFiles('web/libsignal/build.sh', 'web/libsignal/loader.js', 'web/libsignal/loader.d.ts', 'web/libsignal/tsconfig.json', 'web/pnpm-lock.yaml') }}
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          package_json_file: web/package.json
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      - name: Install web dependencies
+        working-directory: web
+        run: pnpm install --frozen-lockfile
+
+      - name: Install the Rust toolchain pinned by libsignal
+        if: steps.libsignal-dist.outputs.cache-hit != 'true'
+        working-directory: web/libsignal/libsignal
+        run: |
+          rustup toolchain install "$(cat rust-toolchain)" --profile minimal \
+            --target wasm32-wasip1 --component rust-src
+          rustc --version
+
+      - name: Install protoc and binaryen ${{ env.BINARYEN_VERSION }}
+        if: steps.libsignal-dist.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends protobuf-compiler
+          name="binaryen-version_${BINARYEN_VERSION}"
+          curl -sSfL -o "$RUNNER_TEMP/$name.tar.gz" \
+            "https://github.com/WebAssembly/binaryen/releases/download/version_${BINARYEN_VERSION}/$name-x86_64-linux.tar.gz"
+          echo "$BINARYEN_SHA256  $RUNNER_TEMP/$name.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/$name.tar.gz" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/$name/bin" >> "$GITHUB_PATH"
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: steps.libsignal-dist.outputs.cache-hit != 'true'
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+          key: libsignal-cargo-${{ runner.os }}-${{ hashFiles('web/libsignal/libsignal/Cargo.lock') }}
+          restore-keys: |
+            libsignal-cargo-${{ runner.os }}-
+
+      - name: Build libsignal (WebAssembly + TypeScript package)
+        if: steps.libsignal-dist.outputs.cache-hit != 'true'
+        run: bash web/libsignal/build.sh
+
+      - name: libsignal's TypeScript tests against the WebAssembly build
+        run: node web/libsignal/test/node.mjs
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: libsignal-package
+          path: |
+            web/libsignal/dist/package
+            !web/libsignal/dist/package/ts
+            !web/libsignal/dist/package/dist/test
+          retention-days: 1
+          if-no-files-found: error
+
+  build:
+    needs: libsignal
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Fetch the transport submodule
+        run: git submodule update --init --depth 1 web/transport/webtor-rs
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: libsignal-package
+          path: web/libsignal/dist/package
 
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
@@ -112,6 +206,9 @@ jobs:
       - name: Transport checks, local (Snowflake WebSocket)
         run: node web/transport-test/run.mjs 'suites=ws'
 
+      - name: libsignal checks, local (WebAssembly under the site's CSP)
+        run: node web/libsignal/check/run.mjs
+
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: web/dist/site
@@ -157,3 +254,6 @@ jobs:
 
       - name: Smoke test, live site
         run: node web/app/smoke.mjs "$LIVE_URL"
+
+      - name: libsignal checks, live site
+        run: node web/libsignal/check/run.mjs "$LIVE_URL"

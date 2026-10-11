@@ -1,3 +1,5 @@
 node_modules/
 /dist/
 /transport/dist/
+/libsignal/dist/
+/libsignal/target/

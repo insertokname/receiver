@@ -1,7 +1,7 @@
 {
   "name": "receiver-web",
   "private": true,
-  "description": "Static web build of receiver: Tor transport, site and browser tests",
+  "description": "Static web build of receiver: Tor transport, libsignal (WebAssembly), site and browser tests",
   "license": "AGPL-3.0-only",
   "type": "module",
   "packageManager": "pnpm@11.25.0",
@@ -10,13 +10,37 @@
   },
   "scripts": {
     "build:transport": "bash transport/build.sh",
+    "build:libsignal": "bash libsignal/build.sh",
     "build:site": "bash scripts/build-site.sh",
-    "build": "bash transport/build.sh && bash scripts/build-site.sh",
+    "build": "bash transport/build.sh && bash libsignal/build.sh && bash scripts/build-site.sh",
     "test:transport": "node transport-test/run.mjs",
-    "smoke": "node app/smoke.mjs"
+    "smoke": "node app/smoke.mjs",
+    "test:libsignal": "node libsignal/test/node.mjs",
+    "check:libsignal": "node libsignal/check/run.mjs"
   },
   "devDependencies": {
+    "@emnapi/core": "1.11.3",
+    "@emnapi/runtime": "1.11.3",
     "@indutny/protopiler": "4.0.2",
-    "puppeteer-core": "25.12.0"
+    "@tybys/wasm-util": "0.10.4",
+    "@types/chai": "5.2.3",
+    "@types/chai-as-promised": "8.0.2",
+    "@types/chance": "1.1.6",
+    "@types/mocha": "10.0.10",
+    "@types/node": "24.12.0",
+    "@types/sinon": "17.0.4",
+    "@types/sinon-chai": "4.0.0",
+    "buffer": "6.0.3",
+    "chai": "6.0.1",
+    "chai-as-promised": "8.0.2",
+    "chance": "1.1.13",
+    "mocha": "12.0.3",
+    "protobufjs": "7.5.3",
+    "puppeteer-core": "25.12.0",
+    "rolldown": "1.0.1",
+    "sinon": "21.0.0",
+    "sinon-chai": "4.0.1",
+    "type-fest": "4.41.0",
+    "typescript": "6.0.3"
   }
 }

@@ -3,3 +3,8 @@
 	url = https://github.com/insertokname/webtor-rs.git
 	branch = signal-web-transport
 	shallow = true
+[submodule "web/libsignal/libsignal"]
+	path = web/libsignal/libsignal
+	url = https://github.com/insertokname/libsignal.git
+	branch = web-wasm
+	shallow = true

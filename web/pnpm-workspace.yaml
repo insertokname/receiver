@@ -8,3 +8,7 @@ minimumReleaseAge: 4320
 minimumReleaseAgeStrict: true
 trustPolicy: no-downgrade
 strictDepBuilds: true
+allowBuilds:
+  'protobufjs': false # postinstall only checks its CLI deps; not needed for tests
+patchedDependencies:
+  '@emnapi/runtime@1.11.3': patches/@emnapi__runtime@1.11.3.patch

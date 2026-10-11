@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en" data-state="loading">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>receiver: libsignal checks</title>
+<link rel="icon" href="../favicon.svg">
+<link rel="stylesheet" href="../app.css">
+<script type="module" src="./check.js"></script>
+</head>
+<body>
+<main>
+  <h1>libsignal checks</h1>
+  <p class="lede">Loads libsignal (compiled to WebAssembly) in this tab and runs it on made-up keys: a post-quantum session between two in-memory users with messages both ways, a sealed-sender message, and zkgroup encryption. Nothing leaves the page.</p>
+  <pre id="out" class="events"></pre>
+  <footer><a href="../">receiver</a> · <a href="https://github.com/insertokname/receiver">source code (AGPL-3.0)</a></footer>
+</main>
+</body>
+</html>

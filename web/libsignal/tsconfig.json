@@ -1,0 +1,11 @@
+{
+  "extends": "./libsignal/node/tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "./libsignal/node/ts",
+    "outDir": "./dist/package/dist",
+    "sourceMap": false,
+    "types": ["mocha", "node"]
+  },
+  "include": ["./libsignal/node/ts/**/*.ts"],
+  "exclude": ["./libsignal/node/ts/test/ChatTest.ts"]
+}
