@@ -33,17 +33,6 @@ export function h(
   return element;
 }
 
-/** The "unofficial client" notice with a link to the source (AGPL). */
-export function notice(): HTMLElement {
-  return h(
-    'p',
-    {},
-    'receiver is an unofficial client, not affiliated with Signal. ',
-    h('a', { href: SOURCE_URL, target: '_blank', rel: 'noopener noreferrer' }, 'Source code'),
-    ' (AGPL-3.0).'
-  );
-}
-
 export type ScreenButton = Readonly<{
   label: string;
   kind?: 'primary' | 'secondary' | 'danger';
@@ -86,8 +75,7 @@ export function showScreen({ id, title, text, buttons = [] }: ScreenOptions): ()
     h('div', { class: 'web-shell-screen__logo', 'aria-hidden': 'true' }),
     h('h1', { class: 'web-shell-screen__title' }, title),
     ...text.map(paragraph => h('p', { class: 'web-shell-screen__text' }, paragraph)),
-    buttonElements.length ? h('div', { class: 'web-shell-screen__buttons' }, ...buttonElements) : null,
-    h('div', { class: 'web-shell-screen__footer' }, notice())
+    buttonElements.length ? h('div', { class: 'web-shell-screen__buttons' }, ...buttonElements) : null
   );
   document.body.append(screen);
   currentScreen = screen;

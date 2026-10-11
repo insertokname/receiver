@@ -1,13 +1,13 @@
 {
   "name": "receiver",
   "short_name": "receiver",
-  "description": "Unofficial Signal client for the browser: links to your phone like Signal Desktop, connects through Tor. Not affiliated with Signal.",
+  "description": "A fork of Signal Desktop that runs in the browser: links to your phone like Signal Desktop and connects through Tor.",
   "id": "./",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#0d7c66",
+  "theme_color": "#ffffff",
   "icons": [
     { "src": "brand/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "brand/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },

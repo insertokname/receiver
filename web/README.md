@@ -268,8 +268,9 @@ WhatsApp Web:
   focused, like Desktop.
 - **Branding**: receiver's logo replaces Signal's in the splash screen, link
   screen and empty inbox (`renderer/brand/`, copied over `images/signal-logo*.svg`
-  at build time); the title is "receiver"; the link screen and the shell's
-  screens say that receiver is unofficial and link to the source (AGPL).
+  at build time), and in the centre of the link QR code
+  (`ts/components/BrandedQRCode.web.tsx`); the title is "receiver". Colours
+  are Desktop's own.
 - **Device name**: the phone lists the linked device as "receiver
   (Chrome, Linux)", "receiver (Safari, iOS)", ... (`shell/device-name.ts`,
   from client hints or the user agent), through `ts/util/os/osMain.web.ts`

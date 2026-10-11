@@ -16,10 +16,9 @@
 //   app explains that and goes to the link screen, instead of looking like
 //   a first start.
 //
-// Plus the "unofficial client" notice under the link screen.
 
 import { getStored, setStored } from '../main/storage.ts';
-import { desktopView, everySecond, h, notice, showScreen } from './ui.ts';
+import { desktopView, everySecond, h, showScreen } from './ui.ts';
 
 const LINKED_KEY = 'linked';
 
@@ -149,7 +148,10 @@ export function installStorageGuards(): void {
         'Safari deletes website data after 7 days without use. To keep your messages, add receiver to your Dock (File > Add to Dock) or Home Screen (Share > Add to Home Screen) and use it from there.'
       );
     }
-    footer = h('div', { class: 'web-shell web-shell-footer', 'data-web-footer': '' }, hint, notice());
+    if (!hint) {
+      return;
+    }
+    footer = h('div', { class: 'web-shell web-shell-footer', 'data-web-footer': '' }, hint);
     document.body.append(footer);
   });
 }

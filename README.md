@@ -7,8 +7,7 @@ Open https://insertokname.github.io/receiver/, scan the code with Signal on
 your phone, and message from any computer, like WhatsApp Web. Nothing to
 install, no account besides your Signal account.
 
-It is an unofficial fork of [Signal Desktop](https://github.com/signalapp/Signal-Desktop),
-not affiliated with or endorsed by Signal Messenger.
+It is a fork of [Signal Desktop](https://github.com/signalapp/Signal-Desktop).
 
 ## How it works
 
@@ -69,8 +68,6 @@ not affiliated with or endorsed by Signal Messenger.
 - Connecting through Tor takes a few seconds (up to a minute on networks
   that block the WebSocket bridge) and adds latency. Signal can rate-limit
   or block Tor exit addresses.
-- **Unofficial.** Signal does not support it; it uses Signal's service as a
-  linked device. Don't contact Signal's support about it.
 - Tested with Chromium; Firefox and Safari are not tested yet.
 
 ### The web delivery trust model
@@ -161,9 +158,6 @@ Signal Messenger, LLC, licensed under the GNU AGPLv3
 (https://www.gnu.org/licenses/agpl-3.0.html). receiver's changes are under
 the same license. As the AGPL requires for software used over a network,
 the app links to this source code.
-
-"Signal" is a trademark of Signal Messenger, LLC; receiver uses the name only
-to refer to the Signal service and apps it works with.
 
 ### Cryptography notice
 
