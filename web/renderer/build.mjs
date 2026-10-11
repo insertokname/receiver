@@ -3,15 +3,16 @@
 // Builds Desktop's main window for the browser into OUT_DIR (default
 // web/dist/app/, deployed at the site's root, /receiver/):
 //
-//   index.html            from background.html, strict CSP, no inline script
+//   index.html            from background.html, strict CSP, Subresource Integrity
+//                         for its scripts, stylesheets and modules (import map)
 //   app.js, chunks/       the renderer bundle (entry.ts -> preload graph)
 //   transport/webtor_wasm_bg.wasm   the Tor transport (web/transport), for web/net
 //                         (the Tor directory snapshot is the site's transport/tor/)
-//   chunks/libsignal_node.wasm   next to libsignal's loader
+//   libsignal_node.wasm   next to libsignal's loader (in app.js)
 //   stylesheets/          Desktop's compiled SCSS + Tailwind (asset:/// -> ../)
 //   fonts/ images/ sounds/
 //   locales/              compact locale messages + display names
-//   sql/worker.js, sql/chunks/   the SQL worker (web/sql/: Desktop's
+//   sql/worker.js         the SQL worker (web/sql/: Desktop's
 //                         ts/sql/Server.node.ts on SQLite3 Multiple Ciphers)
 //   sql/sqlite3.wasm, sql/signal_tokenizer.wasm
 //
@@ -32,11 +33,12 @@ import { createHash } from 'node:crypto';
 import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { existsSync, readdirSync } from 'node:fs';
 import { execSync } from 'node:child_process';
-import { dirname, join, relative, resolve as resolvePath } from 'node:path';
+import { dirname, join, relative, resolve as resolvePath, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { build } from 'rolldown';
 
+import { addIntegrity } from '../scripts/sri.mjs';
 import { buildServiceWorker } from '../sw/build.mjs';
 import { netAssetsPlugin, transportWasm } from './net-assets.mjs';
 import { webResolvePlugin, LIBSIGNAL_PACKAGE } from './resolve.mjs';
@@ -190,6 +192,83 @@ const output = {
   comments: { legal: false },
 };
 
+// Where the page bundle puts libsignal's WebAssembly: next to its loader,
+// which is in app.js (checked after the page bundle).
+const LIBSIGNAL_WASM_TARGET = join(OUT, 'libsignal_node.wasm');
+
+// The SQL worker: its own bundle with its own fs, worker_threads and
+// @signalapp/sqlcipher (web/sql/), one file (the page checks its digest
+// before starting it; a worker's imports cannot carry integrity). It fetches
+// its WebAssembly modules (relative to itself) and checks them against these
+// digests. Built before the page, which needs the worker's digest.
+const SQL_DIST = join(WEB, 'sql/dist');
+const SQL_OUT = join(OUT, 'sql');
+const SQL_ASSETS_ID = '\0web-sql-assets';
+const sri = async path => `sha384-${createHash('sha384').update(await readFile(path)).digest('base64')}`;
+const sqlAssets = {
+  sqlite: { path: 'sqlite3.wasm', integrity: await sri(join(SQL_DIST, 'sqlite3mc/sqlite3.wasm')) },
+  tokenizer: { path: 'signal_tokenizer.wasm', integrity: await sri(join(SQL_DIST, 'signal_tokenizer.wasm')) },
+  // The page's copy (same URL, so the browser cache serves it).
+  libsignal: {
+    path: relative(SQL_OUT, LIBSIGNAL_WASM_TARGET),
+    integrity: await sri(join(LIBSIGNAL_PACKAGE, 'wasm/libsignal_node.wasm')),
+  },
+};
+const sqlResolver = webResolvePlugin({
+  overrides: {
+    fs: ['partial', join(WEB, 'sql/shims/fs.ts')],
+    'fs/promises': ['unavailable'],
+    worker_threads: ['shim', join(WEB, 'sql/shims/worker-threads.ts')],
+    '@signalapp/sqlcipher': ['real', join(WEB, 'sql/sqlcipher.ts')],
+    sqlite3mc: ['real', join(SQL_DIST, 'sqlite3mc/sqlite3.mjs')],
+  },
+});
+await mkdir(SQL_OUT, { recursive: true });
+const sqlBundle = await build({
+  cwd: REPO,
+  input: { worker: join(WEB, 'sql/worker.ts') },
+  platform: 'browser',
+  tsconfig: join(REPO, 'tsconfig.json'),
+  transform,
+  plugins: [
+    sqlResolver.plugin,
+    {
+      name: 'web-sql-assets',
+      resolveId: id => (id === 'virtual:web-sql-assets' ? SQL_ASSETS_ID : null),
+      load: id => (id === SQL_ASSETS_ID ? `export default ${JSON.stringify(sqlAssets)};` : null),
+    },
+  ],
+  onLog,
+  output: { ...output, dir: SQL_OUT, codeSplitting: false },
+});
+if (sqlBundle.output.filter(o => o.type === 'chunk').length !== 1) throw new Error('the SQL worker must be one file');
+await cp(join(SQL_DIST, 'sqlite3mc/sqlite3.wasm'), join(SQL_OUT, 'sqlite3.wasm'));
+await cp(join(SQL_DIST, 'signal_tokenizer.wasm'), join(SQL_OUT, 'signal_tokenizer.wasm'));
+if (problems.length) {
+  for (const p of problems) console.error(`error: ${p.split('\n')[0]}`);
+  throw new Error(`${problems.length} unresolved imports or missing exports`);
+}
+
+// What the page itself fetches from the site besides modules, with SHA-384
+// digests it checks (fetch integrity): the SQL worker, before starting it,
+// and the locale files. WebAssembly digests are in web/net (transport) and
+// libsignal's loader.
+const localeFiles = {};
+for (const entry of readdirSync(join(REPO, 'build/compact-locales'), { recursive: true, withFileTypes: true })) {
+  if (!entry.isFile()) continue;
+  const path = join(entry.parentPath, entry.name);
+  localeFiles[relative(join(REPO, 'build/compact-locales'), path).split(sep).join('/')] = await sri(path);
+}
+for (const name of ['available-locales.json', 'locale-display-names.json', 'country-display-names.json']) {
+  localeFiles[name] = await sri(join(REPO, 'build', name));
+}
+const localAssets = {
+  sqlWorker: { path: 'sql/worker.js', integrity: await sri(join(SQL_OUT, 'worker.js')) },
+  locales: Object.fromEntries(Object.entries(localeFiles).sort(([a], [b]) => (a < b ? -1 : 1))),
+};
+const LOCAL_ASSETS_ID = '\0web-local-assets';
+
+
 const bundle = await build({
   cwd: REPO,
   input: { app: join(HERE, 'entry.ts') },
@@ -205,6 +284,11 @@ const bundle = await build({
       load: id => (id === STATIC_CONFIG_ID ? `export default ${JSON.stringify(config)};` : null),
     },
     netAssets.plugin,
+    {
+      name: 'web-local-assets',
+      resolveId: id => (id === 'virtual:web-local-assets' ? LOCAL_ASSETS_ID : null),
+      load: id => (id === LOCAL_ASSETS_ID ? `export default ${JSON.stringify(localAssets)};` : null),
+    },
   ],
   onLog,
   output: { ...output, dir: OUT },
@@ -221,50 +305,12 @@ const loaderChunk = bundle.output.find(
 );
 if (!loaderChunk) throw new Error('libsignal loader not found in the bundle');
 const wasmTarget = join(OUT, loaderChunk.fileName, '..', 'libsignal_node.wasm');
+if (wasmTarget !== LIBSIGNAL_WASM_TARGET) throw new Error(`libsignal's loader moved: ${loaderChunk.fileName}`);
 await cp(join(LIBSIGNAL_PACKAGE, 'wasm/libsignal_node.wasm'), wasmTarget);
 
 await mkdir(join(OUT, 'transport'));
 await cp(transportWasm(TRANSPORT_DIR), join(OUT, netAssets.assets.transport.wasmUrl));
 
-// The SQL worker: its own bundle with its own fs, worker_threads and
-// @signalapp/sqlcipher (web/sql/). It fetches its WebAssembly modules
-// (relative to itself) and checks them against these digests.
-const SQL_DIST = join(WEB, 'sql/dist');
-const SQL_OUT = join(OUT, 'sql');
-const SQL_ASSETS_ID = '\0web-sql-assets';
-const sri = async path => `sha384-${createHash('sha384').update(await readFile(path)).digest('base64')}`;
-const sqlAssets = {
-  sqlite: { path: 'sqlite3.wasm', integrity: await sri(join(SQL_DIST, 'sqlite3mc/sqlite3.wasm')) },
-  tokenizer: { path: 'signal_tokenizer.wasm', integrity: await sri(join(SQL_DIST, 'signal_tokenizer.wasm')) },
-  // The page's copy (same URL, so the browser cache serves it).
-  libsignal: { path: relative(SQL_OUT, wasmTarget), integrity: await sri(wasmTarget) },
-};
-const sqlResolver = webResolvePlugin({
-  overrides: {
-    fs: ['partial', join(WEB, 'sql/shims/fs.ts')],
-    'fs/promises': ['unavailable'],
-    worker_threads: ['shim', join(WEB, 'sql/shims/worker-threads.ts')],
-    '@signalapp/sqlcipher': ['real', join(WEB, 'sql/sqlcipher.ts')],
-    sqlite3mc: ['real', join(SQL_DIST, 'sqlite3mc/sqlite3.mjs')],
-  },
-});
-const sqlBundle = await build({
-  cwd: REPO,
-  input: { worker: join(WEB, 'sql/worker.ts') },
-  platform: 'browser',
-  tsconfig: join(REPO, 'tsconfig.json'),
-  transform,
-  plugins: [
-    sqlResolver.plugin,
-    {
-      name: 'web-sql-assets',
-      resolveId: id => (id === 'virtual:web-sql-assets' ? SQL_ASSETS_ID : null),
-      load: id => (id === SQL_ASSETS_ID ? `export default ${JSON.stringify(sqlAssets)};` : null),
-    },
-  ],
-  onLog,
-  output: { ...output, dir: SQL_OUT },
-});
 // The voice note recorder's MP3 encoder: an AudioWorklet module that
 // ts/services/audioRecorder.dom.ts loads from bundles/workers/mp3Encoder.js
 // (as rolldown.config.ts builds it for Desktop). LAME is compiled to plain
@@ -278,12 +324,6 @@ await build({
   onLog,
   output: { format: 'esm', file: join(OUT, 'bundles/workers/mp3Encoder.js'), minify, codeSplitting: false, generatedCode: { symbols: false } },
 });
-await cp(join(SQL_DIST, 'sqlite3mc/sqlite3.wasm'), join(SQL_OUT, 'sqlite3.wasm'));
-await cp(join(SQL_DIST, 'signal_tokenizer.wasm'), join(SQL_OUT, 'signal_tokenizer.wasm'));
-if (problems.length) {
-  for (const p of problems) console.error(`error: ${p.split('\n')[0]}`);
-  throw new Error(`${problems.length} unresolved imports or missing exports`);
-}
 
 // Page and static assets.
 let html = await readFile(join(HERE, 'index.html'), 'utf8');
@@ -354,6 +394,13 @@ if (!E2E) {
   if (found.length) throw new Error(`production build contains test-only code:\n  ${found.join('\n  ')}`);
   console.log(`production check: no test relay code (${markers.length} markers), connect-src unchanged`);
 }
+
+// Subresource Integrity for the page's scripts, stylesheets and modules
+// (scripts/sri.mjs), before the service worker records every file's digest.
+const sriModules = await addIntegrity(join(OUT, 'index.html'));
+const pageChunks = bundle.output.filter(o => o.type === 'chunk').length;
+if (sriModules < pageChunks) throw new Error(`import map covers ${sriModules} of ${pageChunks} chunks`);
+console.log(`integrity: index.html, ${sriModules} modules in its import map`);
 
 // The service worker, with the list of every file above (web/sw).
 const sw = await buildServiceWorker(OUT, { minify });

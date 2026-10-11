@@ -4,17 +4,37 @@
 // and exits non-zero if any check fails.
 //
 //   node transport-test/run.mjs [query]             e.g. 'suites=ws&only=basic,bulk'
+//   node transport-test/run.mjs 'only=directory'    Tor directory verification (no network)
 //   BLACKHOLE=snowflake.torproject.net node ...     make that host unreachable
 //
 // Needs: web/scripts/build-site.sh output, CHROMIUM=<browser executable>.
 
-import { BASE_PATH, LOCAL_ORIGIN, launchBrowser, pipePageOutput, serveSite, watchPage } from '../scripts/harness.mjs';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { brotliDecompressSync } from 'node:zlib';
+
+import { BASE_PATH, LOCAL_ORIGIN, SITE_DIR, launchBrowser, pipePageOutput, serveSite, watchPage } from '../scripts/harness.mjs';
 
 const query = process.argv[2] ?? 'suites=ws';
 const blackholeHosts = (process.env.BLACKHOLE ?? '').split(',').filter(Boolean);
 const timeoutMs = Number(process.env.TEST_TIMEOUT_SECS ?? 60 * 60) * 1000;
 
-const server = await serveSite();
+// For the directory checks (only=directory): the site's snapshot as plain
+// text, which the page tampers with, and the certificates of Arti's test
+// network (authorities that are not the pinned ones). Test-only routes.
+const extra = {};
+if (new URLSearchParams(query).get('only')?.split(',').includes('directory')) {
+  const plain = `${BASE_PATH}test/tor-plain/`;
+  for (const name of ['consensus', 'certs', 'microdescriptors']) {
+    const body = brotliDecompressSync(readFileSync(join(SITE_DIR, `transport/tor/${name}.txt.br`)));
+    extra[`${plain}${name}.txt`] = ['text/plain; charset=utf-8', body];
+  }
+  const testdata = new URL('../transport/webtor-rs/vendor/arti/crates/tor-dirmgr/testdata/', import.meta.url);
+  const otherCerts = ['cert-5696.txt', 'cert-5A23.txt', 'cert-7C47.txt'].map(n => readFileSync(new URL(n, testdata)));
+  extra[`${plain}other-network-certs.txt`] = ['text/plain; charset=utf-8', Buffer.concat(otherCerts)];
+}
+
+const server = await serveSite({ extra });
 const browser = await launchBrowser({ blackholeHosts });
 let failed = true;
 try {

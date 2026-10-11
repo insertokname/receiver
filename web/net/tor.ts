@@ -97,7 +97,11 @@ export type OpenedSocket = Readonly<{
 }>;
 
 export type CarrierStatus = Readonly<{
-  state: 'starting' | 'bootstrapping' | 'ready' | 'retrying';
+  /**
+   * 'directory': the Tor directory (the list of relays) did not verify or
+   * could not be fetched; 'clock': it is not valid at this device's time.
+   */
+  state: 'starting' | 'bootstrapping' | 'ready' | 'retrying' | 'directory' | 'clock';
   transport?: string;
   detail?: string;
 }>;
@@ -199,6 +203,21 @@ function waitFor<T>(promise: Promise<T>, signal?: AbortSignal): Promise<T> {
   });
 }
 
+/**
+ * The status for a Tor start that failed in a way the user should know
+ * about: the device's clock is wrong (the bridge's certificates, or even the
+ * bridge's fresh copy of the directory, are not valid at its time), or the
+ * directory did not verify (webtor: "Tor directory: snapshot: ...; from the
+ * bridge: ...").
+ */
+function directoryStatus(reason: string): CarrierStatus | undefined {
+  if (/clock skew|from the bridge: [^;]*not valid at this time/.test(reason)) {
+    return { state: 'clock', detail: reason };
+  }
+  if (reason.includes('Tor directory:')) return { state: 'directory', detail: reason };
+  return undefined;
+}
+
 class TorCarrier implements Carrier {
   #session: Session | undefined;
   #waiting: Array<(session: Session) => void> = [];
@@ -234,21 +253,27 @@ class TorCarrier implements Carrier {
 
   async #bootstrap(): Promise<void> {
     const started = performance.now();
+    // A directory problem is reported as such until an attempt gets past it.
+    let directoryProblem: CarrierStatus | undefined;
     const onEvent = (event: TorEvent) => {
       switch (event.type) {
         case 'attempt':
           log.info(`connecting via ${event.transport.name} (round ${event.round})`);
-          this.#setStatus({ state: 'bootstrapping', transport: event.transport.label });
+          this.#setStatus(directoryProblem ?? { state: 'bootstrapping', transport: event.transport.label });
           break;
         case 'failed':
           log.warn(`${event.transport.name} failed after ${event.seconds.toFixed(1)}s: ${event.reason}`);
+          directoryProblem = directoryStatus(event.reason);
+          if (directoryProblem) this.#setStatus(directoryProblem);
           break;
         case 'connected':
           log.info(`circuit ready via ${event.transport.name} in ${event.seconds.toFixed(1)}s`);
           break;
         case 'backoff':
           log.warn(`every transport failed, retrying in ${Math.round(event.delayMs / 1000)}s`);
-          this.#setStatus({ state: 'retrying', detail: `retrying in ${Math.round(event.delayMs / 1000)}s` });
+          this.#setStatus(
+            directoryProblem ?? { state: 'retrying', detail: `retrying in ${Math.round(event.delayMs / 1000)}s` }
+          );
           break;
         default:
           break;

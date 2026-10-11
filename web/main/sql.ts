@@ -16,6 +16,7 @@
 // Nothing here logs SQL arguments or results.
 
 import { format } from 'node:util';
+import localAssets from 'virtual:web-local-assets';
 
 import { SqliteErrorKind } from '../../ts/sql/errors.std.ts';
 import { redactAll } from '../../ts/util/privacy.node.ts';
@@ -56,10 +57,26 @@ function log(level: keyof typeof LOG_LEVELS, message: string): void {
   );
 }
 
+/**
+ * Starts the SQL worker once its script matches the digest recorded at build
+ * time. A Worker cannot be given an integrity value; the script is fetched
+ * with one first, and the worker then loads it from the HTTP cache (or the
+ * service worker, which serves files it checked against the same build).
+ */
+async function startVerifiedWorker(url: URL, integrity: string): Promise<Worker> {
+  const response = await fetch(url, { integrity, credentials: 'same-origin' });
+  if (!response.ok) {
+    throw new Error(`the worker could not be loaded (HTTP ${response.status})`);
+  }
+  await response.arrayBuffer();
+  return new Worker(url, { type: 'module', name: 'sql' });
+}
+
 class WebSQL {
   /** The database became unusable while the app runs. */
   onFailure: ((error: { name: string; message: string }) => void) | undefined;
-  readonly #worker: Worker;
+  readonly #worker: Promise<Worker>;
+  #runningWorker: Worker | undefined;
   readonly #pending = new Map<number, Pending>();
   #seq = 0;
   #ready: Promise<StorageInfo>;
@@ -71,10 +88,32 @@ class WebSQL {
   #started = false;
   #failed: Error | undefined;
 
-  constructor(workerUrl: URL, init: { configDir: string; appVersion: string }) {
-    this.#worker = new Worker(workerUrl, { type: 'module', name: 'sql' });
-    this.#worker.addEventListener('message', event => this.#onMessage(event.data));
-    this.#worker.addEventListener('error', event => {
+  constructor(workerUrl: URL, integrity: string, init: { configDir: string; appVersion: string }) {
+    this.#worker = startVerifiedWorker(workerUrl, integrity).then(worker => {
+      this.#listen(worker);
+      this.#runningWorker = worker;
+      return worker;
+    });
+    this.#worker.catch(error => {
+      const message = `SQL worker error: ${error instanceof Error ? error.message : String(error)}`;
+      log('error', `MainSQL: ${redactAll(message)}`);
+      this.#failed = new Error(message);
+      this.#failAll(this.#failed);
+    });
+    this.#ready = this.#send({ type: 'init', ...init }) as Promise<StorageInfo>;
+    this.#ready.then(
+      () => {
+        this.#started = true;
+      },
+      () => {
+        this.#started = true;
+      }
+    );
+  }
+
+  #listen(worker: Worker): void {
+    worker.addEventListener('message', event => this.#onMessage(event.data));
+    worker.addEventListener('error', event => {
       event.preventDefault();
       const message = `SQL worker error: ${event.message || 'the worker could not be loaded'}`;
       log('error', `MainSQL: ${redactAll(message)}`);
@@ -86,18 +125,9 @@ class WebSQL {
         this.#failAll(this.#failed);
       }
     });
-    this.#worker.addEventListener('messageerror', () => {
+    worker.addEventListener('messageerror', () => {
       log('error', 'MainSQL: a worker message could not be deserialized');
     });
-    this.#ready = this.#send({ type: 'init', ...init }) as Promise<StorageInfo>;
-    this.#ready.then(
-      () => {
-        this.#started = true;
-      },
-      () => {
-        this.#started = true;
-      }
-    );
   }
 
   get ready(): Promise<StorageInfo> {
@@ -182,14 +212,34 @@ class WebSQL {
       this.#pending.set(seq, { errorId, resolve, reject });
     });
     const message: WrappedWorkerRequest = { seq, request };
-    try {
-      this.#worker.postMessage(message);
-    } catch (error) {
-      this.#pending.delete(seq);
-      // Arguments that can't be cloned (Desktop serializes them with
-      // node:v8, which has the same limits).
-      return Promise.reject(
-        new Error(`${errorId}: ${error instanceof Error ? error.message : String(error)}`)
+    const post = (worker: Worker): Error | undefined => {
+      try {
+        worker.postMessage(message);
+        return undefined;
+      } catch (error) {
+        // Arguments that can't be cloned (Desktop serializes them with
+        // node:v8, which has the same limits).
+        this.#pending.delete(seq);
+        return new Error(`${errorId}: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    };
+    if (this.#runningWorker) {
+      const error = post(this.#runningWorker);
+      if (error) {
+        return Promise.reject(error);
+      }
+    } else {
+      // Until the worker started, requests wait for it, in order; if it
+      // cannot start, #failAll rejects them.
+      void this.#worker.then(
+        worker => {
+          const entry = this.#pending.get(seq);
+          const error = post(worker);
+          if (error) {
+            entry?.reject(error);
+          }
+        },
+        () => undefined
       );
     }
     this.#inFlight += 1;
@@ -356,7 +406,10 @@ export function installSql({
   const status: StorageStatus = {};
   window.__webStorage = status;
 
-  const sql = new WebSQL(new URL('sql/worker.js', document.baseURI), { configDir, appVersion });
+  const sql = new WebSQL(new URL(localAssets.sqlWorker.path, document.baseURI), localAssets.sqlWorker.integrity, {
+    configDir,
+    appVersion,
+  });
   current = sql;
   const started = performance.now();
   sql.ready.then(

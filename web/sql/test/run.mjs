@@ -21,6 +21,7 @@
 //
 //   node sql/test/run.mjs
 
+import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -42,6 +43,16 @@ const appHtml = await readFile(join(SITE_DIR, 'index.html'), 'utf8');
 const csp = appHtml.match(/<meta\s+http-equiv="Content-Security-Policy"[\s\S]*?\/>/)?.[0];
 if (!csp) throw new Error('index.html has no CSP meta tag');
 
+// The SQL worker of the built site and its digest (renderer/build.mjs
+// compiles the same into the app).
+const workerIntegrity = `sha384-${createHash('sha384').update(await readFile(join(SITE_DIR, 'sql/worker.js'))).digest('base64')}`;
+const localAssets = { sqlWorker: { path: 'sql/worker.js', integrity: workerIntegrity }, locales: {} };
+const localAssetsPlugin = {
+  name: 'web-local-assets',
+  resolveId: id => (id === 'virtual:web-local-assets' ? '\0web-local-assets' : null),
+  load: id => (id === '\0web-local-assets' ? `export default ${JSON.stringify(localAssets)};` : null),
+};
+
 const resolver = webResolvePlugin();
 const bundle = await build({
   cwd: REPO,
@@ -53,7 +64,7 @@ const bundle = await build({
     define: { 'process.env.NODE_ENV': '"production"', global: 'globalThis' },
     inject: { process: 'node:process', Buffer: ['node:buffer', 'Buffer'] },
   },
-  plugins: [resolver.plugin],
+  plugins: [resolver.plugin, localAssetsPlugin],
   output: { format: 'esm', codeSplitting: false },
 });
 const pageJs = bundle.output[0].code;

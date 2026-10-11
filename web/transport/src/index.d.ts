@@ -4,7 +4,7 @@
 
 import type { TorClient } from './pkg/webtor_wasm.js';
 
-export { SignalHttps, SignalHttpsBody, SignalSocket, TorClient } from './pkg/webtor_wasm.js';
+export { SignalHttps, SignalHttpsBody, SignalSocket, TorClient, verifyTorDirectory } from './pkg/webtor_wasm.js';
 
 export declare const SIGNAL_CA_PEM: string;
 export declare const DEFAULT_USER_AGENT: string;

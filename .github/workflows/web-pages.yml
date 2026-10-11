@@ -26,6 +26,7 @@ env:
   WASM_PACK_SHA256: c09f971ecaed9a2efc80fdcea7a00ef6b53c7fadc8c57d1f61b53a6aa66b668a
   BINARYEN_VERSION: '132'
   BINARYEN_SHA256: 195ddc94f9bc89f45abdabb0b9eea86023d727ba90eac8b35b80f2544fc30572
+  CLANG_VERSION: '18'
   LIVE_URL: https://receiver.insertokname.com/
 
 jobs:
@@ -115,8 +116,12 @@ jobs:
 
   build:
     needs: libsignal
-    runs-on: ubuntu-latest
+    # A fixed image: its clang-18 package compiles ring's C code into the
+    # transport's WebAssembly (reproducible builds, web/README.md).
+    runs-on: ubuntu-24.04
     timeout-minutes: 40
+    outputs:
+      sums: ${{ steps.sums.outputs.digest }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -159,19 +164,18 @@ jobs:
           tar -xzf "$RUNNER_TEMP/$name.tar.gz" -C "$RUNNER_TEMP"
           echo "$RUNNER_TEMP/$name" >> "$GITHUB_PATH"
 
-      - name: Select clang and llvm-ar for ring (C code compiled to wasm32)
+      # One clang version, always: ring's C code is part of the transport's
+      # WebAssembly, which must not change with the runner image
+      # (reproducible builds, scripts/verify-site.sh).
+      - name: Select clang ${{ env.CLANG_VERSION }} and llvm-ar for ring (C code compiled to wasm32)
         run: |
-          for v in 20 19 18 17; do
-            if command -v "clang-$v" && command -v "llvm-ar-$v"; then
-              echo "CC_wasm32_unknown_unknown=clang-$v" >> "$GITHUB_ENV"
-              echo "AR_wasm32_unknown_unknown=llvm-ar-$v" >> "$GITHUB_ENV"
-              exit 0
-            fi
-          done
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends clang llvm
-          echo "CC_wasm32_unknown_unknown=clang" >> "$GITHUB_ENV"
-          echo "AR_wasm32_unknown_unknown=llvm-ar" >> "$GITHUB_ENV"
+          if ! command -v "clang-$CLANG_VERSION" || ! command -v "llvm-ar-$CLANG_VERSION"; then
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends "clang-$CLANG_VERSION" "llvm-$CLANG_VERSION"
+          fi
+          echo "CC_wasm32_unknown_unknown=clang-$CLANG_VERSION" >> "$GITHUB_ENV"
+          echo "AR_wasm32_unknown_unknown=llvm-ar-$CLANG_VERSION" >> "$GITHUB_ENV"
+          "clang-$CLANG_VERSION" --version
 
       - name: Install the Rust toolchain for the search tokenizer
         working-directory: web/sql/tokenizer
@@ -234,8 +238,23 @@ jobs:
       - name: node:crypto shim against Node's node:crypto
         run: node web/renderer/test/crypto-shim.mjs
 
-      - name: Build the site (with a fresh Tor directory snapshot)
-        run: bash web/scripts/build-site.sh
+      # Consensus, authority certificates and every microdescriptor, fetched
+      # from the directory authorities; verified by the Rust tests below and
+      # again by build-site.sh (the client verifies it too).
+      - name: Fetch the Tor directory snapshot
+        run: bash web/transport/webtor-rs/scripts/fetch-consensus.sh web/dist/tor-directory
+
+      - name: Tor directory verification tests (native, on that snapshot)
+        working-directory: web/transport/webtor-rs
+        env:
+          WEBTOR_TEST_DIRECTORY: ${{ github.workspace }}/web/dist/tor-directory
+        run: cargo test --locked -p webtor --lib directory
+
+      - name: Build the site (verifies the snapshot, adds SHA256SUMS)
+        run: bash web/scripts/build-site.sh --tor-dir web/dist/tor-directory
+
+      - id: sums
+        run: echo "digest=$(sha256sum web/dist/site/SHA256SUMS | cut -c1-64)" >> "$GITHUB_OUTPUT"
 
       - name: The site contains no test relay code
         run: |
@@ -246,6 +265,9 @@ jobs:
 
       - name: Select the browser for the tests
         run: echo "CHROMIUM=$(command -v google-chrome || command -v chromium)" >> "$GITHUB_ENV"
+
+      - name: Tor directory verification in the browser (the snapshot and tampered copies)
+        run: node web/transport-test/run.mjs 'only=directory'
 
       - name: Transport checks, local (Snowflake WebSocket)
         run: node web/transport-test/run.mjs 'suites=ws&only=basic,upload'
@@ -315,7 +337,7 @@ jobs:
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
 
   live-smoke:
-    needs: deploy
+    needs: [build, deploy]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -338,6 +360,25 @@ jobs:
 
       - name: Select the browser for the test
         run: echo "CHROMIUM=$(command -v google-chrome || command -v chromium)" >> "$GITHUB_ENV"
+
+      # The deployed files are the files this run built: same SHA256SUMS,
+      # and every file matches it.
+      - name: Deployed files, live site
+        env:
+          BUILT_SUMS: ${{ needs.build.outputs.sums }}
+        run: |
+          # The CDN may serve the previous deployment for a few minutes.
+          for attempt in $(seq 1 20); do
+            live=$(curl -sSf -H 'Cache-Control: no-cache' "${LIVE_URL}SHA256SUMS" | sha256sum | cut -c1-64)
+            [ "$live" = "$BUILT_SUMS" ] && break
+            echo "attempt $attempt: live SHA256SUMS $live, built $BUILT_SUMS"
+            sleep 30
+          done
+          if [ "$live" != "$BUILT_SUMS" ]; then
+            echo "::error::the live site's SHA256SUMS is not this build's"
+            exit 1
+          fi
+          bash web/scripts/verify-site.sh "$LIVE_URL" --deployed-only --work-dir "$RUNNER_TEMP/verify"
 
       - name: libsignal checks, live site
         run: node web/libsignal/check/run.mjs "$LIVE_URL"

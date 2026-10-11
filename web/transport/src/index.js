@@ -16,10 +16,12 @@ import initWasm, {
   SignalSocket,
   TorClient,
   TorClientOptions,
+  verifyTorDirectory,
 } from './pkg/webtor_wasm.js';
 import SIGNAL_CA_PEM from './signal-ca.js';
+import WASM_INTEGRITY from './wasm-integrity.js';
 
-export { SIGNAL_CA_PEM, SignalHttps, SignalHttpsBody, SignalSocket };
+export { SIGNAL_CA_PEM, SignalHttps, SignalHttpsBody, SignalSocket, verifyTorDirectory };
 
 /** Sent when the caller does not set one: honest, never the official client's. */
 export const DEFAULT_USER_AGENT = 'unofficial-web-client/0.1';
@@ -61,19 +63,18 @@ export function onTransportLog(listener) {
 
 let loading;
 /**
- * Loads the WebAssembly module (once). `wasmUrl` + `integrity` (an SRI
- * digest) fetch it from an explicit location and check it; by default it is
- * fetched from next to this file.
+ * Loads the WebAssembly module (once), checked against an SRI digest:
+ * `wasmUrl` + `integrity` from an explicit location, by default from next to
+ * this file against the digest recorded when it was built.
  */
-export function loadTransport({ wasmUrl, integrity } = {}) {
+export function loadTransport({
+  wasmUrl = new URL('./pkg/webtor_wasm_bg.wasm', import.meta.url).href,
+  integrity = WASM_INTEGRITY,
+} = {}) {
   loading ??= (async () => {
-    if (wasmUrl) {
-      const response = await fetch(wasmUrl, { integrity, credentials: 'same-origin' });
-      if (!response.ok) throw new Error(`transport WebAssembly: HTTP ${response.status}`);
-      await initWasm({ module_or_path: response });
-    } else {
-      await initWasm();
-    }
+    const response = await fetch(wasmUrl, { integrity, credentials: 'same-origin' });
+    if (!response.ok) throw new Error(`transport WebAssembly: HTTP ${response.status}`);
+    await initWasm({ module_or_path: response });
     initWebtorLogging();
     setLogCallback((level, target, message) => {
       for (const listener of logListeners) listener(String(level), String(target), String(message));

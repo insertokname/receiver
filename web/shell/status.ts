@@ -41,6 +41,14 @@ const TEXT: Record<string, { title: string; detail: string }> = {
     title: 'Not connected',
     detail: 'Could not reach the Tor network. Check your internet connection; receiver keeps trying.',
   },
+  directory: {
+    title: 'Not connected',
+    detail: 'The list of Tor relays could not be verified. receiver keeps trying.',
+  },
+  clock: {
+    title: 'Not connected',
+    detail: "Your device's date and time seem to be wrong. Correct them; receiver keeps trying.",
+  },
 };
 
 type InstallerState = Readonly<{
@@ -171,7 +179,7 @@ export function installConnectionStatus(): void {
       }
       view = 'waiting';
       waitingSince ??= Date.now() - 1000;
-      state = state === 'retrying' ? state : 'bootstrapping';
+      state = state === 'retrying' || state === 'directory' || state === 'clock' ? state : 'bootstrapping';
       text = TEXT[state];
     } else if (qrCodeShown()) {
       retries = 0;

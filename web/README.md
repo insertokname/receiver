@@ -12,7 +12,8 @@ The app is the site's root; `test/` and `libsignal/` are check pages.
 |---|---|
 | `transport/webtor-rs/` | Tor client in Rust/WASM: git submodule, [insertokname/webtor-rs](https://github.com/insertokname/webtor-rs) branch `signal-web-transport` |
 | `transport/src/index.js` | Connection policy: Snowflake WebSocket first, then Snowflake WebRTC, retried with backoff; Signal sockets pinned to Signal's CA |
-| `transport/build.sh` | Builds `transport/dist/` (WASM, `signal-ca.js` from `config/default.json`, policy); `--test-relay` builds the end-to-end tests' variant into `transport/dist-e2e/` |
+| `transport/build.sh` | Builds `transport/dist/` (WASM and its SRI digest, `signal-ca.js` from `config/default.json`, policy); `--test-relay` builds the end-to-end tests' variant into `transport/dist-e2e/` |
+| `transport/verify-directory.mjs` | Verifies a Tor directory snapshot with the transport's own WebAssembly (build-site.sh runs it) |
 | `libsignal/libsignal/` | libsignal 0.103.0 (the version Desktop pins): git submodule, [insertokname/libsignal](https://github.com/insertokname/libsignal) branch `web-wasm` |
 | `libsignal/build.sh` | Builds `libsignal/dist/package/`: `@signalapp/libsignal-client` with its native addon replaced by WebAssembly (see below) |
 | `libsignal/loader.js` | Loads the WebAssembly module on emnapi; provides `initLibsignal()` |
@@ -30,13 +31,15 @@ The app is the site's root; `test/` and `libsignal/` are check pages.
 | `transport-test/` | Transport checks page (`test/` on the site) and its headless runner `run.mjs` |
 | `lib/signal.js` | Signal WebSocket framing shared by the pages |
 | `protos/SubProtocol.proto` | Signal's WebSocket message definitions (restored from upstream history) |
-| `scripts/build-site.sh` | Assembles `dist/site/`, including a fresh Tor directory snapshot |
+| `scripts/build-site.sh` | Assembles `dist/site/`, including a fresh, verified Tor directory snapshot, `SHA256SUMS` and `SOURCE` |
+| `scripts/sri.mjs` | Adds Subresource Integrity to a built page (scripts, stylesheets, an import map with every module's digest) |
+| `scripts/verify-site.sh` | Rebuilds the commit a deployment names and compares it with the deployed files |
 
 ## Build
 
 Needs the Rust toolchain pinned in `transport/webtor-rs/rust-toolchain.toml`
 (with the `wasm32-unknown-unknown` target), wasm-pack 0.15, clang and llvm-ar
-able to target wasm32 (for ring), node 24, pnpm 11, brotli and curl. For
+able to target wasm32 (for ring), node 24, pnpm 11, brotli, openssl and curl. For
 libsignal also the toolchain pinned in `libsignal/libsignal/rust-toolchain`
 with the `wasm32-wasip1` target and the `rust-src` component, protoc and
 wasm-opt (binaryen); for the app the toolchain in
@@ -50,7 +53,7 @@ bash transport/build.sh          # -> transport/dist/
 bash libsignal/build.sh          # -> libsignal/dist/package/
 (cd .. && pnpm install --frozen-lockfile --ignore-scripts)   # Desktop's dependencies, for the app
 bash renderer/build.sh           # -> dist/app/ (Desktop's renderer and SQL worker; runs sql/build.sh)
-bash scripts/build-site.sh       # -> dist/site/ (fetches a fresh Tor directory snapshot)
+bash scripts/build-site.sh       # -> dist/site/ (fetches and verifies a fresh Tor directory snapshot)
 bash transport/build.sh --test-relay && node renderer/build.mjs --e2e   # -> dist/app-e2e/ (end-to-end tests only)
 ```
 
@@ -214,6 +217,7 @@ deletes (migrations) are deleted by the page on the worker's request.
 127.0.0.1), like GitHub Pages.
 
 ```bash
+node transport-test/run.mjs 'only=directory'          # Tor directory verification: the snapshot and tampered copies (no network)
 node transport-test/run.mjs 'suites=ws'               # basic checks over Snowflake WebSocket
 node transport-test/run.mjs 'suites=ws&only=basic,upload'   # + uploads of 64 KB to 1 MB to Signal (CI)
 node transport-test/run.mjs 'suites=webrtc'           # same over Snowflake WebRTC
@@ -337,6 +341,46 @@ WhatsApp Web:
 - **Mac**: Desktop runs its Linux code paths (`process.platform`), but on a
   Mac `window.platform` is `darwin`, so shortcuts and their labels use Cmd.
 
+## Integrity and reproducible builds
+
+- **Subresource Integrity.** The app's `index.html` carries an
+  `integrity` digest (SHA-384) for its script and stylesheets and an
+  import map with the digest of every JavaScript module the page imports,
+  statically or later (`scripts/sri.mjs`; its CSP allows exactly that
+  import map by its hash). What the page fetches besides modules is checked
+  against digests compiled into those modules: the WebAssembly (transport,
+  libsignal, SQLite, the search tokenizer), the SQL worker (fetched with
+  its digest before it starts; a worker's own script cannot carry one) and
+  the locale files. The check pages (`test/`, `libsignal/`) get the same.
+  Not covered by SRI: the service worker's script (browsers fetch it
+  themselves; it holds the SHA-256 of every file and switches to a new
+  build only when the user clicks the update prompt) and the voice note
+  encoder worklet (served by the service worker from its checked cache).
+  Apart from those two, `index.html`'s digest (in `SHA256SUMS`) pins all
+  the code the page runs.
+- **Published hashes.** Every deployment has `SHA256SUMS` (every file
+  except the Tor directory snapshot, which is data that changes daily and
+  is verified by its signatures) and `SOURCE` (the commit and submodule
+  commits it was built from) at the site's root.
+- **Reproducible builds.** Building a commit gives the same files
+  wherever it is checked out: no build-machine paths in the WebAssembly
+  (`--remap-path-prefix` for the transport, libsignal and the tokenizer),
+  the build date taken from the commit (`SOURCE_DATE_EPOCH` overrides it),
+  sorted file lists. Identical output across machines also needs the same
+  tools: the Rust toolchains pinned in the `rust-toolchain` files,
+  wasm-pack 0.15.0, binaryen 132, node 24 and the lockfiles (the
+  deployment workflow pins these), and the same clang build for ring's C
+  code in the transport (the workflow uses Ubuntu 24.04's `clang-18`
+  package; another clang build changes `transport/webtor_wasm_bg.wasm`
+  (clang 18.1.8 and 21.1.8 give different modules) and the files that
+  carry its digest: `transport/wasm-integrity.js`, `app.js`, `index.html`,
+  `sw.js`, `test/index.html`). libsignal's WebAssembly built on a NixOS machine is
+  byte-identical to the deployed one.
+- `scripts/verify-site.sh [URL]` downloads `URL`'s `SOURCE` and
+  `SHA256SUMS`, checks every deployed file against `SHA256SUMS`, rebuilds
+  that commit from source and compares; `--deployed-only` does the first
+  part only (the deployment workflow runs it after every deployment).
+
 ## Network
 
 libsignal-net (chat, CDSI, SVR, registration, key transparency) is not in
@@ -369,6 +413,28 @@ headers, timeouts and error codes from libsignal-net's Rust code):
 - Not available yet, rejecting with typed libsignal errors: CDSI (needs SGX
   attestation), SVR2, registration, key transparency, backups.
 - The User-Agent is `unofficial-web-client/<version> (receiver)`.
+- The Tor directory (which relays exist, their keys) is verified before
+  any relay from it is used, as Tor and Arti do (webtor-rs
+  `webtor/src/directory.rs`, on Arti's `tor-netdoc`, `tor-netdir` and
+  `tor-dircommon`): the directory authorities' key certificates must be
+  signed by the authority identities pinned in the code (Arti's list) and
+  be within their lifetime; the consensus must be signed by more than half
+  of those authorities and be valid now, with Tor's tolerance (one day
+  early, three days late); a microdescriptor is used only if its digest is
+  listed in the signed consensus, and they must cover enough of the network
+  to build paths. Circuits then pick their middle and exit relays with
+  Arti's relay selection (bandwidth-weighted, exit allowing port 443,
+  Stable relays, no two in the same family or /16). The directory comes
+  from the snapshot served with the site (`transport/tor/`: consensus,
+  authority certificates, every relay's microdescriptor; fetched at build
+  time by `transport/webtor-rs/scripts/fetch-consensus.sh` and verified by
+  `transport/verify-directory.mjs`, so a build with a bad snapshot fails).
+  If the snapshot is missing, too old or does not verify, the client
+  fetches the documents through the bridge (BEGIN_DIR) and verifies those;
+  a directory that does not verify is never used, and the shell shows
+  "The list of Tor relays could not be verified" (or asks to correct the
+  device's clock when even a fresh one is not valid at its time) while it
+  keeps retrying.
 - The carrier under TLS is an interface (`Carrier` in `net/tor.ts`, the
   `Carrier` enum in webtor-rs `signal_socket.rs`), chosen at build time in
   `net/carrier.ts`: Tor in every deployed build; the end-to-end tests'

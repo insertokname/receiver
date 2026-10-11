@@ -39,6 +39,10 @@ fi
 (
   cd "$SQL/tokenizer"
   target_dir="${TOKENIZER_TARGET_DIR:-$SQL/tokenizer/target}"
+  # Reproducible output: build-machine paths mapped as in transport/build.sh.
+  sysroot="$(rustc --print sysroot)"
+  commit="$(rustc -vV | sed -n 's/^commit-hash: //p')"
+  export RUSTFLAGS="--remap-path-prefix=${CARGO_HOME:-$HOME/.cargo}=/cargo --remap-path-prefix=$sysroot/lib/rustlib/src/rust=/rustc/$commit --remap-path-prefix=$SQL/tokenizer=/tokenizer"
   CARGO_TARGET_DIR="$target_dir" cargo build --locked --release --target wasm32-wasip1 --quiet
   cp "$target_dir/wasm32-wasip1/release/receiver_signal_tokenizer.wasm" "$DIST/signal_tokenizer.wasm"
 )

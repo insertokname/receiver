@@ -8,11 +8,15 @@
 //                           ws = Snowflake WebSocket bridge, webrtc = Snowflake
 //                           volunteer proxy, chain = the full fallback chain
 //                           the app uses (reports which transport won)
-//   only=basic,upload,bulk,hold  which checks to run (default: basic)
+//   only=basic,upload,bulk,hold,directory  which checks to run (default: basic)
 //                           upload sends large request bodies to Signal,
 //                           bulk downloads ~2.7 MB from a third party through
 //                           Tor and hold keeps a connection open for minutes;
-//                           they only run when asked for explicitly
+//                           they only run when asked for explicitly.
+//                           directory runs the Tor directory verification on
+//                           the site's snapshot and tampered copies of it (no
+//                           network; needs the plain-text copies run.mjs serves
+//                           at ./tor-plain/)
 //   uploadKB=64,256,512,1024  request body sizes for the upload check
 //   sustainedMB=<n>         upload check: also send n MB in back-to-back requests
 //   maxBodyKB=256           upload check: largest single request body
@@ -22,9 +26,11 @@
 import {
   connectTor,
   errorReason,
+  loadTransport,
   onTransportLog,
   openSignalSocket,
   TRANSPORTS,
+  verifyTorDirectory,
   withDeadline,
 } from '../transport/index.js';
 import { CHAT_URL, receiveProvisioningAddress, request } from '../lib/signal.js';
@@ -267,6 +273,93 @@ async function runSuite(label, transports) {
   try { await client.close(); } catch {}
 }
 
+// The client's directory verification (webtor directory.rs) on the site's
+// snapshot, and on copies changed the ways an attacker serving the files
+// could change them: each must be refused (or, for microdescriptors, the
+// changed one dropped).
+async function directoryChecks() {
+  log('===== Tor directory verification =====');
+  await loadTransport();
+  const text = async name => {
+    const response = await fetch(`./tor-plain/${name}`);
+    if (!response.ok) throw new Error(`${name}: HTTP ${response.status} (run through transport-test/run.mjs)`);
+    return response.text();
+  };
+  const [consensus, certs, microdescs, otherCerts] = await Promise.all(
+    ['consensus.txt', 'certs.txt', 'microdescriptors.txt', 'other-network-certs.txt'].map(text)
+  );
+  const timeOf = keyword => Date.parse(`${consensus.match(new RegExp(`^${keyword} (.+)$`, 'm'))[1].replace(' ', 'T')}Z`);
+  const fresh = timeOf('valid-after') + 30 * 60_000;
+  const verify = (c, k, m, now = fresh) => verifyTorDirectory(c, k, m, now);
+  const editFirst = (doc, prefix, edit) => doc.replace(new RegExp(`^${prefix}.*$`, 'm'), edit);
+  const signatures = [...consensus.matchAll(/^directory-signature [\s\S]*?-----END SIGNATURE-----\n/gm)];
+  const firstSignature = signatures[0].index;
+  const corruptAll = signatures.reduce((doc, m) => {
+    const at = m.index + m[0].indexOf('-----BEGIN SIGNATURE-----\n') + 36;
+    return doc.slice(0, at) + (doc[at] === 'A' ? 'B' : 'A') + doc.slice(at + 1);
+  }, consensus);
+  const pinned = [...new Set([...certs.matchAll(/^fingerprint (\S+)$/gm)].map(m => m[1]))];
+  const forgedCerts = certs.replace(/^fingerprint (\S+)$/gm, (_, fp) => `fingerprint ${pinned.find(other => other !== fp)}`);
+  const microdescStarts = [...microdescs.matchAll(/^onion-key\n/gm)].map(m => m.index);
+
+  const started = performance.now();
+  const valid = verify(consensus, certs, microdescs);
+  const seconds = (performance.now() - started) / 1000;
+  record(
+    'directory: snapshot verifies',
+    valid.microdescriptors * 100 >= valid.relays * 95 && valid.droppedMicrodescriptors === 0,
+    `${valid.relays} relays, ${valid.microdescriptors} microdescriptors, ${valid.certificates} certificates`,
+    seconds
+  );
+
+  const refused = (name, expected, run) => {
+    try {
+      const summary = run();
+      record(`directory: ${name}`, false, `accepted: ${JSON.stringify(summary)}`);
+    } catch (e) {
+      const reason = errorReason(e);
+      record(`directory: ${name}`, expected.test(reason), `refused: ${reason}`);
+    }
+  };
+  refused('a relay changed', /signatures do not verify/, () =>
+    verify(editFirst(consensus, 'r ', line => line.replace(/ \d+\.\d+\.\d+\.\d+ /, ' 192.0.2.1 ')), certs, microdescs)
+  );
+  refused('every signature wrong', /signatures do not verify/, () => verify(corruptAll, certs, microdescs));
+  refused('signatures missing (4 of 9 kept)', /not signed by enough/, () =>
+    verify(consensus.slice(0, firstSignature) + signatures.slice(0, 4).map(m => m[0]).join(''), certs, microdescs)
+  );
+  refused('certificates of unknown authorities', /no valid certificate/, () => verify(consensus, otherCerts, microdescs));
+  refused('certificates naming another authority', /no valid certificate/, () =>
+    verify(consensus, forgedCerts, microdescs)
+  );
+  refused('expired beyond the tolerance', /not valid at this time/, () =>
+    verify(consensus, certs, microdescs, timeOf('valid-until') + 3 * 86_400_000 + 60_000)
+  );
+  refused('too few microdescriptors', /too few microdescriptors/, () =>
+    verify(consensus, certs, microdescs.slice(0, microdescStarts[Math.floor(microdescStarts.length / 10)]))
+  );
+  try {
+    const late = verify(consensus, certs, microdescs, timeOf('valid-until') + 3 * 86_400_000 - 60_000);
+    record('directory: accepted within the tolerance (3 days late)', late.relays === valid.relays, 'accepted');
+  } catch (e) {
+    record('directory: accepted within the tolerance (3 days late)', false, errorReason(e));
+  }
+  try {
+    const tampered = verify(
+      consensus,
+      certs,
+      editFirst(microdescs, 'ntor-onion-key ', () => `ntor-onion-key ${'A'.repeat(43)}`)
+    );
+    record(
+      'directory: tampered microdescriptor dropped',
+      tampered.droppedMicrodescriptors === 1 && tampered.usableRelays === valid.usableRelays - 1,
+      `${tampered.droppedMicrodescriptors} dropped, ${tampered.usableRelays} usable`
+    );
+  } catch (e) {
+    record('directory: tampered microdescriptor dropped', false, errorReason(e));
+  }
+}
+
 async function run() {
   document.getElementById('run').disabled = true;
   onTransportLog((level, target, message) => {
@@ -276,6 +369,8 @@ async function run() {
   });
   log('page origin:', location.origin, '| secure context:', isSecureContext, '| suites:', SUITES.join(','), '| checks:', ONLY.join(','));
   try {
+    if (want('directory')) await directoryChecks();
+    if (ONLY.every(check => check === 'directory')) SUITES.length = 0;
     for (const suite of SUITES) {
       const transports = SUITE_TRANSPORTS[suite];
       if (!transports) {

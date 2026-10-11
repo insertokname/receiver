@@ -5,6 +5,7 @@
 // locales, compact message files merged over English.
 
 import { match } from '@formatjs/intl-localematcher';
+import localAssets from 'virtual:web-local-assets';
 
 import type { LocaleMessagesType } from '../../ts/types/I18N.std.ts';
 import { getStored } from './storage.ts';
@@ -23,7 +24,12 @@ export type WebLocale = {
 const BASE = new URL('./locales/', document.baseURI);
 
 async function fetchJson<T>(path: string): Promise<T> {
-  const response = await fetch(new URL(path, BASE));
+  // Checked against the digest recorded at build time.
+  const integrity = localAssets.locales[path];
+  if (!integrity) {
+    throw new Error(`locale: ${path}: not part of this build`);
+  }
+  const response = await fetch(new URL(path, BASE), { integrity });
   if (!response.ok) {
     throw new Error(`locale: ${path}: HTTP ${response.status}`);
   }

@@ -39,6 +39,16 @@ declare module 'virtual:web-net-assets' {
   export default assets;
 }
 
+declare module 'virtual:web-local-assets' {
+  const assets: {
+    /** The SQL worker (relative to the page) and its SRI digest. */
+    sqlWorker: { path: string; integrity: string };
+    /** SRI digest of every locale file, by path relative to locales/. */
+    locales: Record<string, string>;
+  };
+  export default assets;
+}
+
 declare module 'virtual:web-sw-manifest' {
   const manifest: {
     /** Digest of the file list: changes exactly when a file changes. */
