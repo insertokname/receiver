@@ -20,7 +20,6 @@ import {
   errorReason,
   onTransportLog,
   openSignalSocket,
-  SignalSocket,
   TRANSPORTS,
   withDeadline,
 } from '../transport/index.js';
@@ -98,7 +97,7 @@ async function runSuite(label, transports) {
     // SECURITY: no connection unless the server proves it holds a certificate
     // issued by Signal's CA. Trusting a different root must fail.
     try {
-      await timed(() => SignalSocket.open(client, CHAT_URL, WRONG_CA, null));
+      await timed(() => openSignalSocket(client, CHAT_URL, { rootPem: WRONG_CA }));
       record(`${label}: wrong CA is rejected`, false, 'UNEXPECTEDLY CONNECTED');
     } catch (e) {
       const msg = errorReason(e);

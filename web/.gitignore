@@ -5,3 +5,4 @@ node_modules/
 /libsignal/target/
 /sql/dist/
 /sql/tokenizer/target/
+/net/generated/

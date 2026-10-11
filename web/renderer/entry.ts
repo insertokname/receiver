@@ -3,6 +3,7 @@
 // Entry point of the web app (index.html loads this, no inline scripts).
 //
 // Order matters, as in Electron:
+//   0. Tor starts bootstrapping (web/net/tor.ts), in the background;
 //   1. libsignal's WebAssembly is instantiated (it must be ready before any
 //      module that imports @signalapp/libsignal-client is evaluated);
 //   2. the in-page main process starts: config, locale, IPC handlers;
@@ -16,6 +17,8 @@
 
 import { initLibsignal } from '@signalapp/libsignal-client/wasm/index.js';
 import { config as configureZod } from 'zod';
+
+import { startTor } from '../net/tor.ts';
 
 // zod probes `new Function` (a CSP violation under script-src 'self') unless
 // told not to compile validators.
@@ -64,6 +67,11 @@ function fail(name: string, error: unknown): void {
 
 async function boot(): Promise<void> {
   step('start');
+
+  // Tor bootstraps while the app starts, so that Signal is reachable by the
+  // time Desktop asks for the link QR code (WhatsApp Web shows its code as
+  // soon as it can, too).
+  startTor();
 
   try {
     await initLibsignal();

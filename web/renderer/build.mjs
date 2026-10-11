@@ -5,6 +5,7 @@
 //
 //   index.html            from background.html, strict CSP, no inline script
 //   app.js, chunks/       the renderer bundle (entry.ts -> preload graph)
+//   transport/webtor_wasm_bg.wasm   the Tor transport (web/transport), for web/net
 //   chunks/libsignal_node.wasm   next to libsignal's loader
 //   stylesheets/          Desktop's compiled SCSS + Tailwind (asset:/// -> ../)
 //   fonts/ images/ sounds/
@@ -28,6 +29,7 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { build } from 'rolldown';
 
+import { netAssetsPlugin, TRANSPORT_WASM } from './net-assets.mjs';
 import { webResolvePlugin, LIBSIGNAL_PACKAGE } from './resolve.mjs';
 
 const HERE = fileURLToPath(new URL('.', import.meta.url));
@@ -110,6 +112,10 @@ async function staticConfig() {
 const config = await staticConfig();
 const STATIC_CONFIG_ID = '\0web-static-config';
 
+// The network layer (web/net): the transport's WebAssembly, fetched by the
+// page from app/transport/ and checked against its digest.
+const netAssets = await netAssetsPlugin();
+
 const resolver = webResolvePlugin();
 const problems = [];
 const started = Date.now();
@@ -168,6 +174,7 @@ const bundle = await build({
       resolveId: id => (id === 'virtual:web-static-config' ? STATIC_CONFIG_ID : null),
       load: id => (id === STATIC_CONFIG_ID ? `export default ${JSON.stringify(config)};` : null),
     },
+    netAssets.plugin,
   ],
   onLog,
   output: { ...output, dir: OUT },
@@ -185,6 +192,9 @@ const loaderChunk = bundle.output.find(
 if (!loaderChunk) throw new Error('libsignal loader not found in the bundle');
 const wasmTarget = join(OUT, loaderChunk.fileName, '..', 'libsignal_node.wasm');
 await cp(join(LIBSIGNAL_PACKAGE, 'wasm/libsignal_node.wasm'), wasmTarget);
+
+await mkdir(join(OUT, 'transport'));
+await cp(TRANSPORT_WASM, join(OUT, netAssets.assets.transport.wasmUrl));
 
 // The SQL worker: its own bundle with its own fs, worker_threads and
 // @signalapp/sqlcipher (web/sql/). It fetches its WebAssembly modules

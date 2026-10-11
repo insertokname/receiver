@@ -4,7 +4,7 @@
 # Builds the Tor transport into web/transport/dist/ (git-ignored):
 #   pkg/          webtor-rs compiled to WASM (wasm-pack --target web --release)
 #   signal-ca.js  Signal's CA, taken from config/default.json certificateAuthority
-#   index.js      the connection policy (src/index.js)
+#   index.js      the connection policy (src/index.js, types in src/index.d.ts)
 #
 # Needs: the Rust toolchain pinned in webtor-rs/rust-toolchain.toml with the
 # wasm32-unknown-unknown target, wasm-pack, clang + llvm-ar that can target
@@ -40,6 +40,6 @@ node -e '
     "export default " + JSON.stringify(pem) + ";\n");
 ' "$REPO/config/default.json" "$OUT/signal-ca.js"
 
-cp "$HERE/src/index.js" "$OUT/index.js"
+cp "$HERE/src/index.js" "$HERE/src/index.d.ts" "$OUT/"
 
 ls -l "$OUT" "$OUT/pkg"

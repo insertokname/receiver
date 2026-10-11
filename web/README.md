@@ -22,7 +22,7 @@ The site is deployed to https://insertokname.github.io/receiver/ by
 | `main/` | In-page replacement for Electron's main process: IPC (`ipc.ts`), config, locale, settings, the database side (`sql.ts`), every other channel the renderer uses (`channels.ts`) |
 | `sql/` | The SQL worker: Desktop's `ts/sql/Server.node.ts` and migrations on encrypted SQLite in the origin private file system (see below); `build.sh` fetches SQLite3 Multiple Ciphers and builds `tokenizer/`; `test/run.mjs` is the storage test |
 | `sql/tokenizer/` | Signal's FTS5 tokenizer (Signal-FTS5-Extension, the revision `@signalapp/sqlcipher` uses) as a WebAssembly module (Rust) |
-| `net/` | Stand-in for libsignal's `Net` (libsignal-net is not in the WebAssembly build); the network layer implements it over the Tor transport |
+| `net/` | libsignal's `Net` for the web build (`WebNet`): chat and provisioning connections, the typed chat calls, and HTTPS (`node-fetch` replacement), all through one Tor client (`tor.ts`); `test/run.mjs` checks it against Signal |
 | `transport-test/` | Transport checks page (`test/` on the site) and its headless runner `run.mjs` |
 | `lib/signal.js` | Signal WebSocket framing shared by the pages |
 | `protos/SubProtocol.proto` | Signal's WebSocket message definitions (restored from upstream history) |
@@ -160,7 +160,44 @@ node libsignal/check/run.mjs                          # libsignal in the browser
 node libsignal/check/run.mjs https://insertokname.github.io/receiver/
 node libsignal/test/node.mjs                          # libsignal's TypeScript tests (Node, no browser)
 node sql/test/run.mjs                                 # storage: create/migrate, reopen, encrypted at rest, second tab, erase
-node renderer/run.mjs                                 # web app boots to Desktop's install screen under the app's CSP
+node renderer/run.mjs                                 # web app boots to Desktop's link QR code (decoded) under the app's CSP
 node renderer/run.mjs https://insertokname.github.io/receiver/
 node renderer/test/crypto-shim.mjs                    # node:crypto shim against Node's node:crypto
+node net/test/run.mjs                                 # WebNet + HTTPS through Tor against Signal (bogus credentials only)
 ```
+
+## Network
+
+libsignal-net (chat, CDSI, SVR, registration, key transparency) is not in
+the WebAssembly build; `net/` implements the part of libsignal's `Net`
+Desktop uses, with libsignal's TypeScript types and its semantics (paths,
+headers, timeouts and error codes from libsignal-net's Rust code):
+
+- One Tor client per page (`net/tor.ts`), bootstrapped when the app starts
+  (`renderer/entry.ts`). Each Signal connection is its own Tor stream with
+  TLS 1.3 (rustls, in the transport's Rust code) trusting only Signal's CA.
+  Repeated failures or HTTP 429 get a new circuit; continued failures
+  replace the Tor client (bootstrapped again with backoff) and interrupt
+  every connection on the old one.
+- Chat: `wss://chat.signal.org/v1/websocket/` (unauthenticated,
+  authenticated with Basic auth, `x-signal-receive-stories`,
+  `Accept-Language`) and `/v1/websocket/provisioning/`, WebSocketMessage
+  protobufs (protopiler output, `net/generated/`). Ping after 31 s idle,
+  disconnect after 45 s without anything from the server, like
+  libsignal-net. Every failure reaches the listener's
+  `onConnectionInterrupted` with libsignal's error code.
+- Typed calls: libsignal's REST-over-WebSocket requests. Calls libsignal
+  only makes over gRPC (devices, username reservation and links) use the
+  chat server's REST endpoints for the same operations.
+- HTTPS (`net/node-fetch.ts`, replacing `node-fetch`'s `fetch`): hyper's
+  HTTP/1.1 client over rustls over Tor, keep-alive connections reused per
+  host. Trust is exactly Desktop's: Desktop pins Signal's CA (`ca`) for
+  every Signal host it fetches from (storage service, CDNs, updates2
+  resources, upload locations). Requests without a pinned CA (link
+  previews via contentproxy, Stripe) are refused for now.
+- Not available yet, rejecting with typed libsignal errors: CDSI (needs SGX
+  attestation), SVR2, registration, key transparency, backups.
+- The User-Agent is `unofficial-web-client/<version> (receiver)`.
+- The carrier under TLS is an interface (`Carrier` in `net/tor.ts`, the
+  `Carrier` enum in webtor-rs `signal_socket.rs`) so tests can replace Tor.
+

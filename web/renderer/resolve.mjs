@@ -34,7 +34,8 @@ const pkgMain = name => {
 export const LIBSIGNAL_PACKAGE = join(WEB, 'libsignal/dist/package');
 
 // module -> [kind, target]. kind: 'polyfill' (established browser package),
-// 'shim' (our glue, real behaviour), 'stub' (explicit "not available").
+// 'shim' (our glue, real behaviour), 'partial' (a shim for some exports,
+// the rest throw "not available"), 'stub' (explicit "not available").
 // Keys are Node builtin names without the `node:` prefix.
 const BUILTINS = {
   assert: ['polyfill', pkgMain('assert')],
@@ -43,6 +44,7 @@ const BUILTINS = {
   crypto: ['shim', join(SHIMS, 'node/crypto.ts')],
   diagnostics_channel: ['shim', join(SHIMS, 'node/diagnostics-channel.ts')],
   events: ['polyfill', pkgMain('events')],
+  http: ['partial', join(SHIMS, 'node/http.ts')],
   os: ['shim', join(SHIMS, 'node/os.ts')],
   path: ['polyfill', pkgMain('path-browserify')],
   process: ['shim', join(SHIMS, 'node/process.ts')],
@@ -72,7 +74,6 @@ const UNAVAILABLE_BUILTINS = [
   'dns/promises',
   'fs',
   'fs/promises',
-  'http',
   'http2',
   'https',
   'inspector',
@@ -99,6 +100,10 @@ const PACKAGES = {
   // the web build does not run. The TypeScript source is the same code.
   '@signalapp/types': ['shim', join(REPO, 'packages/types/src/index.std.ts')],
 };
+
+// node-fetch's `fetch` goes through Tor (web/net/node-fetch.ts); the shim
+// itself imports the real package.
+const NODE_FETCH_SHIM = join(WEB, 'net/node-fetch.ts');
 
 const WEB_SIBLING = /\.(preload|node|main|dom|std)\.(tsx?|js)$/;
 
@@ -142,7 +147,7 @@ export function webResolvePlugin({ overrides = {} } = {}) {
         if (Object.hasOwn(BUILTINS, bare)) {
           const [kind, target] = BUILTINS[bare];
           note(bare, kind, target);
-          return target;
+          return kind === 'partial' ? `${PARTIAL_PREFIX}${bare}:${target}` : target;
         }
         if (UNAVAILABLE_BUILTINS.includes(bare)) {
           note(bare, 'stub', 'throws "not available in the web build"');
@@ -151,6 +156,10 @@ export function webResolvePlugin({ overrides = {} } = {}) {
         if (source.startsWith('node:') || (builtinModules.includes(bare) && !bare.startsWith('_'))) {
           // An unlisted builtin: fail loudly instead of bundling a surprise.
           this.error(`no web mapping for Node builtin "${source}" (imported by ${importer})`);
+        }
+        if (source === 'node-fetch' && importer !== NODE_FETCH_SHIM) {
+          note('node-fetch', 'shim', 'fetch over Tor (web/net/node-fetch.ts), rest of the package real');
+          return NODE_FETCH_SHIM;
         }
         if (Object.hasOwn(PACKAGES, source)) {
           const [kind, target] = PACKAGES[source];

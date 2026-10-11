@@ -28,3 +28,13 @@ declare module 'virtual:web-static-config' {
   const config: Record<string, unknown>;
   export default config;
 }
+
+declare module 'virtual:web-net-assets' {
+  const assets: {
+    /** The transport's WebAssembly (relative to the page) and its SRI digest. */
+    transport: { wasmUrl: string; integrity: string };
+    /** Base URL of the Tor directory snapshot, relative to the page. */
+    torDirectory: string;
+  };
+  export default assets;
+}

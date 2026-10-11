@@ -11,13 +11,18 @@
 import initWasm, {
   init as initWebtorLogging,
   setLogCallback,
+  SignalHttps,
   SignalSocket,
   TorClient,
   TorClientOptions,
 } from './pkg/webtor_wasm.js';
 import SIGNAL_CA_PEM from './signal-ca.js';
 
-export { SIGNAL_CA_PEM, SignalSocket };
+export { SIGNAL_CA_PEM, SignalHttps, SignalSocket };
+
+/** Sent when the caller does not set one: honest, never the official client's. */
+export const DEFAULT_USER_AGENT = 'unofficial-web-client/0.1';
+const DEFAULT_OPEN_TIMEOUT_MS = 30_000;
 
 // Budgets are per attempt and cover bridge connection + Tor handshake + first
 // circuit. WebSocket bridges answer in 1-3 s when they work.
@@ -54,14 +59,28 @@ export function onTransportLog(listener) {
 }
 
 let loading;
-export function loadTransport() {
+/**
+ * Loads the WebAssembly module (once). `wasmUrl` + `integrity` (an SRI
+ * digest) fetch it from an explicit location and check it; by default it is
+ * fetched from next to this file.
+ */
+export function loadTransport({ wasmUrl, integrity } = {}) {
   loading ??= (async () => {
-    await initWasm();
+    if (wasmUrl) {
+      const response = await fetch(wasmUrl, { integrity, credentials: 'same-origin' });
+      if (!response.ok) throw new Error(`transport WebAssembly: HTTP ${response.status}`);
+      await initWasm({ module_or_path: response });
+    } else {
+      await initWasm();
+    }
     initWebtorLogging();
     setLogCallback((level, target, message) => {
       for (const listener of logListeners) listener(String(level), String(target), String(message));
     });
   })();
+  loading.catch(() => {
+    loading = undefined;
+  });
   return loading;
 }
 
@@ -148,8 +167,9 @@ export async function connectTor({
   rounds = Infinity,
   onEvent = () => {},
   signal,
+  wasm,
 } = {}) {
-  await loadTransport();
+  await loadTransport(wasm);
   const failures = [];
   for (let round = 1; round <= rounds; round++) {
     for (const transport of transports) {
@@ -180,16 +200,73 @@ export async function connectTor({
 }
 
 /**
- * Opens a WebSocket to `url` (wss://<Signal host>/...) through `client`.
- * TLS trusts only Signal's CA. Throws (with `status`) if the server refuses
- * the upgrade.
+ * A binary WebSocket to a Signal server (see openSignalSocket).
+ *
+ * `next()` resolves to the next frame: a Uint8Array (binary message), `true`
+ * (a control frame: proof of life) or `{ code, reason }` once closed.
+ * `recv()` skips control frames and resolves to `null` once closed.
  */
-export async function openSignalSocket(client, url, { authorization = null } = {}) {
-  const socket = await SignalSocket.open(client, url, SIGNAL_CA_PEM, authorization);
-  if (typeof socket === 'number') {
-    throw Object.assign(new Error(`${new URL(url).host} refused the WebSocket: HTTP ${socket}`), {
-      status: socket,
+export class SignalConnection {
+  #socket;
+  constructor(socket, headers) {
+    this.#socket = socket;
+    /** Response headers of the upgrade, as [name, value] pairs. */
+    this.headers = headers;
+    /** `{ code, reason }` once the server closed the socket. */
+    this.closed = null;
+  }
+  send(bytes) {
+    return this.#socket.send(bytes);
+  }
+  ping() {
+    return this.#socket.ping();
+  }
+  async next() {
+    if (this.closed) return this.closed;
+    const frame = await this.#socket.recv();
+    if (frame instanceof Uint8Array || frame === true) return frame;
+    this.closed = frame;
+    return frame;
+  }
+  async recv() {
+    for (;;) {
+      const frame = await this.next();
+      if (frame instanceof Uint8Array) return frame;
+      if (frame !== true) return null;
+    }
+  }
+  close(code = 1000, reason = '') {
+    return this.#socket.close(code, reason);
+  }
+}
+
+/**
+ * Opens a WebSocket to `url` (wss://<Signal host>/...) through `client`.
+ * TLS trusts only `rootPem` (default: Signal's CA). `headers` ([name, value]
+ * pairs) go on the upgrade request, plus User-Agent unless given. Resolves
+ * to a SignalConnection; throws (with `status` and `headers`) if the server
+ * refuses the upgrade, or if there is no handshake within `timeoutMs`.
+ */
+export async function openSignalSocket(
+  client,
+  url,
+  {
+    authorization = null,
+    headers = [],
+    userAgent = DEFAULT_USER_AGENT,
+    rootPem = SIGNAL_CA_PEM,
+    timeoutMs = DEFAULT_OPEN_TIMEOUT_MS,
+  } = {}
+) {
+  const all = [...headers];
+  if (!all.some(([name]) => name.toLowerCase() === 'user-agent')) all.push(['User-Agent', userAgent]);
+  if (authorization) all.push(['Authorization', authorization]);
+  const result = await SignalSocket.open(client, url, rootPem, all, timeoutMs);
+  if (result.status !== 101) {
+    throw Object.assign(new Error(`${new URL(url).host} refused the WebSocket: HTTP ${result.status}`), {
+      status: result.status,
+      headers: result.headers,
     });
   }
-  return socket;
+  return new SignalConnection(result.socket, result.headers);
 }
