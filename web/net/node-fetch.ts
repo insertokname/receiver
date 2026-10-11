@@ -11,8 +11,17 @@
 // Requests without `ca` would use the system's roots in Desktop: link
 // previews (through contentproxy.signal.org) and payments (Stripe). They
 // are not available in the web build yet and fail here with a FetchError.
+//
+// Response bodies are streams, as in Node: `response.body` delivers the
+// body as it arrives (Desktop's download progress follows it), with no
+// size limit and nothing buffered beyond what the reader has not taken
+// yet. `timeout` covers the request until the response head arrives (in
+// Desktop 0 means none: we cap it); after that, each piece of the body must
+// arrive within an idle timeout, so a hung connection fails the body
+// instead of stalling it. Aborting the signal drops the connection.
 
 import { Buffer } from 'node:buffer';
+import { Readable } from 'node:stream';
 
 import { AbortError, FetchError, Headers, Response } from 'node-fetch';
 import type { RequestInfo, RequestInit, ResponseInit } from 'node-fetch';
@@ -20,6 +29,7 @@ import type { RequestInfo, RequestInit, ResponseInit } from 'node-fetch';
 import { createLogger } from '../../ts/logging/log.std.ts';
 import { errorReason } from '../transport/dist/index.js';
 import { getCarrier } from './carrier.ts';
+import type { HttpsBodyReader } from './tor.ts';
 
 export * from 'node-fetch';
 
@@ -28,7 +38,9 @@ const log = createLogger('https');
 // Desktop's 0 means "no timeout" (large downloads and uploads).
 const MAX_TIMEOUT_MS = 15 * 60_000;
 const DEFAULT_TIMEOUT_MS = 60_000;
-const MAX_RESPONSE_BYTES = 256 * 1024 * 1024;
+// Longest wait for the next piece of a response body.
+const MAX_BODY_IDLE_MS = 60_000;
+const MIN_BODY_IDLE_MS = 15_000;
 
 type WebRequestInit = RequestInit & { ca?: string; timeout?: number };
 
@@ -46,6 +58,44 @@ async function bodyBytes(body: unknown): Promise<Uint8Array | undefined> {
     return Buffer.concat(chunks);
   }
   throw new FetchError('unsupported request body in the web build', 'system');
+}
+
+function failure(host: string, what: string, error: unknown): FetchError {
+  const reason = errorReason(error);
+  log.warn(`${what} ${host} failed: ${reason}`);
+  return new FetchError(`${what} ${host} failed: ${reason}`, 'system', {
+    code: /timed out/i.test(reason) ? 'ETIMEDOUT' : 'ECONNRESET',
+  } as never);
+}
+
+/** A Node Readable over a transport response body, read on demand. */
+function bodyStream(reader: HttpsBodyReader, idleMs: number, host: string, signal: AbortSignal | undefined): Readable {
+  let reading = false;
+  const stream = new Readable({
+    read() {
+      if (reading) return;
+      reading = true;
+      reader.next(idleMs).then(
+        piece => {
+          reading = false;
+          stream.push(piece === undefined ? null : Buffer.from(piece.buffer, piece.byteOffset, piece.byteLength));
+        },
+        error => {
+          reading = false;
+          stream.destroy(signal?.aborted ? new AbortError('The operation was aborted.') : failure(host, 'response body from', error));
+        }
+      );
+    },
+    destroy(error, callback) {
+      reader.cancel();
+      signal?.removeEventListener('abort', onAbort);
+      callback(error);
+    },
+  });
+  const onAbort = () => stream.destroy(new AbortError('The operation was aborted.'));
+  signal?.addEventListener('abort', onAbort, { once: true });
+  stream.once('end', () => signal?.removeEventListener('abort', onAbort));
+  return stream;
 }
 
 export default async function fetch(input: RequestInfo, init: WebRequestInit = {}): Promise<Response> {
@@ -78,19 +128,23 @@ export default async function fetch(input: RequestInfo, init: WebRequestInit = {
         body,
         rootPem: init.ca,
         timeoutMs: timeout,
-        maxResponseBytes: MAX_RESPONSE_BYTES,
       },
       signal as AbortSignal | undefined
     );
   } catch (error) {
     if (signal?.aborted) throw new AbortError('The operation was aborted.');
-    const reason = errorReason(error);
-    log.warn(`request to ${url.host} failed: ${reason}`);
-    throw new FetchError(`request to ${url.host} failed: ${reason}`, 'system', {
-      code: /timed out/i.test(reason) ? 'ETIMEDOUT' : 'ECONNRESET',
-    } as never);
+    throw failure(url.host, 'request to', error);
   }
-  return new Response(result.body.length > 0 ? Buffer.from(result.body) : null, {
+  if (signal?.aborted) {
+    result.body.cancel();
+    throw new AbortError('The operation was aborted.');
+  }
+  const idleMs = Math.max(MIN_BODY_IDLE_MS, Math.min(timeout, MAX_BODY_IDLE_MS));
+  const method = (init.method ?? 'GET').toUpperCase();
+  const noBody = method === 'HEAD' || result.status === 204 || result.status === 304;
+  // No body: reading its end returns the connection to the pool.
+  if (noBody) result.body.next(idleMs).catch(() => undefined);
+  return new Response(noBody ? null : bodyStream(result.body, idleMs, url.host, signal as AbortSignal | undefined), {
     status: result.status,
     headers: new Headers(result.headers),
     url: url.href,

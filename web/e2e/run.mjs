@@ -26,14 +26,23 @@
 //                clicking it opens the conversation
 //   (h) link-and-sync  the QR code's capabilities; what the app does when
 //                the primary offers a transfer archive (see below)
+//   (i)-(o) linking survives faults: every connection drops or stalls (stops
+//                forwarding without closing, like a hung Tor circuit) at
+//                the critical points of linking: while the authenticated
+//                socket connects, while the app long-polls for the transfer
+//                archive (with and without a transfer), during the contact
+//                sync, half way through a large (32 MiB) archive download
+//                (resumed with Range; download progress must advance). Each
+//                ends in the inbox with contacts synced (and the history
+//                imported when transferred).
 //
 // Fails on CSP violations, uncaught exceptions, network destinations other
 // than the page's origin and the relay, and key-like secrets in the log.
 //
 //   node e2e/run.mjs              (needs web/dist/app-e2e and $CHROMIUM)
-//   ONLY=a,b,c node e2e/run.mjs   stop after these scenarios
+//   ONLY=a,b,c node e2e/run.mjs   only these scenarios ((b)-(g) need (a))
 
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -42,7 +51,7 @@ import { BASE_PATH, LOCAL_ORIGIN, decodeLinkQrCode, launchBrowser, serveSite, wa
 import { MOCK_HOST, MOCK_PORT, RELAY_PORT, RELAY_URL } from './config.mjs';
 import { startMockServer } from './mock.mjs';
 import { startRelay } from './relay.mjs';
-import { loadBackupGenerator, loadDeviceNameDecryptor } from './backup-generator.mjs';
+import { loadBackupGenerator, loadDeviceNameDecryptor, loadPaddedBackupGenerator } from './backup-generator.mjs';
 
 const WEB = fileURLToPath(new URL('..', import.meta.url));
 const REPO = join(WEB, '..');
@@ -52,6 +61,10 @@ const ONLY = process.env.ONLY ? new Set(process.env.ONLY.split(',')) : undefined
 const QR = '.module-InstallScreenQrCodeNotScannedStep__qr-code--loaded svg';
 const SECRET_PATTERNS = [/\b[0-9a-f]{64}\b/i, /PRAGMA key/i];
 const STEP_TIMEOUT_MS = Number(process.env.STEP_TIMEOUT_MS ?? 60_000);
+// Linking with faults: a stalled connection is noticed after at most 45 s
+// without data (libsignal-net's limit), then the app reconnects.
+const FAULT_LINK_TIMEOUT_MS = Number(process.env.FAULT_LINK_TIMEOUT_MS ?? 150_000);
+const LARGE_BACKUP_BYTES = Number(process.env.LARGE_BACKUP_BYTES ?? 32 * 1024 * 1024);
 
 // ts/test-mock/bootstrap.node.ts DEFAULT_REMOTE_CONFIG, without
 // desktop.internalUser (the app should behave as for everyone).
@@ -96,10 +109,29 @@ async function scenario(id, name, fn) {
   }
 }
 
+// Faults for (i)-(o): rules matched against every request the mock server
+// sees; `run` acts on the relay (drop, stall) or the mock.
+let faultRules = [];
+const faultLog = [];
+function onMockEvent(event) {
+  for (const rule of faultRules) {
+    if (!rule.match(event)) continue;
+    rule.seen = (rule.seen ?? 0) + 1;
+    if (rule.seen <= (rule.skip ?? 0) || rule.seen > (rule.skip ?? 0) + (rule.times ?? 1)) continue;
+    const what = `${rule.name} (${event.type} ${event.method} ${event.path.replace(/\/[0-9a-f-]{20,}.*$/i, '/…')}, #${rule.seen})`;
+    setTimeout(() => {
+      faultLog.push(what);
+      console.log(`fault: ${what}`);
+      rule.run(event, rule.seen);
+    }, rule.delayMs ?? 0);
+  }
+}
+
 const tmp = await mkdtemp(join(os.tmpdir(), 'receiver-e2e-'));
 const linkedDeviceNames = [];
 const { server, port: mockPort, mock } = await startMockServer({
   onDeviceLink: attributes => linkedDeviceNames.push(attributes?.name),
+  onEvent: onMockEvent,
   maxStorageReadKeys: 2500,
   cdn3Path: join(tmp, 'cdn3'),
   updates2Path: join(REPO, 'ts/test-mock/updates-data'),
@@ -157,14 +189,19 @@ const phone = await server.createPrimaryDevice({ profileName: 'Myself', contacts
 // Alice and Bob, pinned (ts/test-mock/helpers.node.ts createGroup).
 const GROUP_TITLE = 'Weekend plans';
 const group = await phone.createGroup({ title: GROUP_TITLE, members: [phone, alice, bob] });
-{
-  let state = mock.StorageState.getEmpty().updateAccount({
-    profileKey: phone.profileKey.serialize(),
-    givenName: phone.profileName,
+
+function accountStorageState(primary) {
+  return mock.StorageState.getEmpty().updateAccount({
+    profileKey: primary.profileKey.serialize(),
+    givenName: primary.profileName,
     // Like a phone that has been in use: no onboarding story to download
     // (the mock server has none).
     hasViewedOnboardingStory: true,
   });
+}
+
+{
+  let state = accountStorageState(phone);
   for (const contact of contacts) {
     state = state.addContact(contact, {
       whitelisted: true,
@@ -219,6 +256,238 @@ async function waitForTimelineText(text, what) {
     });
 }
 
+
+/**
+ * Opens the debug log view with `open()`, saves the log to a file through
+ * the view's "Save as file" and checks it: log lines, no key-like strings,
+ * none of `secrets` (ids and numbers the log must not show in full).
+ */
+async function checkDebugLog(open, secrets) {
+  const dir = await mkdtemp(join(tmp, 'download-'));
+  const cdp = await page.createCDPSession();
+  await cdp.send('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: dir, eventsEnabled: true });
+  await open();
+  await waitForSelector('[data-web-dialog="debug-log"] [data-testid="debug-log-save"]:not([disabled])', 'the debug log view, loaded');
+  const shown = await page.$eval('[data-testid="debug-log-text"]', e => e.value);
+  await page.click('[data-testid="debug-log-save"]');
+  let file;
+  for (let i = 0; i < 100 && !file; i++) {
+    // eslint-disable-next-line no-await-in-loop
+    await new Promise(resolve => setTimeout(resolve, 100));
+    // eslint-disable-next-line no-await-in-loop
+    file = (await readdir(dir)).find(name => /^receiver-debug-log-.*\.txt$/.test(name));
+  }
+  if (!file) throw new Error('"Save as file" saved no file');
+  const saved = await readFile(join(dir, file), 'utf8');
+  await page.click('[data-testid="debug-log-close"]');
+  await cdp.detach();
+  if (saved !== shown) throw new Error('the saved debug log differs from the one shown');
+  if (!/========= System info =========/.test(saved) || !/========= Logs =========/.test(saved)) {
+    throw new Error('the debug log has no header or log section');
+  }
+  const lines = saved.split('\n').length;
+  if (lines < 50) throw new Error(`the debug log has only ${lines} lines`);
+  const leaked = [
+    ...SECRET_PATTERNS.filter(p => p.test(saved)).map(String),
+    ...secrets.filter(secret => secret && saved.includes(secret)).map(secret => `${secret.slice(0, 4)}...`),
+  ];
+  if (leaked.length) throw new Error(`the debug log contains secret-looking strings: ${leaked.join(', ')}`);
+  return `${lines} lines, ${(saved.length / 1024).toFixed(0)} KiB saved as ${file}; no secret-looking strings`;
+}
+
+const isTransferArchivePoll = e => e.type === 'ws' && e.method === 'GET' && e.path.startsWith('/v1/devices/transfer_archive');
+const isAuthUpgrade = e => e.type === 'upgrade' && e.authenticated;
+const isProfileFetch = e => e.type === 'ws' && e.method === 'GET' && e.path.startsWith('/v1/profile/');
+
+/**
+ * Links a new primary device ("phone") in a fresh browser profile while
+ * `rules` inject faults, and waits until the app shows the inbox with
+ * the contact sync done (and, with a transfer, the history imported).
+ *
+ *   transfer 'none'      the phone does not offer its history
+ *            'archive'   it uploads an ephemeral backup (`backupBytes`
+ *                        large); the mock answers the app's long poll on
+ *                        `answerOnPoll` (1: the first poll, 2: the poll
+ *                        after a fault, ...)
+ *            'continue'  it offers, then continues without a transfer
+ *
+ * Contacts must be synced and messages processed within `maxSeconds` of
+ * linking (a stalled connection takes up to 45 s to notice).
+ */
+async function linkWithFaults({ name, transfer = 'none', answerOnPoll = 1, backupBytes, rules = [], beforeLink, maxSeconds = 60 }) {
+  const { randomBytes } = await import('node:crypto');
+  // Only the linking app's traffic: the faults must hit it alone.
+  for (const other of await browser.pages()) {
+    // eslint-disable-next-line no-await-in-loop
+    await other.close().catch(() => undefined);
+  }
+  const primary = await server.createPrimaryDevice({ profileName: name, contacts: [alice, bob], hasE164: true });
+  // Contacts come only from the contact sync (the storage service has the
+  // account record alone): finding them proves the sync worked.
+  await primary.setStorageState(accountStorageState(primary));
+
+  let answer;
+  let backupSize = 0;
+  const historyAcis = [crypto.randomUUID(), crypto.randomUUID()];
+  if (transfer !== 'none') {
+    primary.ephemeralBackupKey = randomBytes(32);
+  }
+  if (transfer === 'archive') {
+    const options = {
+      aci: primary.device.aci,
+      profileKey: primary.profileKey.serialize(),
+      mediaRootBackupKey: primary.mediaRootBackupKey,
+      backupKey: primary.ephemeralBackupKey,
+      conversations: 2,
+      conversationAcis: historyAcis,
+      messages: 50,
+    };
+    let stream;
+    if (backupBytes) {
+      const { generatePaddedBackup } = await loadPaddedBackupGenerator();
+      ({ stream, size: backupSize } = await generatePaddedBackup(options, backupBytes));
+    } else {
+      const { generateBackup } = await loadBackupGenerator();
+      ({ stream } = generateBackup(options));
+    }
+    const cdnKey = randomBytes(16).toString('hex');
+    await server.storeAttachmentOnCdn(3, cdnKey, stream);
+    answer = { cdn: 3, key: cdnKey };
+  } else if (transfer === 'continue') {
+    answer = { error: 'CONTINUE_WITHOUT_UPLOAD' };
+  }
+
+  let device;
+  let polls = 0;
+  const contactsKey = primary.getContactsBlob().attachmentIdentifier?.cdnKey;
+  const context = { primary, contactsKey, isContactsDownload: e => e.type === 'http' && e.path.startsWith('/attachments/') && e.path.includes(contactsKey) };
+  faultRules = [
+    ...(answer
+      ? [
+          {
+            name: 'transfer archive answer',
+            times: Infinity,
+            match: isTransferArchivePoll,
+            run: () => {
+              polls += 1;
+              if (polls !== answerOnPoll) return;
+              void (async () => {
+                while (!device) await new Promise(resolve => setTimeout(resolve, 50));
+                await server.provideTransferArchive(device, answer);
+              })();
+            },
+          },
+        ]
+      : []),
+    ...rules.map(rule => (typeof rule === 'function' ? rule(context) : rule)),
+  ];
+  const faultsBefore = faultLog.length;
+
+  await openPage(await browser.createBrowserContext());
+  await beforeLink?.(page);
+  const provisioning = server.waitForProvision();
+  const started = Date.now();
+  await page.goto(appUrl, { waitUntil: 'domcontentloaded' });
+  await waitForSelector(QR, 'the link QR code', 120_000);
+  const qr = await decodeLinkQrCode(page, QR);
+  if (!qr.ok) throw new Error(`QR code: ${qr.reason}`);
+  const provision = await withTimeout(provisioning, STEP_TIMEOUT_MS, 'the provisioning socket at the mock');
+  device = await withTimeout(
+    provision.complete({ provisionURL: qr.url, primaryDevice: primary }),
+    STEP_TIMEOUT_MS,
+    'the app to register the linked device'
+  );
+  const linked = Date.now();
+  await primary.addSingleUseKey(device, await withTimeout(device.popSingleUseKey(), FAULT_LINK_TIMEOUT_MS, 'keys'));
+  await withTimeout(primary.waitForSync(device), FAULT_LINK_TIMEOUT_MS, 'the initial sync requests');
+  primary.resetSyncState(device);
+
+  try {
+    await page.waitForSelector('#LeftPane', { timeout: Math.max(1000, FAULT_LINK_TIMEOUT_MS - (Date.now() - linked)) });
+  } catch {
+    const state = await page.evaluate(() => JSON.stringify(window.reduxStore?.getState().installer)).catch(() => '?');
+    throw new Error(`no inbox ${((Date.now() - linked) / 1000).toFixed(0)} s after linking; installer state ${state}`);
+  }
+  const inboxSeconds = (Date.now() - linked) / 1000;
+  if (await page.$('[class*="module-InstallScreen"]')) throw new Error('the install screen is still shown');
+
+  // The contact sync: Bob is known (he has no conversation yet: search).
+  // The inbox can open before the sync is done (Desktop opens it when the
+  // connection drops) and search results do not follow new contacts: search
+  // again until he is found.
+  const search = '.module-SearchInput__input.LeftPaneSearchInput__input';
+  const bobResult = `#LeftPane [data-testid="${bob.device.aci}"]`;
+  const searchDeadline = Date.now() + STEP_TIMEOUT_MS;
+  for (;;) {
+    // eslint-disable-next-line no-await-in-loop
+    await waitForSelector(search, 'the search box');
+    // eslint-disable-next-line no-await-in-loop
+    await clearInput(search);
+    // eslint-disable-next-line no-await-in-loop
+    await page.type(search, 'Bob');
+    // eslint-disable-next-line no-await-in-loop
+    if (await page.waitForSelector(bobResult, { timeout: 3000 }).then(() => true, () => false)) break;
+    if (Date.now() > searchDeadline) throw new Error('timed out waiting for Bob (from the contact sync) in the search results');
+  }
+  await clearInput(search);
+
+  // Messages are processed: one from Alice shows up in the conversation list.
+  await alice.addSingleUseKey(device, await device.popSingleUseKey(mock.ServiceIdKind.ACI), mock.ServiceIdKind.ACI);
+  const hello = `Hello ${name} ${Date.now()}`;
+  await alice.sendText(device, hello);
+  await page
+    .waitForFunction(
+      ([id, text]) => document.querySelector(`#LeftPane [data-testid="${id}"]`)?.textContent.includes(text),
+      { timeout: STEP_TIMEOUT_MS },
+      [alice.device.aci, hello]
+    )
+    .catch(() => {
+      throw new Error("timed out waiting for Alice's message in the conversation list (messages not processed)");
+    });
+  const doneSeconds = (Date.now() - linked) / 1000;
+  if (doneSeconds > maxSeconds) {
+    throw new Error(`contacts synced and messages processed only ${doneSeconds.toFixed(1)} s after linking (bound ${maxSeconds} s)`);
+  }
+
+  if (transfer === 'archive') {
+    await page
+      .waitForFunction(
+        ([first, second]) => {
+          const text = id => document.querySelector(`#LeftPane [data-testid="${id}"]`)?.textContent ?? '';
+          return text(first).includes('Message 48') && text(second).includes('Message 49');
+        },
+        { timeout: STEP_TIMEOUT_MS },
+        historyAcis
+      )
+      .catch(() => {
+        throw new Error('timed out waiting for the imported conversations ("Message 48", "Message 49")');
+      });
+  }
+  faultRules = [];
+  const faults = faultLog.slice(faultsBefore);
+  if (rules.length && !faults.some(f => !f.startsWith('transfer archive answer'))) {
+    throw new Error('no fault was injected');
+  }
+  return {
+    primary,
+    device,
+    backupSize,
+    polls,
+    summary: `inbox ${inboxSeconds.toFixed(1)} s, contacts synced and a message received ${doneSeconds.toFixed(1)} s after linking (link ${((linked - started) / 1000).toFixed(1)} s after load); faults: ${faults.filter(f => !f.startsWith('transfer archive answer')).join('; ')}${answer ? `; ${polls} transfer archive polls` : ''}`,
+  };
+}
+
+const dropAll = { name: 'drop all connections', run: () => relay.dropAll() };
+// As a Tor client being replaced: no new connection works for a while.
+const dropAllFor = ms => ({
+  name: `drop all connections, refuse new ones for ${ms / 1000} s`,
+  run: () => {
+    relay.refuseFor(ms);
+    relay.dropAll();
+  },
+});
+const stallAll = { name: 'stall all connections', run: () => relay.stallAll() };
+
 try {
   await openPage();
 
@@ -235,6 +504,11 @@ try {
     // Persistent storage is asked for after linking, not on a first visit.
     if (await page.evaluate(() => window.__webPersist != null)) throw new Error('persistent storage was asked for before linking');
     linkCapabilities = new URL(qr.url).searchParams.get('capabilities') ?? '';
+    const linkScreenLog = await checkDebugLog(async () => {
+      await waitForSelector('[data-testid="debug-log-link"]', 'the "Problems linking?" link');
+      await page.click('[data-testid="debug-log-link"]');
+    }, []);
+    console.log(`debug log from the link screen: ${linkScreenLog}`);
 
     const provision = await withTimeout(provisioning, STEP_TIMEOUT_MS, 'the provisioning socket at the mock');
     desktop = await withTimeout(
@@ -468,7 +742,12 @@ try {
       delete document.hasFocus;
       window.dispatchEvent(new Event('focus'));
     });
-    return `permission ${permissionBefore} -> granted via the banner; notification "${shown.title}" for "${text}"; click opened the conversation`;
+    const helpLog = await checkDebugLog(
+      () => page.evaluate(() => window.IPC.showDebugLog()),
+      [desktop.aci, desktop.pni, phone.device.aci, phone.device.number, alice.device.aci, alice.device.number, bob.device.aci]
+    );
+    console.log(`debug log from Help (show-debug-log): ${helpLog}`);
+    return `permission ${permissionBefore} -> granted via the banner; notification "${shown.title}" for "${text}"; click opened the conversation; debug log: ${helpLog}`;
   });
 
   await scenario('h', 'link-and-sync: history from the primary\'s ephemeral backup', async () => {
@@ -529,6 +808,121 @@ try {
     return 'backup5 offered; 2 conversations and 50 messages imported from the ephemeral backup';
   });
 
+  // The authenticated socket first carries the registration (keys upload,
+  // which Desktop retries 3 times, 1 s apart); right after it, the app
+  // fetches profiles (where the owner's log shows the drop).
+  await scenario('i', 'link: every connection drops as the authenticated socket connects, and again (4 s outage) right after registration', async () => {
+    const { summary } = await linkWithFaults({
+      name: 'Phone i',
+      rules: [
+        { ...dropAll, match: isAuthUpgrade },
+        { ...dropAllFor(4000), match: isProfileFetch },
+      ],
+    });
+    return summary;
+  });
+
+  await scenario('j', 'link: every connection stalls right after registration', async () => {
+    const { summary } = await linkWithFaults({
+      name: 'Phone j',
+      maxSeconds: 90,
+      rules: [{ ...stallAll, match: isProfileFetch }],
+    });
+    return summary;
+  });
+
+  await scenario('k', 'link with transfer: every connection drops while the app long-polls for the archive', async () => {
+    const { summary } = await linkWithFaults({
+      name: 'Phone k',
+      transfer: 'archive',
+      answerOnPoll: 2,
+      rules: [{ ...dropAllFor(4000), match: isTransferArchivePoll, delayMs: 500 }],
+    });
+    return summary;
+  });
+
+  await scenario('l', 'link, phone continues without transfer: every connection stalls during the long poll', async () => {
+    const { summary } = await linkWithFaults({
+      name: 'Phone l',
+      maxSeconds: 90,
+      transfer: 'continue',
+      answerOnPoll: 2,
+      rules: [{ ...stallAll, match: isTransferArchivePoll, delayMs: 500 }],
+    });
+    return summary;
+  });
+
+  await scenario('m', 'link without transfer: every connection drops as the phone sends the contact sync', async () => {
+    const { summary } = await linkWithFaults({
+      name: 'Phone m',
+      rules: [{ ...dropAllFor(4000), match: e => e.type === 'push' }],
+    });
+    return summary;
+  });
+
+  await scenario('n', 'link without transfer: every connection stalls during the contact sync', async () => {
+    const { summary } = await linkWithFaults({
+      name: 'Phone n',
+      maxSeconds: 90,
+      rules: [({ isContactsDownload }) => ({ ...stallAll, match: isContactsDownload })],
+    });
+    return summary;
+  });
+
+  await scenario('o', `link with a large archive (${(LARGE_BACKUP_BYTES / 2 ** 20).toFixed(0)} MiB): progress, a drop half way, resumed with Range`, async () => {
+    const ranges = [];
+    const archiveDownload = e => e.type === 'http' && e.method === 'GET' && /^\/cdn3\/attachments\//.test(e.path);
+    const started = Date.now();
+    const { summary, backupSize } = await linkWithFaults({
+      name: 'Phone o',
+      transfer: 'archive',
+      backupBytes: LARGE_BACKUP_BYTES,
+      rules: [
+        {
+          name: 'drop all connections half way through the archive download',
+          match: archiveDownload,
+          times: 1,
+          run: () => relay.afterBytesDown(Math.floor(LARGE_BACKUP_BYTES / 2), () => relay.dropAll()),
+        },
+        {
+          name: 'archive download',
+          match: archiveDownload,
+          times: Infinity,
+          run: e => {
+            if (e.range) ranges.push(e.range);
+          },
+        },
+      ],
+      beforeLink: p =>
+        p.evaluateOnNewDocument(() => {
+          window.__backupProgress = [];
+          window.__heap = [];
+          const timer = setInterval(() => {
+            const store = window.reduxStore;
+            if (!store) return;
+            const { installer } = store.getState();
+            if (installer?.step === 'BackupImport' && installer.backupStep === 'Download') {
+              const last = window.__backupProgress.at(-1);
+              if (!last || last.currentBytes !== installer.currentBytes) {
+                window.__backupProgress.push({ t: Date.now(), currentBytes: installer.currentBytes, totalBytes: installer.totalBytes });
+                if (performance.memory) window.__heap.push(performance.memory.usedJSHeapSize);
+              }
+            }
+            if (store.getState().app?.appView === 'Inbox') clearInterval(timer);
+          }, 50);
+        }),
+    });
+    const { progress, heap } = await page.evaluate(() => ({ progress: window.__backupProgress, heap: window.__heap }));
+    const distinct = new Set(progress.map(p => p.currentBytes)).size;
+    if (distinct < 5) throw new Error(`download progress did not advance in steps: ${JSON.stringify(progress.slice(0, 10))}`);
+    if (!ranges.some(r => /^bytes=[1-9]\d*-$/.test(r))) throw new Error(`the download was not resumed with a Range request: ${JSON.stringify(ranges)}`);
+    const maxHeap = heap.length ? Math.max(...heap) : 0;
+    const minHeap = heap.length ? Math.min(...heap) : 0;
+    const total = progress.at(-1)?.totalBytes;
+    const seconds = (Date.now() - started) / 1000;
+    return `${(backupSize / 2 ** 20).toFixed(1)} MiB archive, total ${total}; ${progress.length} progress updates (${distinct} distinct); resumed with Range ${ranges.join(', ')}; JS heap during download ${(minHeap / 2 ** 20).toFixed(0)}-${(maxHeap / 2 ** 20).toFixed(0)} MiB; ${seconds.toFixed(1)} s; ${summary}`;
+  });
+
   ok = true;
 } catch {
   ok = false;
@@ -561,6 +955,7 @@ try {
   for (const line of unhandled) problems.push(`unhandled error: ${line.slice(0, 200)}`);
   for (const line of secrets) problems.push(`secret-looking log line: ${line.slice(0, 80)}...`);
   console.log(`relay: ${JSON.stringify(relay.stats)}`);
+  if (faultLog.length) console.log(`faults injected: ${faultLog.length}`);
   console.log(`log lines: ${logLines.length}, uncaught exceptions: ${pageErrors.length}, secret-looking: ${secrets.length}`);
   console.log('\nresults:');
   for (const r of results) console.log(`  (${r.id}) ${r.ok ? 'PASS' : 'FAIL'} ${r.seconds.toFixed(1)} s  ${r.name}${r.note ? ` -- ${r.note}` : ''}`);

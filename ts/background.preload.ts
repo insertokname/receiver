@@ -1820,6 +1820,8 @@ async function startApp(): Promise<void> {
   let registrationCompleted: ExplodePromiseResultType<void> | undefined;
   let authSocketConnectCount = 0;
   let afterAuthSocketConnectPromise: ExplodePromiseResultType<void> | undefined;
+  // WEB-FORK: whether the running afterAuthSocketConnect passed step 5
+  let isMessageProcessingEnabled = false;
   let remotelyExpired = false;
 
   async function afterAuthSocketConnect() {
@@ -1841,12 +1843,20 @@ async function startApp(): Promise<void> {
     strictAssert(messageReceiver, 'messageReceiver must be initialized');
 
     while (afterAuthSocketConnectPromise?.promise) {
+      // WEB-FORK: going offline removed the request handler. A previous run
+      // past step 5 may be waiting (step 7) for syncs that only arrive
+      // through it: give it back, or both runs wait for each other.
+      // Connections over Tor drop often while linking.
+      if (isMessageProcessingEnabled) {
+        registerRequestHandler(messageReceiver);
+      }
       log.info(`${logId}: waiting for previous run to finish`);
       // oxlint-disable-next-line no-await-in-loop
       await afterAuthSocketConnectPromise.promise;
     }
 
     afterAuthSocketConnectPromise = explodePromise();
+    isMessageProcessingEnabled = false; // WEB-FORK
     log.info(`${logId}: starting`);
 
     try {
@@ -1904,6 +1914,7 @@ async function startApp(): Promise<void> {
       log.info(`${logId}: enabling message processing`);
       messageReceiver.startProcessingQueue();
       registerRequestHandler(messageReceiver);
+      isMessageProcessingEnabled = true; // WEB-FORK
 
       // 6. Kickoff storage service sync if we're not still installing standalone
       const step6State = window.reduxStore.getState();

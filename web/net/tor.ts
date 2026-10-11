@@ -9,7 +9,11 @@
 // failures, or when Signal rate-limits us, the client builds a new circuit
 // (a new exit); if failures continue, the whole client is replaced
 // (bootstrapped again over the transport chain, with backoff) and every
-// connection on the old one is told it was lost.
+// connection on the old one is told it was lost. Some failures say which
+// it is right away: a closed circuit asks for a new circuit, a closed
+// channel (the connection to the first relay) for a new client. While a
+// new circuit is being built, new connections wait for it (bounded by
+// their timeout) instead of failing on the old one.
 //
 // Carrier is the seam for tests: a test build can hand WebNet a different
 // implementation (e.g. TLS over a WebSocket to a local relay in front of
@@ -22,10 +26,12 @@ import {
   openSignalSocket,
   SIGNAL_CA_PEM,
   SignalHttps,
+  withDeadline,
 } from '../transport/dist/index.js';
 import type {
   HeaderPairs,
   SignalConnection,
+  SignalHttpsBody,
   TorClient,
   TorEvent,
   Transport,
@@ -44,14 +50,24 @@ export type HttpsRequest = Readonly<{
   headers: HeaderPairs;
   body?: Uint8Array;
   rootPem: string;
+  /** Until the response head arrives (connecting and sending included). */
   timeoutMs: number;
-  maxResponseBytes: number;
 }>;
+
+/** A response body, received piece by piece (SignalHttpsBody). */
+export type HttpsBodyReader = {
+  /** The next piece, undefined at the end; rejects after `idleTimeoutMs` without data. */
+  next(idleTimeoutMs: number): Promise<Uint8Array | undefined>;
+  /** Stops receiving and drops the connection; a pending next() rejects. */
+  cancel(): void;
+};
 
 export type HttpsResponse = Readonly<{
   status: number;
   headers: HeaderPairs;
-  body: Uint8Array;
+  body: HttpsBodyReader;
+  /** The carrier session it came over (for reportStall). */
+  session: number;
 }>;
 
 /** The server answered a WebSocket upgrade with something other than 101. */
@@ -105,12 +121,52 @@ const NEW_CIRCUIT_AFTER = 2;
 const REPLACE_AFTER = 4;
 const NEW_CIRCUIT_DEADLINE_MS = 30_000;
 
+// What a failure says about the Tor client (arti's error messages).
+const CHANNEL_DEAD = /channel closed|channel .*(dead|failed|shut ?down)/i;
+const CIRCUIT_DEAD = /circuit (closed|collapsed|destroyed)|circuit .*(dead|shut ?down)/i;
+
 type Session = {
   id: number;
   client: TorClient;
   transport: Transport;
   https: SignalHttps;
 };
+
+/**
+ * Wraps a transport response body; `onError` hears of failures (not of
+ * cancel()). The WebAssembly object is freed once the body ended.
+ */
+export function bodyReader(body: SignalHttpsBody, onError: (error: unknown) => void = () => undefined): HttpsBodyReader {
+  let done = false;
+  let cancelled = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    body.free();
+  };
+  return {
+    async next(idleTimeoutMs) {
+      if (cancelled) throw new Error('response body cancelled');
+      if (done) return undefined;
+      try {
+        const piece = (await body.next(idleTimeoutMs)) as Uint8Array | undefined;
+        if (piece === undefined) finish();
+        return piece;
+      } catch (error) {
+        if (!cancelled) onError(error);
+        finish();
+        throw error;
+      }
+    },
+    cancel() {
+      if (cancelled || done) return;
+      cancelled = true;
+      body.cancel();
+      // A pending next() still holds its own reference; it rejects now.
+      finish();
+    },
+  };
+}
 
 function abortError(signal: AbortSignal): unknown {
   return signal.reason ?? new DOMException('Aborted', 'AbortError');
@@ -246,6 +302,10 @@ class TorCarrier implements Carrier {
     log.warn(`connection failure ${this.#failures} on Tor session ${session.id}: ${reason}`);
     if (this.#failures >= REPLACE_AFTER) {
       this.#replace(session, `${this.#failures} consecutive failures`);
+    } else if (CHANNEL_DEAD.test(reason)) {
+      this.#replace(session, 'its channel closed');
+    } else if (CIRCUIT_DEAD.test(reason)) {
+      this.#newCircuit(session, 'circuit closed');
     } else if (this.#failures >= NEW_CIRCUIT_AFTER) {
       this.#newCircuit(session, 'repeated failures');
     }
@@ -265,6 +325,10 @@ class TorCarrier implements Carrier {
           log.warn(`new circuit failed: ${errorReason(error)}`);
           this.#replace(session, 'new circuit failed');
         }
+      )
+      .then(
+        () => undefined,
+        () => undefined
       )
       .finally(() => {
         this.#renewing = undefined;
@@ -303,8 +367,31 @@ class TorCarrier implements Carrier {
     if (!this.#session) this.start();
   }
 
+  /**
+   * A session to use: waits while the client bootstraps or builds a new
+   * circuit, for at most `timeoutMs`.
+   */
+  async #usable(timeoutMs: number, signal?: AbortSignal): Promise<Session> {
+    const deadline = Date.now() + timeoutMs;
+    for (;;) {
+      const left = deadline - Date.now();
+      if (left <= 0) throw new Error(`Tor is not connected (waited ${Math.round(timeoutMs / 1000)}s)`);
+      // eslint-disable-next-line no-await-in-loop
+      const session = await withDeadline(this.#current(signal), left, `Tor is not connected (waited ${Math.round(timeoutMs / 1000)}s)`);
+      const renewing = this.#renewing;
+      if (!renewing || this.#session !== session) return session;
+      // eslint-disable-next-line no-await-in-loop
+      await withDeadline(waitFor(renewing, signal), Math.max(1, deadline - Date.now()), 'Tor is building a new circuit').catch(
+        error => {
+          if (signal?.aborted) throw error;
+        }
+      );
+      if (Date.now() >= deadline) return this.#session ?? session;
+    }
+  }
+
   async openSocket(url: string, { rootPem, headers, timeoutMs, signal }: OpenSocketOptions): Promise<OpenedSocket> {
-    const session = await this.#current(signal);
+    const session = await this.#usable(timeoutMs, signal);
     const opening = openSignalSocket(session.client, url, { rootPem, headers, timeoutMs });
     try {
       const connection = await waitFor(opening, signal);
@@ -336,23 +423,27 @@ class TorCarrier implements Carrier {
   }
 
   async request(request: HttpsRequest, signal?: AbortSignal): Promise<HttpsResponse> {
-    const session = await this.#current(signal);
+    const session = await this.#usable(request.timeoutMs, signal);
     try {
-      const response = (await waitFor(
+      const response = await waitFor(
         session.https.request(
           request.method,
           request.url,
           request.headers,
           request.body,
           request.rootPem,
-          request.timeoutMs,
-          request.maxResponseBytes
-        ) as Promise<HttpsResponse>,
+          request.timeoutMs
+        ) as Promise<{ status: number; headers: HeaderPairs; body: SignalHttpsBody }>,
         signal
-      )) as HttpsResponse;
+      );
       this.#succeeded();
       if (response.status === 429) this.#newCircuit(session, 'rate limited');
-      return response;
+      return {
+        status: response.status,
+        headers: response.headers,
+        session: session.id,
+        body: bodyReader(response.body, error => this.#failed(session, errorReason(error))),
+      };
     } catch (error) {
       if (!signal?.aborted) this.#failed(session, errorReason(error));
       throw error;

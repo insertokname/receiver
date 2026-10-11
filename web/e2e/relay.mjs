@@ -7,6 +7,14 @@
 // must be one of `targets` ("host:port" the app may ask for), every one of
 // which goes to 127.0.0.1:<mockPort>. It never sees plaintext: TLS runs end
 // to end between the app and the mock server.
+//
+// Faults, like those of a Tor circuit: dropAll() closes every connection;
+// stallAll() makes every open connection silently stop forwarding (no
+// close, like a circuit that hangs); stallNew(true) does the same to new
+// connections until turned off; refuseFor(ms) fails new connections right
+// away for a while (like a Tor client being replaced); afterBytesDown(n,
+// fn) runs fn once n more bytes went to the app (e.g. to drop a download
+// half way).
 
 import { createRequire } from 'node:module';
 import net from 'node:net';
@@ -15,17 +23,21 @@ import { join } from 'node:path';
 import { MOCK_SERVER_PACKAGE } from './config.mjs';
 
 // The `ws` package the mock server itself uses.
-const { WebSocketServer, createWebSocketStream } = createRequire(join(MOCK_SERVER_PACKAGE, 'package.json'))('ws');
+const { WebSocketServer } = createRequire(join(MOCK_SERVER_PACKAGE, 'package.json'))('ws');
 
 /**
  * Starts the relay on 127.0.0.1:`port`. Only pages from `origin` may use it.
- * Resolves to { close(), stats } where stats counts accepted and refused
- * connections.
+ * Resolves to { close(), dropAll(), stallAll(), stallNew(), afterBytesDown(),
+ * stats } where stats counts connections, bytes and faults.
  */
 export async function startRelay({ port, origin, targets, mockPort }) {
   const allowed = new Set(targets);
-  const stats = { accepted: 0, refused: 0, open: 0, bytesUp: 0, bytesDown: 0 };
-  const sockets = new Set();
+  const stats = { accepted: 0, refused: 0, open: 0, bytesUp: 0, bytesDown: 0, dropped: 0, stalled: 0 };
+  const connections = new Set();
+  let stallingNew = false;
+  let refuseUntil = 0;
+  let byteTriggers = [];
+
   const wss = new WebSocketServer({
     host: '127.0.0.1',
     port,
@@ -41,26 +53,48 @@ export async function startRelay({ port, origin, targets, mockPort }) {
     },
   });
   wss.on('connection', ws => {
+    if (Date.now() < refuseUntil) {
+      stats.refused += 1;
+      ws.terminate();
+      return;
+    }
     stats.accepted += 1;
     stats.open += 1;
     const tcp = net.connect(mockPort, '127.0.0.1');
-    const stream = createWebSocketStream(ws);
-    sockets.add(tcp);
+    const connection = { ws, tcp, stalled: false };
+    connections.add(connection);
+    if (stallingNew) {
+      connection.stalled = true;
+      stats.stalled += 1;
+    }
+    let closed = false;
     const done = () => {
-      tcp.destroy();
-      stream.destroy();
-    };
-    tcp.on('data', chunk => (stats.bytesDown += chunk.length));
-    stream.on('data', chunk => (stats.bytesUp += chunk.length));
-    tcp.on('error', done);
-    stream.on('error', done);
-    tcp.on('close', () => {
-      sockets.delete(tcp);
+      if (closed) return;
+      closed = true;
+      connections.delete(connection);
       stats.open -= 1;
-      ws.close();
+      tcp.destroy();
+      ws.terminate();
+    };
+    ws.on('message', data => {
+      if (connection.stalled) return;
+      stats.bytesUp += data.length;
+      tcp.write(data);
     });
-    stream.on('close', done);
-    stream.pipe(tcp).pipe(stream);
+    tcp.on('data', chunk => {
+      if (connection.stalled) return;
+      stats.bytesDown += chunk.length;
+      ws.send(chunk);
+      if (byteTriggers.length) {
+        const due = byteTriggers.filter(t => stats.bytesDown >= t.at);
+        byteTriggers = byteTriggers.filter(t => stats.bytesDown < t.at);
+        for (const trigger of due) setImmediate(trigger.fn);
+      }
+    });
+    tcp.on('error', done);
+    tcp.on('close', done);
+    ws.on('error', done);
+    ws.on('close', done);
   });
   await new Promise((resolve, reject) => {
     wss.once('listening', resolve);
@@ -70,11 +104,36 @@ export async function startRelay({ port, origin, targets, mockPort }) {
     stats,
     /** Drops every relayed connection (as if the network went away). */
     dropAll() {
-      for (const ws of wss.clients) ws.terminate();
-      for (const tcp of sockets) tcp.destroy();
+      for (const { ws, tcp } of connections) {
+        stats.dropped += 1;
+        ws.terminate();
+        tcp.destroy();
+      }
+    },
+    /** Every open connection stops forwarding, in both directions, without closing. */
+    stallAll() {
+      for (const connection of connections) {
+        if (!connection.stalled) stats.stalled += 1;
+        connection.stalled = true;
+      }
+    },
+    /** While on, new connections are stalled from the start. */
+    stallNew(on) {
+      stallingNew = on;
+    },
+    /** New connections fail at once for `ms`. */
+    refuseFor(ms) {
+      refuseUntil = Date.now() + ms;
+    },
+    /** Runs `fn` once `bytes` more bytes went from the mock server to the app. */
+    afterBytesDown(bytes, fn) {
+      byteTriggers.push({ at: stats.bytesDown + bytes, fn });
     },
     close() {
-      for (const ws of wss.clients) ws.terminate();
+      for (const { ws, tcp } of connections) {
+        ws.terminate();
+        tcp.destroy();
+      }
       return new Promise(resolve => wss.close(resolve));
     },
   };

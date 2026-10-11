@@ -175,7 +175,12 @@ function jsonBody(value: unknown): Uint8Array<ArrayBuffer> {
   return new TextEncoder().encode(JSON.stringify(value)) as Uint8Array<ArrayBuffer>;
 }
 
-/** A typed REST-over-WebSocket request (no timeout, like libsignal's typed APIs). */
+// libsignal's typed APIs have no request timeout of their own (the
+// connection's liveness checks end them when it dies); a generous one here
+// bounds a request that a live connection never answers.
+const TYPED_REQUEST_TIMEOUT_MS = 120_000;
+
+/** A typed REST-over-WebSocket request. */
 type Send = (
   operation: string,
   request: { verb: string; path: string; headers?: Headers; body?: Uint8Array<ArrayBuffer> },
@@ -207,7 +212,7 @@ class BaseChatConnection {
   }
 
   protected send: Send = (operation, { verb, path, headers = [], body }, options) =>
-    this.socket.fetch({ verb, path, headers, body }, undefined, operation, options?.abortSignal);
+    this.socket.fetch({ verb, path, headers, body }, TYPED_REQUEST_TIMEOUT_MS, operation, options?.abortSignal);
 }
 
 export class WebUnauthenticatedChatConnection extends BaseChatConnection {

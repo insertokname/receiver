@@ -11,6 +11,8 @@
 
 import type { RendererConfigType } from '../../ts/types/RendererConfig.std.ts';
 import { handle, logOnce, onSend, onSync, sendToRenderer, stub } from './ipc.ts';
+import { showDebugLog } from '../shell/debug-log.ts';
+import { fetchLogData, formatDebugLog, installDebugLogChannels } from './debug-log.ts';
 import { clearLog } from './logs.ts';
 
 class NotAvailableError extends Error {
@@ -123,11 +125,17 @@ export function installChannels({ config }: { config: RendererConfigType }): voi
   handle('show-open-folder-dialog', reject('choosing folders'));
   handle('pdf:generate', reject('PDF export'));
 
-  // Logs: kept in memory (logs.ts). Uploading needs the network (Phase 4).
+  // Logs: kept in memory (logs.ts); Help > Debug log opens the shell's
+  // view of them (copy or save). No upload: logs never leave the browser.
   handle('delete-all-logs', () => clearLog());
-  handle('fetch-log', reject('the debug log view'));
-  handle('DebugLogs.getLogs', reject('the debug log view'));
-  handle('DebugLogs.upload', reject('debug log upload'));
+  installDebugLogChannels(config.version);
+  handle('fetch-log', () => fetchLogData());
+  handle('DebugLogs.getLogs', (_event, data: unknown, userAgent: unknown) =>
+    formatDebugLog(data, typeof userAgent === 'string' ? userAgent : undefined)
+  );
+  handle('DebugLogs.upload', reject('debug log upload (logs stay in the browser: copy or save them)'));
+  onSend('show-debug-log', () => showDebugLog());
+  stub('send', 'show-debug-log-save-dialog', undefined, 'the debug log view saves by itself');
 
   // Optional resources (large emoji font, localized emoji search, calling
   // sounds) are downloaded by Electron's main process from Signal's update
@@ -144,7 +152,6 @@ export function installChannels({ config }: { config: RendererConfigType }): voi
 
   // Secondary windows and calling: not in the web build yet.
   for (const channel of [
-    'show-debug-log',
     'close-debug-log',
     'show-call-diagnostic',
     'close-call-diagnostic',

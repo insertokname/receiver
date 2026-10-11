@@ -12,13 +12,14 @@ import initWasm, {
   init as initWebtorLogging,
   setLogCallback,
   SignalHttps,
+  SignalHttpsBody,
   SignalSocket,
   TorClient,
   TorClientOptions,
 } from './pkg/webtor_wasm.js';
 import SIGNAL_CA_PEM from './signal-ca.js';
 
-export { SIGNAL_CA_PEM, SignalHttps, SignalSocket };
+export { SIGNAL_CA_PEM, SignalHttps, SignalHttpsBody, SignalSocket };
 
 /** Sent when the caller does not set one: honest, never the official client's. */
 export const DEFAULT_USER_AGENT = 'unofficial-web-client/0.1';
@@ -205,6 +206,7 @@ export async function connectTor({
  * `next()` resolves to the next frame: a Uint8Array (binary message), `true`
  * (a control frame: proof of life) or `{ code, reason }` once closed.
  * `recv()` skips control frames and resolves to `null` once closed.
+ * `abort()` drops a connection that may be dead without waiting for it.
  */
 export class SignalConnection {
   #socket;
@@ -237,6 +239,11 @@ export class SignalConnection {
   }
   close(code = 1000, reason = '') {
     return this.#socket.close(code, reason);
+  }
+  /** Ends the connection at once (no closing handshake): pending calls fail. */
+  abort() {
+    this.closed ??= { code: 1006, reason: 'aborted' };
+    this.#socket.abort();
   }
 }
 

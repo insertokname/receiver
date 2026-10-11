@@ -19,6 +19,12 @@
 // with backoff while showing "Connecting..." in place of the error. A QR
 // code that expired unused (MaxRotations) is left to the user, as in
 // Desktop and WhatsApp Web.
+//
+// The message transfer while linking: when downloading the phone's archive
+// fails for a retriable reason (a connection lost), Desktop waits for the
+// user to press "Retry". Like WhatsApp Web's history sync, the shell retries
+// by itself with backoff (Desktop resumes the download where it stopped),
+// with a banner above Desktop's error, which keeps its Cancel button.
 
 import { desktopView, everySecond, h } from './ui.ts';
 
@@ -40,6 +46,7 @@ const TEXT: Record<string, { title: string; detail: string }> = {
 type InstallerState = Readonly<{
   step?: string;
   error?: string;
+  currentBytes?: number;
   provisioningUrl?: Readonly<{ loadingState?: number; error?: string }>;
 }>;
 
@@ -67,8 +74,56 @@ function linkScreenFailed(): boolean {
 }
 
 function qrCodeShown(): boolean {
-  const installer = (window.reduxStore?.getState() as { installer?: InstallerState } | undefined)?.installer;
+  const installer = installerState();
   return installer?.step === 'QrCodeNotScanned' && installer.provisioningUrl?.loadingState === LOADED;
+}
+
+function installerState(): InstallerState | undefined {
+  return (window.reduxStore?.getState() as { installer?: InstallerState } | undefined)?.installer;
+}
+
+/** The phone's archive could not be downloaded; Desktop offers "Retry". */
+function backupImportFailed(): boolean {
+  const installer = installerState();
+  return installer?.step === 'BackupImport' && installer.error === 'Retriable';
+}
+
+/**
+ * Retries the message transfer with backoff while it fails. The backoff
+ * starts over once a download got further than before.
+ */
+function backupImportRetry(): { secondsLeft: () => number | undefined; check: () => boolean } {
+  let retries = 0;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let retryAt = 0;
+  let bytesAtFailure = -1;
+  return {
+    secondsLeft: () => (timer === undefined ? undefined : Math.max(0, Math.ceil((retryAt - Date.now()) / 1000))),
+    check: () => {
+      const installer = installerState();
+      if (installer?.step === 'BackupImport' && !installer.error && (installer.currentBytes ?? 0) > bytesAtFailure) {
+        retries = 0;
+      }
+      if (!backupImportFailed()) {
+        return false;
+      }
+      if (timer === undefined) {
+        const delay = Math.min(MAX_RETRY_DELAY_MS, 2000 * 2 ** retries);
+        retries += 1;
+        retryAt = Date.now() + delay;
+        bytesAtFailure = installer?.currentBytes ?? 0;
+        // oxlint-disable-next-line no-console
+        console.log(`web shell: the message transfer failed; trying again in ${delay / 1000} s`);
+        timer = setTimeout(() => {
+          timer = undefined;
+          if (backupImportFailed()) {
+            window.reduxActions?.installer.retryBackupImport();
+          }
+        }, delay);
+      }
+      return true;
+    },
+  };
 }
 
 export function installConnectionStatus(): void {
@@ -86,12 +141,24 @@ export function installConnectionStatus(): void {
   let waitingSince: number | undefined;
   let retries = 0;
   let retryTimer: ReturnType<typeof setTimeout> | undefined;
+  const backupRetry = backupImportRetry();
   const update = () => {
     const tor = document.documentElement.dataset.tor;
     // The browser knows it is offline: say so, whatever Tor is trying.
     let state = tor && tor !== 'ready' && !navigator.onLine ? 'retrying' : tor;
     let view = desktopView();
-    if (linkScreenFailed()) {
+    let text = state ? TEXT[state] : undefined;
+    if (backupRetry.check()) {
+      const seconds = backupRetry.secondsLeft();
+      text = {
+        title: 'Connection lost',
+        detail:
+          seconds === undefined || seconds === 0
+            ? 'Trying again to transfer your messages...'
+            : `Trying again to transfer your messages in ${seconds} s.`,
+      };
+      state = 'backup';
+    } else if (linkScreenFailed()) {
       if (retryTimer === undefined) {
         const delay = Math.min(MAX_RETRY_DELAY_MS, 1000 * 2 ** retries);
         retries += 1;
@@ -105,10 +172,10 @@ export function installConnectionStatus(): void {
       view = 'waiting';
       waitingSince ??= Date.now() - 1000;
       state = state === 'retrying' ? state : 'bootstrapping';
+      text = TEXT[state];
     } else if (qrCodeShown()) {
       retries = 0;
     }
-    const text = state ? TEXT[state] : undefined;
     // A linked app is 'waiting' only for a moment before its inbox opens
     // (which does not wait for Tor): no card for that.
     waitingSince = view === 'waiting' ? (waitingSince ?? Date.now()) : undefined;

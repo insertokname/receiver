@@ -23,6 +23,7 @@ import { initLibsignal } from '@signalapp/libsignal-client/wasm/index.js';
 import { config as configureZod } from 'zod';
 
 import { startCarrier } from '../net/carrier.ts';
+import { installDebugLogLink } from '../shell/debug-log.ts';
 import { showDatabaseError, showRuntimeDatabaseError } from '../shell/errors.ts';
 import { installNotificationBanner } from '../shell/notifications.ts';
 import { installConnectionStatus } from '../shell/status.ts';
@@ -94,6 +95,7 @@ async function boot(): Promise<void> {
   window.addEventListener('load', () => setTimeout(installServiceWorker, 1000), { once: true });
   installConnectionStatus();
   installNotificationBanner();
+  installDebugLogLink();
   installStorageGuards();
 
   // One window at a time: nothing starts while another window uses the app.

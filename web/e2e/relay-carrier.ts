@@ -18,9 +18,9 @@ import {
   SignalHttps,
   SignalSocket,
 } from '../transport/dist/index.js';
-import type { HeaderPairs } from '../transport/dist/index.js';
+import type { HeaderPairs, SignalHttpsBody } from '../transport/dist/index.js';
 import { createLogger } from '../../ts/logging/log.std.ts';
-import { UpgradeRefusedError } from '../net/tor.ts';
+import { bodyReader, UpgradeRefusedError } from '../net/tor.ts';
 import type {
   Carrier,
   HttpsRequest,
@@ -89,15 +89,20 @@ class RelayCarrier implements Carrier {
   async request(request: HttpsRequest): Promise<HttpsResponse> {
     await this.#load();
     try {
-      return (await (this.#https as SignalHttps).request(
+      const response = (await (this.#https as SignalHttps).request(
         request.method,
         request.url,
         request.headers,
         request.body,
         request.rootPem,
-        request.timeoutMs,
-        request.maxResponseBytes
-      )) as HttpsResponse;
+        request.timeoutMs
+      )) as { status: number; headers: HeaderPairs; body: SignalHttpsBody };
+      return {
+        status: response.status,
+        headers: response.headers,
+        session: SESSION,
+        body: bodyReader(response.body, error => log.warn(`response body failed: ${errorReason(error)}`)),
+      };
     } catch (error) {
       log.warn(`request failed: ${errorReason(error)}`);
       throw error;

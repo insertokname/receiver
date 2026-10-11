@@ -275,7 +275,9 @@ jobs:
 
       # The app linked to Desktop's mock server (packages/mock-server), reached
       # through a local relay instead of Tor: link, sync, receive, send,
-      # reload, link-and-sync. A separate build (web/dist/app-e2e), not deployed.
+      # reload, link-and-sync, the debug log view, and linking while the relay
+      # drops or stalls every connection (about 3 minutes). A separate build
+      # (web/dist/app-e2e), not deployed.
       - name: Build the end-to-end test variant of the app
         run: node web/renderer/build.mjs --e2e
 

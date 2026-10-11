@@ -9,7 +9,11 @@
 // Keepalive and dead-connection detection follow libsignal-net: a ping after
 // 31 s without outgoing or incoming frames, disconnect after 45 s without
 // anything from the server. Every failure ends in onConnectionInterrupted
-// with the error libsignal would report, so Desktop's reconnect logic runs.
+// with the error libsignal would report, so Desktop's reconnect logic runs:
+// in-flight requests fail at once (ChatServiceInactive), requests on a
+// closed connection fail at once, and the transport is aborted (a hung
+// Tor circuit never completes a closing handshake, and the server only
+// redelivers unacknowledged messages once the old connection is gone).
 
 import type { Net } from '@signalapp/libsignal-client';
 import type {
@@ -59,6 +63,8 @@ const DEFAULT_CHAT_REQUEST_TIMEOUT_MILLIS = 5000;
 // One connection attempt: Tor stream + TLS + WebSocket handshake.
 const CONNECT_ATTEMPT_TIMEOUT_MS = 30_000;
 const CONNECT_ATTEMPTS = 2;
+// A deliberate disconnect waits this long for the closing handshake.
+const CLOSE_TIMEOUT_MS = 2000;
 
 const REASON_PHRASES: Record<number, string> = {
   200: 'OK',
@@ -398,10 +404,21 @@ export class ChatSocket {
     await Promise.resolve();
     if (this.#closed) return;
     this.#finish(null, false);
-    await this.#connection.close(1000, 'Normal Closure').catch(() => undefined);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    await Promise.race([
+      this.#connection.close(1000, 'Normal Closure').catch(() => undefined),
+      new Promise(resolve => {
+        timer = setTimeout(resolve, CLOSE_TIMEOUT_MS);
+      }),
+    ]);
+    clearTimeout(timer);
+    this.#connection.abort();
   }
 
-  /** Ends the connection; `cause` null means we disconnected deliberately. */
+  /**
+   * Ends the connection; `cause` null means we disconnected deliberately
+   * (disconnect() closes it), otherwise the transport is aborted.
+   */
   #finish(cause: LibSignalErrorBase | null, closeSocket: boolean): void {
     if (this.#closed) return;
     this.#closed = true;
@@ -418,7 +435,7 @@ export class ChatSocket {
       pending.reject(pendingError ?? chatServiceInactive(this.#logTag));
     }
     this.#pending.clear();
-    if (closeSocket) void this.#connection.close(1000, '').catch(() => undefined);
+    if (closeSocket || cause) this.#connection.abort();
     if (cause) log.warn(`${this.#logTag}: connection interrupted: ${cause.message}`);
     else log.info(`${this.#logTag}: disconnected`);
     queueMicrotask(() => this.#onClosed(cause));

@@ -203,9 +203,14 @@ dependencies must be installed) and runs scenarios modelled on
 inbox), sync (contacts, a group), receive, send (typed into the composer,
 decrypted by the mock contact), persistence (reload, reconnect, a dropped
 connection) and link-and-sync (message history imported from the primary's
-ephemeral backup), "Use here" (a second window takes over) and
+ephemeral backup), "Use here" (a second window takes over),
 notifications (the permission banner, a notification for a message while
-the window is not focused, clicking it). It needs the e2e build:
+the window is not focused, clicking it) and the debug log view. Scenarios
+(i)-(o) link while every connection drops or stalls (the relay stops
+forwarding without closing, like a hung Tor circuit) at the critical points
+of linking, including half way through a 32 MiB archive download resumed
+with Range; each must end with contacts synced and messages processed
+within a time bound. It needs the e2e build:
 
 - `transport/build.sh --test-relay` compiles webtor-rs with its
   `test-relay` feature (`Carrier::Relay`: TLS carried by a WebSocket to a

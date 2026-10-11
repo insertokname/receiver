@@ -50,3 +50,8 @@ export function loadBackupGenerator() {
 export function loadDeviceNameDecryptor() {
   return bundle('deviceName', join(WEB, 'e2e/device-name.ts'));
 }
+
+/** An ephemeral backup padded to a given size (web/e2e/padded-backup.ts). */
+export function loadPaddedBackupGenerator() {
+  return bundle('paddedBackup', join(WEB, 'e2e/padded-backup.ts'));
+}

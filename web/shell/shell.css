@@ -349,10 +349,9 @@ body.dark-theme {
 
 .web-shell-debuglog-link {
   position: fixed;
-  bottom: 8px;
-  left: 50%;
+  top: 12px;
+  right: 16px;
   z-index: 99000;
-  transform: translateX(-50%);
   max-width: calc(100vw - 32px);
   padding: 4px 8px;
   border: 0;

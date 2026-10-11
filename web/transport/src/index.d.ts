@@ -4,7 +4,7 @@
 
 import type { TorClient } from './pkg/webtor_wasm.js';
 
-export { SignalHttps, SignalSocket, TorClient } from './pkg/webtor_wasm.js';
+export { SignalHttps, SignalHttpsBody, SignalSocket, TorClient } from './pkg/webtor_wasm.js';
 
 export declare const SIGNAL_CA_PEM: string;
 export declare const DEFAULT_USER_AGENT: string;
@@ -54,6 +54,7 @@ export declare class SignalConnection {
   next(): Promise<Uint8Array | true | CloseInfo>;
   recv(): Promise<Uint8Array | null>;
   close(code?: number, reason?: string): Promise<void>;
+  abort(): void;
 }
 
 export declare function openSignalSocket(

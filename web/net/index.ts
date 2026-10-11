@@ -47,6 +47,7 @@ const log = createLogger('webnet');
 // rust/bridge/shared/types/src/net.rs NETWORK_CHANGE_DEBOUNCE
 const NETWORK_CHANGE_DEBOUNCE_MS = 1000;
 const LIVENESS_CHECK_TIMEOUT_MS = 10_000;
+const PRECONNECT_TIMEOUT_MS = 60_000;
 
 export type WebNetOptions = Readonly<{
   env: 'production' | 'staging';
@@ -115,7 +116,14 @@ export class WebNet {
   // Connections.
 
   async preconnectChat(): Promise<void> {
-    await this.#carrier.ready();
+    // A head start only: connecting waits for the carrier by itself.
+    const abort = new AbortController();
+    const timer = setTimeout(() => abort.abort(new Error('the carrier is not ready yet')), PRECONNECT_TIMEOUT_MS);
+    try {
+      await this.#carrier.ready(abort.signal);
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   #url(path: string): string {
