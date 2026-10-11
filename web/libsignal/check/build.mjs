@@ -20,6 +20,8 @@ await mkdir(outDir, { recursive: true });
 await build({
   input: { check: join(here, 'main.js') },
   platform: 'browser',
+  // Plain JS; ../tsconfig.json extends the submodule, which CI's build job doesn't check out.
+  tsconfig: false,
   resolve: {
     alias: {
       '@signalapp/libsignal-client': pkg,
