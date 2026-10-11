@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 // Web build: there is no DNS resolver in the page; Signal's hosts are
-// resolved by the Tor exit. A lookup reports an error to its callback (the
-// outage check in networkObserver logs it and carries on).
+// resolved by the Tor exit.
 
 import type { LookupAddress, lookup as nodeLookup } from 'node:dns';
 
@@ -22,16 +21,17 @@ export function interleaveAddresses(
   throw new Error('interleaveAddresses: not available in the web build');
 }
 
-function lookupAll(
-  hostname: string,
+// The only caller is networkObserver's outage check (a DNS query for
+// uptime.signal.org every few seconds while the chat socket is down). Without
+// a resolver it has no answer, so the lookup never completes instead of
+// logging an error on every attempt; connection problems still surface
+// through the socket status.
+function lookupNever(
+  _hostname: string,
   _opts: unknown,
-  callback: (err: NodeJS.ErrnoException | null, addresses: string) => void
+  _callback: (err: NodeJS.ErrnoException | null, addresses: string) => void
 ): void {
-  const error: NodeJS.ErrnoException = new Error(
-    `DNS lookup of ${hostname} is not available in the web build`
-  );
-  error.code = 'ENOTSUP';
-  queueMicrotask(() => callback(error, ''));
+  // Intentionally never calls back.
 }
 
-export const electronLookup = lookupAll as unknown as typeof nodeLookup;
+export const electronLookup = lookupNever as unknown as typeof nodeLookup;

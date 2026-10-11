@@ -17,10 +17,10 @@ export const decodeMessage = bytes => WebSocketMessage.decode(bytes);
 let nextRequestId = 1n;
 
 /** Sends one request on an open chat socket and resolves to its response. */
-export async function request(socket, verb, path, { timeoutMs = 30_000 } = {}) {
+export async function request(socket, verb, path, { timeoutMs = 30_000, body, headers } = {}) {
   const id = nextRequestId++;
   await socket.send(
-    encodeMessage({ type: WebSocketMessage.Type.REQUEST, request: { verb, path, id } })
+    encodeMessage({ type: WebSocketMessage.Type.REQUEST, request: { verb, path, id, body, headers } })
   );
   return withDeadline(
     (async () => {

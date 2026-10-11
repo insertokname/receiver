@@ -25,6 +25,13 @@ async function setUp() {
   const { startTor, getTorCarrier } = await import('../tor.ts');
   const { SIGNAL_CA_PEM } = await import('../../transport/dist/index.js');
   const fetch = (await import('../node-fetch.ts')).default;
+  const { setOnLogCallback } = await import('../../../ts/logging/log.std.ts');
+  // Warnings and errors (pino levels >= 40) to the console, where the runner
+  // shows them and checks that no credentials are logged.
+  setOnLogCallback((level, line, prefix) => {
+    // eslint-disable-next-line no-console
+    if (level >= 40) console.log(`${prefix ?? ''}${line}`);
+  });
 
   startTor();
   const net = new WebNet({ env: 'production', userAgent: 'unofficial-web-client/net-test (receiver)' });
@@ -160,6 +167,68 @@ async function setUp() {
         }
       }
       return { ok: false, afterMs: now() - sinceMs, attempts };
+    },
+
+    /**
+     * Desktop uploads ~230 KB of prekeys per request right after linking
+     * (PUT /v2/keys for ACI and PNI at once). Sends requests of that shape
+     * (fake keys, no credentials, so the server reads the body and answers 401)
+     * plus 1 MB more, then checks that the connection is still healthy.
+     */
+    async largeUploads() {
+      const { listener, interruptions } = interruptionListener();
+      const connection = (await net.connectUnauthenticatedChat(listener as never)) as unknown as {
+        fetch: (r: unknown) => Promise<{ status: number }>;
+        disconnect(): Promise<void>;
+      };
+      const randomBase64 = (n: number) => btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(n))));
+      const preKeys = (identity: string) =>
+        new TextEncoder().encode(
+          JSON.stringify({
+            preKeys: Array.from({ length: 100 }, (_, keyId) => ({ keyId, publicKey: randomBase64(33) })),
+            pqPreKeys: Array.from({ length: 100 }, (_, keyId) => ({
+              keyId,
+              publicKey: randomBase64(1569),
+              signature: randomBase64(64),
+            })),
+            identity,
+          })
+        );
+      const put = (identity: string, body: Uint8Array) =>
+        connection.fetch({
+          verb: 'PUT',
+          path: `/v2/keys?identity=${identity}`,
+          headers: [['content-type', 'application/json']],
+          body,
+          timeoutMillis: 120_000,
+        });
+      const started = now();
+      const aciKeys = preKeys('aci');
+      const pniKeys = preKeys('pni');
+      let prekeys, prekeyMs, bulk, bulkMs, after;
+      try {
+        prekeys = await Promise.all([put('aci', aciKeys), put('pni', pniKeys)]);
+        prekeyMs = now() - started;
+        const bulkStarted = now();
+        bulk = await Promise.all(
+          Array.from({ length: 4 }, (_, n) => put('aci', new Uint8Array(256 * 1024).map((_b, i) => (i * 31 + n) & 0xff)))
+        );
+        bulkMs = now() - bulkStarted;
+        after = await keepalive(connection);
+      } catch (error) {
+        return { failed: describe(error), afterMs: now() - started, interruptions };
+      }
+      const interruptedBeforeDisconnect = interruptions.length;
+      await connection.disconnect();
+      return {
+        prekeyBytes: [aciKeys.length, pniKeys.length],
+        prekeyStatuses: prekeys.map(r => r.status),
+        prekeyMs,
+        bulkStatuses: bulk.map(r => r.status),
+        bulkMs,
+        keepaliveAfter: after.status,
+        interruptedBeforeDisconnect,
+      };
     },
 
     async networkChangeProbe() {

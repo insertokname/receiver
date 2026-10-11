@@ -248,7 +248,7 @@ jobs:
         run: echo "CHROMIUM=$(command -v google-chrome || command -v chromium)" >> "$GITHUB_ENV"
 
       - name: Transport checks, local (Snowflake WebSocket)
-        run: node web/transport-test/run.mjs 'suites=ws'
+        run: node web/transport-test/run.mjs 'suites=ws&only=basic,upload'
 
       - name: libsignal checks, local (WebAssembly under the site's CSP)
         run: node web/libsignal/check/run.mjs

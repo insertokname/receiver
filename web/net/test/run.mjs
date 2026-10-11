@@ -19,6 +19,9 @@
 //       TLS pinned to Signal's CA; a wrong CA is rejected; a request
 //       without a pinned CA is refused
 //   (g) CDSI and SVR2 reject with typed libsignal errors
+//   (h) large uploads on a chat connection: two concurrent ~230 KB
+//       prekey-shaped PUT /v2/keys (what Desktop sends right after linking)
+//       and 1 MB more are all answered, and the connection stays healthy
 //
 // The test page (net/test/page.ts, bundled here) is served by this runner
 // only. Needs the built site (scripts/build-site.sh).
@@ -150,6 +153,15 @@ try {
   const g = await run('unavailable');
   console.log(`  ${JSON.stringify(g)}`);
   check(g.cdsiLookup?.name === 'LibSignalError' && g.svr2?.name === 'LibSignalError', 'CDSI and SVR2 reject with typed libsignal errors');
+
+  console.log('(h) large uploads (prekey-sized requests, then 1 MB)');
+  const h = await run('largeUploads');
+  console.log(`  ${JSON.stringify(h)}`);
+  check(
+    !h.failed &&
+    h.prekeyStatuses.every(s => s === 401) && h.bulkStatuses.every(s => s === 401) && h.keepaliveAfter === 200 && h.interruptedBeforeDisconnect === 0,
+    h.failed ? `upload failed after ${h.afterMs} ms: ${h.failed.code} ${h.failed.message}` : `2 x ${Math.round(h.prekeyBytes[0] / 1024)} KB in ${(h.prekeyMs / 1000).toFixed(1)} s, 1 MB in ${(h.bulkMs / 1000).toFixed(1)} s, all answered; connection still healthy`
+  );
 
   console.log('(d) forced transport drop');
   const d0 = await run('openForDrop');

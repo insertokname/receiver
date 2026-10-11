@@ -175,6 +175,7 @@ Desktop encrypts attachments itself before they are written.
 
 ```bash
 node transport-test/run.mjs 'suites=ws'               # basic checks over Snowflake WebSocket
+node transport-test/run.mjs 'suites=ws&only=basic,upload'   # + uploads of 64 KB to 1 MB to Signal (CI)
 node transport-test/run.mjs 'suites=webrtc'           # same over Snowflake WebRTC
 BLACKHOLE=snowflake.torproject.net node transport-test/run.mjs 'suites=chain'   # fallback to WebRTC
 node transport-test/run.mjs 'suites=ws&only=bulk,hold&hold=30'                  # long checks, local only

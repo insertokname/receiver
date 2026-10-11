@@ -8,10 +8,14 @@
 //                           ws = Snowflake WebSocket bridge, webrtc = Snowflake
 //                           volunteer proxy, chain = the full fallback chain
 //                           the app uses (reports which transport won)
-//   only=basic,bulk,hold    which checks to run (default: basic)
+//   only=basic,upload,bulk,hold  which checks to run (default: basic)
+//                           upload sends large request bodies to Signal,
 //                           bulk downloads ~2.7 MB from a third party through
 //                           Tor and hold keeps a connection open for minutes;
-//                           both only run when asked for explicitly
+//                           they only run when asked for explicitly
+//   uploadKB=64,256,512,1024  request body sizes for the upload check
+//   sustainedMB=<n>         upload check: also send n MB in back-to-back requests
+//   maxBodyKB=256           upload check: largest single request body
 //   hold=<minutes>  keepaliveSecs=<n>
 //   autorun                 start without waiting for the button
 
@@ -30,6 +34,8 @@ const SUITES = (params.get('suites') ?? 'ws').split(',');
 const ONLY = (params.get('only') ?? 'basic').split(',');
 const HOLD_MINUTES = Number(params.get('hold') ?? 5);
 const KEEPALIVE_SECS = Number(params.get('keepaliveSecs') ?? 30);
+const UPLOAD_KB = (params.get('uploadKB') ?? '64,256,512,1024').split(',').map(Number);
+const SUSTAINED_MB = Number(params.get('sustainedMB') ?? 0);
 const want = name => ONLY.includes(name);
 
 const out = document.getElementById('out');
@@ -62,6 +68,34 @@ const SUITE_TRANSPORTS = {
 async function keepalive(socket, limitMs = 30_000) {
   const response = await request(socket, 'GET', '/v1/keepalive', { timeoutMs: limitMs });
   if (response.status !== 200) throw new Error(`keepalive status ${response.status}`);
+}
+
+function randomBody(size) {
+  const body = new Uint8Array(size);
+  for (let i = 0; i < size; i += 65536) {
+    crypto.getRandomValues(body.subarray(i, Math.min(size, i + 65536)));
+  }
+  return body;
+}
+
+// Sends `size` bytes as request bodies to an endpoint that needs credentials
+// we don't have: Signal reads each whole WebSocket message before it answers
+// (401), so a response proves the body crossed every transport layer. Bodies
+// above Signal's message size limit go as several concurrent requests.
+const MAX_REQUEST_BODY = Number(params.get('maxBodyKB') ?? 256) * 1024;
+async function upload(socket, size, limitMs) {
+  const parts = [];
+  for (let left = size; left > 0; left -= MAX_REQUEST_BODY) parts.push(Math.min(left, MAX_REQUEST_BODY));
+  const responses = await Promise.all(
+    parts.map(n =>
+      request(socket, 'PUT', '/v2/keys?identity=aci', {
+        body: randomBody(n),
+        headers: ['content-type:application/json'],
+        timeoutMs: limitMs,
+      })
+    )
+  );
+  return [...new Set(responses.map(r => r.status))].join('/');
 }
 
 async function runSuite(label, transports) {
@@ -145,6 +179,38 @@ async function runSuite(label, transports) {
     } catch (e) {
       record(`${label}: server push (provisioning address)`, false, errorReason(e));
     }
+  }
+
+  // ROBUSTNESS: large uploads (a linked device uploads ~230 KB of prekeys per
+  // request). Write-side bugs in the session layers kill the Tor channel.
+  if (want('upload')) {
+    let socket;
+    try {
+      socket = await openSignalSocket(client, CHAT_URL);
+      for (const kb of UPLOAD_KB) {
+        const size = kb * 1024;
+        log(`uploading ${kb} KB`);
+        const [statuses, secs] = await timed(() => upload(socket, size, 120_000), 150_000);
+        record(`${label}: upload ${kb} KB`, true, `HTTP ${statuses}, ${(size / 1024 / secs).toFixed(0)} KB/s`, secs);
+      }
+      if (SUSTAINED_MB > 0) {
+        const size = SUSTAINED_MB * 1024 * 1024;
+        let sent = 0;
+        const [, secs] = await timed(async () => {
+          while (sent < size) {
+            const n = Math.min(MAX_REQUEST_BODY, size - sent);
+            await upload(socket, n, 120_000);
+            sent += n;
+          }
+        }, 30 * 60_000);
+        record(`${label}: sustained upload ${SUSTAINED_MB} MB`, true, `${(size / 1024 / secs).toFixed(0)} KB/s`, secs);
+      }
+      const [, rtt] = await timed(() => keepalive(socket));
+      record(`${label}: socket alive after uploads`, true, `round trip ${rtt.toFixed(2)}s`, rtt);
+    } catch (e) {
+      record(`${label}: upload`, false, errorReason(e));
+    }
+    try { await socket?.close(); } catch {}
   }
 
   // ROBUSTNESS: push megabytes through one Snowflake session. Flow-control bugs
