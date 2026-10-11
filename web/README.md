@@ -18,6 +18,9 @@ The site is deployed to https://insertokname.github.io/receiver/ by
 | `libsignal/test/node.mjs` | Runs libsignal's own TypeScript tests against the WebAssembly build in Node |
 | `libsignal/check/` | libsignal checks page (`libsignal/` on the site) and its headless runner `run.mjs` |
 | `app/` | Start page: bootstraps Tor and opens Signal's provisioning socket; `smoke.mjs` checks it in headless Chromium |
+| `renderer/` | Desktop's main window bundled for the browser (`app/` on the site): `build.sh`, `build.mjs`, module resolution (`resolve.mjs`), Node/Electron/native shims (`shims/`), entry point, page, boot test `run.mjs` |
+| `main/` | In-page replacement for Electron's main process: IPC (`ipc.ts`), config, locale, settings, every channel the renderer uses (`channels.ts`) |
+| `net/` | Stand-in for libsignal's `Net` (libsignal-net is not in the WebAssembly build); the network layer implements it over the Tor transport |
 | `transport-test/` | Transport checks page (`test/` on the site) and its headless runner `run.mjs` |
 | `lib/signal.js` | Signal WebSocket framing shared by the pages |
 | `protos/SubProtocol.proto` | Signal's WebSocket message definitions (restored from upstream history) |
@@ -38,6 +41,8 @@ cd web
 pnpm install --frozen-lockfile
 bash transport/build.sh          # -> transport/dist/
 bash libsignal/build.sh          # -> libsignal/dist/package/
+(cd .. && pnpm install --frozen-lockfile --ignore-scripts)   # Desktop's dependencies, for the app
+bash renderer/build.sh           # -> dist/app/ (Desktop's renderer for the browser)
 bash scripts/build-site.sh       # -> dist/site/ (fetches a fresh Tor directory snapshot)
 ```
 
@@ -70,6 +75,34 @@ and its subpaths to it. Its `wasm/` holds the module and the loader.
   `randomUUID`), `node:assert`, and `node:stream` for `incremental_mac`.
   `libsignal/check/build.mjs` shows a minimal setup.
 
+## Desktop's renderer in the browser
+
+`renderer/build.sh` runs Desktop's own generators (protobuf code, emoji
+data, stylesheets, compact locales; git-ignored outputs) and bundles the main
+window (`ts/windows/main/preload.preload.ts`, the whole app) with rolldown as
+browser ESM. `renderer/resolve.mjs` decides what every import becomes:
+
+- `X.preload.ts` / `X.node.ts` / `X.main.ts` / `X.dom.ts` / `X.std.ts`
+  resolve to a sibling `X.web.ts` when one exists. Web replacements are such
+  new files; upstream files stay untouched.
+- `electron` is `renderer/shims/electron.ts`: `ipcRenderer` dispatches to the
+  in-page main process (`main/`).
+- Node builtins map to browser polyfills (`buffer`, `events`,
+  `path-browserify`, `readable-stream`, `assert`, `browserify-zlib`, ...),
+  small shims (`crypto` on @noble/hashes + @noble/ciphers + Web Crypto
+  randomness, `process`, `os`, `timers`, `v8`, ...), or modules whose every
+  export throws "not available in the web build: <module>.<name>" (`fs`,
+  `net`, `http(s)`, `worker_threads`, ...). An unmapped builtin, an
+  unresolved import or a missing export fails the build.
+- libsignal is `libsignal/dist/package`; RingRTC's TypeScript is used with
+  its native addon stubbed (calling is disabled); other native modules are
+  stubs.
+
+`app/index.html` (from Desktop's `background.html`) has no inline script and
+the CSP `script-src 'self' 'wasm-unsafe-eval'`. `renderer/entry.ts` awaits
+`initLibsignal()`, starts the in-page main process, imports the preload graph
+and calls `window.startApp()`; progress is in `<html data-boot>`.
+
 ## Test
 
 `CHROMIUM` must point at a Chromium or Chrome executable. The runners serve
@@ -86,4 +119,7 @@ node transport-test/run.mjs 'suites=ws&only=bulk,hold&hold=30'                  
 node libsignal/check/run.mjs                          # libsignal in the browser under the site's CSP
 node libsignal/check/run.mjs https://insertokname.github.io/receiver/
 node libsignal/test/node.mjs                          # libsignal's TypeScript tests (Node, no browser)
+node renderer/run.mjs                                 # web app boots to the database step under the app's CSP
+node renderer/run.mjs https://insertokname.github.io/receiver/
+node renderer/test/crypto-shim.mjs                    # node:crypto shim against Node's node:crypto
 ```

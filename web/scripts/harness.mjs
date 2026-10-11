@@ -28,6 +28,15 @@ const TYPES = {
   '.wasm': 'application/wasm',
   '.pem': 'text/plain',
   '.br': 'application/octet-stream',
+  '.json': 'application/json',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.gif': 'image/gif',
+  '.jpg': 'image/jpeg',
+  '.webp': 'image/webp',
+  '.woff2': 'font/woff2',
+  '.ttf': 'font/ttf',
+  '.ogg': 'audio/ogg',
 };
 
 /** Static server for SITE_DIR under BASE_PATH; anything else is 404. */

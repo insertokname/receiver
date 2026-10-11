@@ -194,6 +194,27 @@ jobs:
       - name: Build the transport (webtor-rs to WASM)
         run: bash web/transport/build.sh
 
+      # Desktop's own dependencies (repository root) for the web app: no
+      # install scripts, so no Electron download and no native builds.
+      - id: desktop-store
+        run: echo "path=$(pnpm store path)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.desktop-store.outputs.path }}
+          key: desktop-pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            desktop-pnpm-store-${{ runner.os }}-
+
+      - name: Install Desktop's dependencies (no install scripts)
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Build the web app (Desktop's renderer for the browser)
+        run: bash web/renderer/build.sh
+
+      - name: node:crypto shim against Node's node:crypto
+        run: node web/renderer/test/crypto-shim.mjs
+
       - name: Build the site (with a fresh Tor directory snapshot)
         run: bash web/scripts/build-site.sh
 
@@ -208,6 +229,9 @@ jobs:
 
       - name: libsignal checks, local (WebAssembly under the site's CSP)
         run: node web/libsignal/check/run.mjs
+
+      - name: Web app boot, local (to the database step)
+        run: node web/renderer/run.mjs
 
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
@@ -257,3 +281,6 @@ jobs:
 
       - name: libsignal checks, live site
         run: node web/libsignal/check/run.mjs "$LIVE_URL"
+
+      - name: Web app boot, live site
+        run: node web/renderer/run.mjs "$LIVE_URL"
