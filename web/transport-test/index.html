@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self'; connect-src 'self' wss://snowflake.torproject.net https://snowflake-broker.torproject.net; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>receiver: transport checks</title>
+<link rel="icon" href="../favicon.svg">
+<link rel="stylesheet" href="../app.css">
+<script type="module" src="./test.js"></script>
+</head>
+<body>
+<main>
+  <h1>Transport checks</h1>
+  <p class="lede">Connects to Tor from this tab and checks the connection to Signal's chat server: Tor bootstrap, a wrong certificate authority is rejected, three chat sockets with a request round trip, an invalid Authorization header is refused, and the provisioning socket pushes an address. Nothing is linked and no account is used.</p>
+  <p id="plan" class="detail"></p>
+  <p><button id="run" type="button">Run checks</button></p>
+  <pre id="out" class="events"></pre>
+  <footer><a href="../">receiver</a> · <a href="https://github.com/insertokname/receiver">source code (AGPL-3.0)</a></footer>
+</main>
+</body>
+</html>

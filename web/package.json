@@ -1,0 +1,22 @@
+{
+  "name": "receiver-web",
+  "private": true,
+  "description": "Static web build of receiver: Tor transport, site and browser tests",
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "packageManager": "pnpm@11.25.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build:transport": "bash transport/build.sh",
+    "build:site": "bash scripts/build-site.sh",
+    "build": "bash transport/build.sh && bash scripts/build-site.sh",
+    "test:transport": "node transport-test/run.mjs",
+    "smoke": "node app/smoke.mjs"
+  },
+  "devDependencies": {
+    "@indutny/protopiler": "4.0.2",
+    "puppeteer-core": "25.12.0"
+  }
+}

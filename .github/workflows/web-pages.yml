@@ -1,0 +1,159 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+#
+# Builds the static web app in web/ and deploys it to GitHub Pages
+# (https://insertokname.github.io/receiver/), then checks the live site.
+# Runs daily as well, so the Tor directory snapshot shipped with the site
+# stays fresh.
+
+name: Web (GitHub Pages)
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '23 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: web-pages
+  cancel-in-progress: false
+
+env:
+  WASM_PACK_VERSION: 0.15.0
+  WASM_PACK_SHA256: c09f971ecaed9a2efc80fdcea7a00ef6b53c7fadc8c57d1f61b53a6aa66b668a
+  LIVE_URL: https://insertokname.github.io/receiver/
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          package_json_file: web/package.json
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      - name: Install web dependencies
+        working-directory: web
+        run: pnpm install --frozen-lockfile
+
+      - name: Install the Rust toolchain pinned by webtor-rs
+        working-directory: web/transport/webtor-rs
+        run: |
+          channel=$(sed -n 's/^channel = "\(.*\)"$/\1/p' rust-toolchain.toml)
+          rustup toolchain install "$channel" --profile minimal \
+            --target wasm32-unknown-unknown --component rustfmt,clippy
+          rustc --version
+
+      - name: Install wasm-pack ${{ env.WASM_PACK_VERSION }}
+        run: |
+          name="wasm-pack-v${WASM_PACK_VERSION}-x86_64-unknown-linux-musl"
+          curl -sSfL -o "$RUNNER_TEMP/$name.tar.gz" \
+            "https://github.com/wasm-bindgen/wasm-pack/releases/download/v${WASM_PACK_VERSION}/$name.tar.gz"
+          echo "$WASM_PACK_SHA256  $RUNNER_TEMP/$name.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/$name.tar.gz" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/$name" >> "$GITHUB_PATH"
+
+      - name: Select clang and llvm-ar for ring (C code compiled to wasm32)
+        run: |
+          for v in 20 19 18 17; do
+            if command -v "clang-$v" && command -v "llvm-ar-$v"; then
+              echo "CC_wasm32_unknown_unknown=clang-$v" >> "$GITHUB_ENV"
+              echo "AR_wasm32_unknown_unknown=llvm-ar-$v" >> "$GITHUB_ENV"
+              exit 0
+            fi
+          done
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends clang llvm
+          echo "CC_wasm32_unknown_unknown=clang" >> "$GITHUB_ENV"
+          echo "AR_wasm32_unknown_unknown=llvm-ar" >> "$GITHUB_ENV"
+
+      - name: Install brotli
+        run: command -v brotli || (sudo apt-get update && sudo apt-get install -y --no-install-recommends brotli)
+
+      - id: transport-rev
+        run: echo "rev=$(git -C web/transport/webtor-rs rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            ~/.cache/.wasm-pack
+            web/transport/webtor-rs/target
+          key: transport-${{ runner.os }}-${{ hashFiles('web/transport/webtor-rs/Cargo.lock', 'web/transport/webtor-rs/rust-toolchain.toml') }}-${{ steps.transport-rev.outputs.rev }}
+          restore-keys: |
+            transport-${{ runner.os }}-${{ hashFiles('web/transport/webtor-rs/Cargo.lock', 'web/transport/webtor-rs/rust-toolchain.toml') }}-
+
+      - name: Build the transport (webtor-rs to WASM)
+        run: bash web/transport/build.sh
+
+      - name: Build the site (with a fresh Tor directory snapshot)
+        run: bash web/scripts/build-site.sh
+
+      - name: Select the browser for the tests
+        run: echo "CHROMIUM=$(command -v google-chrome || command -v chromium)" >> "$GITHUB_ENV"
+
+      - name: Smoke test, local (start page under /receiver/)
+        run: node web/app/smoke.mjs
+
+      - name: Transport checks, local (Snowflake WebSocket)
+        run: node web/transport-test/run.mjs 'suites=ws'
+
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: web/dist/site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+
+  live-smoke:
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: web
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          package_json_file: web/package.json
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      - name: Install web dependencies
+        working-directory: web
+        run: pnpm install --frozen-lockfile
+
+      - name: Select the browser for the test
+        run: echo "CHROMIUM=$(command -v google-chrome || command -v chromium)" >> "$GITHUB_ENV"
+
+      - name: Smoke test, live site
+        run: node web/app/smoke.mjs "$LIVE_URL"

@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en" data-state="starting">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self'; connect-src 'self' wss://snowflake.torproject.net https://snowflake-broker.torproject.net; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>receiver</title>
+<link rel="icon" href="./favicon.svg">
+<link rel="stylesheet" href="./app.css">
+<script type="module" src="./app.js"></script>
+</head>
+<body>
+<main>
+  <h1>receiver</h1>
+  <p class="lede">An unofficial Signal client that runs entirely in your browser and reaches Signal only through Tor. It is not usable yet: linking a device is still being built.</p>
+
+  <section class="status" aria-live="polite">
+    <p id="status">Starting…</p>
+    <p id="transport" class="detail"></p>
+    <ol id="events" class="events"></ol>
+  </section>
+
+  <section class="about">
+    <h2>What this page does today</h2>
+    <p>It starts a Tor client inside this tab and connects to the Tor network through a Snowflake bridge. Through Tor it opens Signal's device-linking connection, with TLS that trusts only Signal's own certificate authority. Signal answers with a one-time provisioning address, the first step before a link QR code can be shown. The address is not displayed, and the connection is closed right away. Nothing is linked and no account is touched.</p>
+    <p>Signal sees a Tor exit, not your IP address. The Snowflake bridge sees your IP address, not where your traffic goes.</p>
+    <p>Like every web app, this code is delivered by this site each time you open it. Read it before you trust it.</p>
+  </section>
+
+  <footer>
+    Not affiliated with Signal Messenger.
+    Source code (AGPL-3.0): <a href="https://github.com/insertokname/receiver">github.com/insertokname/receiver</a>
+  </footer>
+</main>
+</body>
+</html>

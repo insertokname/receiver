@@ -1,0 +1,10 @@
+# web/ is its own pnpm workspace, independent of the Signal Desktop workspace at
+# the repository root (whose package.json and lockfile stay untouched).
+
+saveExact: true
+blockExoticSubdeps: true
+verifyStoreIntegrity: true
+minimumReleaseAge: 4320
+minimumReleaseAgeStrict: true
+trustPolicy: no-downgrade
+strictDepBuilds: true

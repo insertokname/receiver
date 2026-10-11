@@ -1,0 +1,5 @@
+[submodule "web/transport/webtor-rs"]
+	path = web/transport/webtor-rs
+	url = https://github.com/insertokname/webtor-rs.git
+	branch = signal-web-transport
+	shallow = true
