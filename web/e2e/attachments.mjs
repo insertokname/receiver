@@ -293,19 +293,24 @@ export async function runAttachmentScenarios(ctx) {
     await page().waitForFunction(() => !document.querySelector('.Lightbox__object'), { timeout: 10_000 }).catch(() => undefined);
 
     // A hard reload (Shift+Reload) loads the page without the service
-    // worker; the page gets it back before the app shows media.
-    await page().reload({ ignoreCache: true, waitUntil: 'domcontentloaded' });
-    await ctx.waitForSelector('#LeftPane', 'the inbox after a hard reload', 120_000);
-    const control = await page().evaluate(() => window.__webBoot?.control);
-    await ctx.openConversation(alice);
-    await page()
-      .waitForSelector(image, { timeout: STEP_TIMEOUT_MS })
-      .catch(() => {
-        throw new Error(`the image did not load after a hard reload (service worker: ${control})`);
-      });
-    const again = await compareImage(image, data, 'image/png');
-    if (again.differing) throw new Error(`after a hard reload: ${again.differing} of ${again.samples} sampled pixels differ`);
-    return `${width}x${height} PNG (${data.length} bytes): timeline and lightbox ${large.width}x${large.height}, ${large.samples} sampled pixels identical (first RGBA ${large.sample.join(',')}); page controlled by the service worker: ${controlled}; after a hard reload: ${control}, image identical`;
+    // worker; the page gets it back before the app shows media. WebDriver
+    // BiDi (Firefox) cannot reload bypassing the cache yet.
+    let hardReload = 'not tried (WebDriver BiDi has no hard reload)';
+    if (!FIREFOX) {
+      await page().reload({ ignoreCache: true, waitUntil: 'domcontentloaded' });
+      await ctx.waitForSelector('#LeftPane', 'the inbox after a hard reload', 120_000);
+      const control = await page().evaluate(() => window.__webBoot?.control);
+      await ctx.openConversation(alice);
+      await page()
+        .waitForSelector(image, { timeout: STEP_TIMEOUT_MS })
+        .catch(() => {
+          throw new Error(`the image did not load after a hard reload (service worker: ${control})`);
+        });
+      const again = await compareImage(image, data, 'image/png');
+      if (again.differing) throw new Error(`after a hard reload: ${again.differing} of ${again.samples} sampled pixels differ`);
+      hardReload = `${control}, image identical`;
+    }
+    return `${width}x${height} PNG (${data.length} bytes): timeline and lightbox ${large.width}x${large.height}, ${large.samples} sampled pixels identical (first RGBA ${large.sample.join(',')}); page controlled by the service worker: ${controlled}; after a hard reload: ${hardReload}`;
   });
 
   await scenario('q', 'receive a file and save it: the browser downloads the sent bytes', async () => {
