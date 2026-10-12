@@ -476,6 +476,10 @@ sw.addEventListener('message', event => {
     reply(status());
   } else if (data.type === 'apply') {
     reply(apply());
+  } else if (data.type === 'claim') {
+    // A page loaded without this worker (a hard reload) asks to be taken
+    // over: its local URLs (media) only work through the worker.
+    reply(sw.clients.claim().then(status));
   } else if (data.type === 'remember' && Array.isArray((data as { paths?: unknown }).paths)) {
     reply(remember((data as { paths: Array<unknown> }).paths.filter((p): p is string => typeof p === 'string')));
   }

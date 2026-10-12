@@ -8,7 +8,7 @@
 
 import { initialize } from '../../app/attachment_channel.main.ts';
 import type { MainSQL } from '../../ts/sql/main.main.ts';
-import { unsealLocalUrl } from './local-urls.ts';
+import { renewLocalUrl, unsealLocalUrl } from './local-urls.ts';
 import { serveLocalRequests } from './protocols.ts';
 
 type SqlCalls = {
@@ -23,5 +23,5 @@ export function installAttachments({ configDir, sql }: { configDir: string; sql:
     sqlWrite: (method: string, ...args: Array<unknown>) => sql.sqlWrite(method, args),
   } as unknown as MainSQL;
   initialize({ configDir, sql: mainSql });
-  serveLocalRequests(unsealLocalUrl);
+  serveLocalRequests(unsealLocalUrl, renewLocalUrl);
 }

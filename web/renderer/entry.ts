@@ -32,7 +32,7 @@ import { installConnectionStatus } from '../shell/status.ts';
 import { checkForWipedData, installStorageGuards } from '../shell/storage.ts';
 import { missingFeatures, showUnsupportedBrowser } from '../shell/support.ts';
 import { claimTab, onRelease } from '../shell/tabs.ts';
-import { installServiceWorker } from '../shell/update.ts';
+import { ensureControlled, installServiceWorker } from '../shell/update.ts';
 
 // zod probes `new Function` (a CSP violation under script-src 'self') unless
 // told not to compile validators.
@@ -42,7 +42,7 @@ type BootStep = { step: string; ms: number };
 
 declare global {
   interface Window {
-    __webBoot: { steps: Array<BootStep>; error?: string };
+    __webBoot: { steps: Array<BootStep>; error?: string; control?: string };
   }
 }
 
@@ -101,6 +101,11 @@ async function boot(): Promise<void> {
     showUnsupportedBrowser(missing);
     return;
   }
+
+  // Media is served by the service worker: a page loaded without it (hard
+  // reload) is taken over first (may reload once).
+  window.__webBoot.control = await ensureControlled();
+  step('sw');
 
   // The app shell: its service worker (updates only with the user's
   // consent), connection status and banners. They show only when relevant.

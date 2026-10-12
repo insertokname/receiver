@@ -82,6 +82,18 @@ export function unsealLocalUrl(href: string): string | undefined {
   }
 }
 
+/**
+ * After a failed answer (not a missing file): the next request for that
+ * local URL gets a new web URL, so a component that renders again loads it
+ * again (with one URL per local URL, a failed <img> would stay failed).
+ */
+export function renewLocalUrl(href: string): void {
+  const url = unsealLocalUrl(href);
+  if (url !== undefined && sealedUrls.get(url) === href.replace(/[?#].*$/, '')) {
+    sealedUrls.delete(url);
+  }
+}
+
 /** Whether `href` is a web local URL (made by any page of this app). */
 export function isLocalUrl(href: string): boolean {
   return href.startsWith(localUrlBase());

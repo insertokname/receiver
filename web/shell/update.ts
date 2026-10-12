@@ -21,7 +21,7 @@ declare global {
   }
 }
 
-function ask(worker: ServiceWorker, type: 'status' | 'apply' | 'remember', paths?: Array<string>): Promise<Status> {
+function ask(worker: ServiceWorker, type: 'status' | 'apply' | 'remember' | 'claim', paths?: Array<string>): Promise<Status> {
   return new Promise((resolve, reject) => {
     const { port1, port2 } = new MessageChannel();
     const timer = setTimeout(() => reject(new Error('the service worker did not answer')), 30_000);
@@ -56,6 +56,68 @@ function showUpdateBanner(onReload: () => void): void {
     h('div', { class: 'web-shell-banner__text' }, h('strong', {}, 'A new version of receiver is available'), button)
   );
   document.body.append(banner);
+}
+
+// A hard reload (Shift+Reload) loads the page without the service worker;
+// its attachment/ URLs (images, video, stickers, avatars) would then go to
+// the server and fail. The worker takes such a page over when asked; if it
+// doesn't (a worker from before 'claim'), one normal reload does.
+const CONTROL_TIMEOUT_MS = 3000;
+const CONTROL_RELOAD_KEY = 'receiver-sw-control-reload';
+
+/** How this page got its service worker (read by the tests). */
+export type Control = 'controlled' | 'claimed' | 'none' | 'uncontrolled';
+
+export async function ensureControlled(): Promise<Control> {
+  if (!('serviceWorker' in navigator)) {
+    return 'none';
+  }
+  const { serviceWorker } = navigator;
+  const reloaded = (() => {
+    try {
+      const value = sessionStorage.getItem(CONTROL_RELOAD_KEY);
+      sessionStorage.removeItem(CONTROL_RELOAD_KEY);
+      return value !== null;
+    } catch {
+      return undefined;
+    }
+  })();
+  if (serviceWorker.controller) {
+    return 'controlled';
+  }
+  const registration = await serviceWorker.getRegistration(new URL('./', document.baseURI)).catch(() => undefined);
+  const active = registration?.active;
+  if (!active) {
+    // First visit: the new worker takes this page over when it activates.
+    return 'none';
+  }
+  const controlled = await new Promise<boolean>(resolve => {
+    const timer = setTimeout(() => resolve(false), CONTROL_TIMEOUT_MS);
+    serviceWorker.addEventListener(
+      'controllerchange',
+      () => {
+        clearTimeout(timer);
+        resolve(true);
+      },
+      { once: true }
+    );
+    ask(active, 'claim').catch(() => undefined);
+  });
+  if (controlled || serviceWorker.controller) {
+    return 'claimed';
+  }
+  if (reloaded === false) {
+    try {
+      sessionStorage.setItem(CONTROL_RELOAD_KEY, '1');
+      window.location.reload();
+      await new Promise(() => undefined);
+    } catch {
+      // No reload without the mark that prevents a loop.
+    }
+  }
+  // oxlint-disable-next-line no-console
+  console.warn('web shell: this page is not controlled by the service worker; media cannot be shown');
+  return 'uncontrolled';
 }
 
 export function installServiceWorker(): void {

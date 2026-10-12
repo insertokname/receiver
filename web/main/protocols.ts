@@ -56,6 +56,7 @@ type Answer = {
 };
 
 let unseal: (href: string) => string | undefined = () => undefined;
+let failed: (href: string) => void = () => undefined;
 
 function warn(message: string): void {
   // oxlint-disable-next-line no-console
@@ -184,6 +185,7 @@ function serve(url: string, range: string | null, port: MessagePort): void {
       if (!finished) {
         const message = error instanceof Error ? error.message : String(error);
         warn(`a local response failed: ${message}`);
+        failed(url);
         finish({ type: 'error', message });
       }
     }
@@ -202,6 +204,7 @@ function serve(url: string, range: string | null, port: MessagePort): void {
 
   answer(url, range).then(
     result => {
+      if (result.status >= 500) failed(url);
       reader = result.body?.getReader();
       remaining = result.limit ?? Infinity;
       firstTimeout = result.firstPieceTimeoutMs ?? FIRST_PIECE_TIMEOUT_MS;
@@ -209,6 +212,7 @@ function serve(url: string, range: string | null, port: MessagePort): void {
     },
     error => {
       warn(`a local request failed: ${error instanceof Error ? error.message : String(error)}`);
+      failed(url);
       port.postMessage({ type: 'head', status: 500, headers: [['content-type', 'text/plain; charset=utf-8']] });
       finish({ type: 'end' });
     }
@@ -219,8 +223,12 @@ function serve(url: string, range: string | null, port: MessagePort): void {
  * Answers the service worker's local requests from now on; `unsealUrl`
  * opens the URLs this page made (web/main/local-urls.ts).
  */
-export function serveLocalRequests(unsealUrl: (href: string) => string | undefined): void {
+export function serveLocalRequests(
+  unsealUrl: (href: string) => string | undefined,
+  onFailed: (href: string) => void = () => undefined
+): void {
   unseal = unsealUrl;
+  failed = onFailed;
   if (!('serviceWorker' in navigator)) {
     warn('no service worker: attachments cannot be shown');
     return;
