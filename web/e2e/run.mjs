@@ -41,6 +41,8 @@
 //   (aa)         linking survives an outage of 20 s as the keys are uploaded
 //   (ab)         liveness: every connection silently stops delivering while
 //                idle; the app notices, reconnects and receives
+//   (ac)         keyboard: browser shortcuts stay the browser's, the app's
+//                take Ctrl+Alt (Cmd+Ctrl on macOS)
 //
 // Fails on CSP violations, uncaught exceptions, network destinations other
 // than the page's origin and the relay, and key-like secrets in the log.
@@ -668,6 +670,49 @@ try {
     }
     await waitForTimelineText(text, 'the sent message');
     return `contact decrypted "${text}"`;
+  });
+
+  await scenario('ac', 'keyboard: the browser keeps its shortcuts (Ctrl+1), the app takes them with Ctrl+Alt', async () => {
+    // Linux here: Desktop's Ctrl+<key> is Ctrl+Alt+<key> (Cmd+Ctrl on macOS).
+    await page.evaluate(() => {
+      window.__keysSeen = [];
+      document.addEventListener('keydown', e =>
+        window.__keysSeen.push(`${e.ctrlKey ? 'Ctrl+' : ''}${e.altKey ? 'Alt+' : ''}${e.shiftKey ? 'Shift+' : ''}${e.key}`)
+      );
+    });
+    const press = async (modifiers, key) => {
+      for (const m of modifiers) await page.keyboard.down(m); // eslint-disable-line no-await-in-loop
+      await page.keyboard.press(key);
+      for (const m of [...modifiers].reverse()) await page.keyboard.up(m); // eslint-disable-line no-await-in-loop
+    };
+    const seen = () => page.evaluate(() => window.__keysSeen.slice());
+    const header = () => page.$('.module-ConversationHeader');
+
+    // Ctrl+Alt+Shift+C: close the conversation (Desktop's Ctrl+Shift+C).
+    if (!(await header())) await openConversation(alice);
+    await press(['Control', 'Alt', 'Shift'], 'KeyC');
+    await page.waitForFunction(() => !document.querySelector('.module-ConversationHeader'), { timeout: 10_000 }).catch(() => {
+      throw new Error('Ctrl+Alt+Shift+C did not close the conversation');
+    });
+    // Ctrl+1 is the browser's (its first tab): the app does not see it.
+    await press(['Control'], 'Digit1');
+    await new Promise(resolve => setTimeout(resolve, 500));
+    if (await header()) throw new Error('Ctrl+1 opened a conversation');
+    if ((await seen()).includes('Ctrl+1')) throw new Error('the app saw Ctrl+1');
+    // Ctrl+Alt+1: the first conversation (Desktop's Ctrl+1).
+    await press(['Control', 'Alt'], 'Digit1');
+    await waitForSelector('.module-ConversationHeader', 'the first conversation after Ctrl+Alt+1', 10_000);
+    const opened = await page.$eval('.module-ConversationHeader', el => el.textContent);
+    const first = await page.$eval('#LeftPane [role=row] [data-testid]', el => el.textContent).catch(() => '?');
+    // In the composer, Ctrl+B (bold) is still the app's.
+    const editor = await waitForSelector('.Inbox__conversation [data-testid=CompositionInput][data-enabled=true] .ql-editor', 'an enabled composer');
+    await editor.click();
+    await press(['Control'], 'KeyB');
+    await press(['Control'], 'KeyB');
+    const keys = await seen();
+    if (!keys.includes('Ctrl+b')) throw new Error(`the composer did not get Ctrl+B (${keys.join(', ')})`);
+    if (!opened.includes(alice.profileName)) await openConversation(alice);
+    return `Ctrl+Alt+1 opened "${opened}" (first in the list: "${first}"); the app saw: ${keys.join(', ')}`;
   });
 
   await scenario('e', 'persistence: reload, still linked, reconnects, receives; then survives a dropped connection', async () => {

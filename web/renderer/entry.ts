@@ -27,6 +27,7 @@ import { config as configureZod } from 'zod';
 import { startCarrier } from '../net/carrier.ts';
 import { installDebugLogLink } from '../shell/debug-log.ts';
 import { showDatabaseError, showQuotaError, showRuntimeDatabaseError } from '../shell/errors.ts';
+import { installKeyboardShortcuts } from '../shell/keyboard.ts';
 import { installNotificationBanner } from '../shell/notifications.ts';
 import { installConnectionStatus } from '../shell/status.ts';
 import { checkForWipedData, installStorageGuards } from '../shell/storage.ts';
@@ -109,6 +110,8 @@ async function boot(): Promise<void> {
   installNotificationBanner();
   installDebugLogLink();
   installStorageGuards();
+  // The browser's shortcuts stay the browser's (WhatsApp Web).
+  installKeyboardShortcuts();
 
   // Media is served by the service worker: a page loaded without it (hard
   // reload) is taken over first (may reload once). After the listeners

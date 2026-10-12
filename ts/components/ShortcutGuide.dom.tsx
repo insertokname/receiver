@@ -6,6 +6,7 @@ import type { JSX } from 'react';
 import classNames from 'classnames';
 import { useRestoreFocus } from '../hooks/useRestoreFocus.dom.ts';
 import type { LocalizerType } from '../types/Util.std.ts';
+import { adaptShortcutKeys } from '../util/adaptShortcutKeys.std.ts'; // WEB-FORK
 
 export type Props = {
   platform: string;
@@ -468,7 +469,8 @@ function renderShortcut(
             key={`${shortcut.description}--${keys.map(k => k).join('-')}`}
             className="module-shortcut-guide__shortcut__key-inner-container"
           >
-            {keys.map(key => {
+            {/* WEB-FORK: app shortcuts in a browser tab (adaptShortcutKeys.web.ts) */}
+            {adaptShortcutKeys(keys).map(key => {
               let label: string = key;
               let isSquare = true;
 
