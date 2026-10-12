@@ -23,7 +23,8 @@
 //                the same, and the second one starts, reconnects, receives
 //   (g) notifications  the in-app banner asks for permission; a message
 //                while the window is not focused creates a notification;
-//                clicking it opens the conversation
+//                clicking it (another conversation open) opens the
+//                message's conversation; the debug log from Settings
 //   (h) link-and-sync  the QR code's capabilities; what the app does when
 //                the primary offers a transfer archive (see below)
 //   (i)-(o) linking survives faults: every connection drops or stalls (stops
@@ -37,6 +38,9 @@
 //                imported when transferred).
 //   (p)-(z) attachments (e2e/attachments.mjs): receive, view, save, send,
 //                record, interrupted transfers, storage full
+//   (aa)         linking survives an outage of 20 s as the keys are uploaded
+//   (ab)         liveness: every connection silently stops delivering while
+//                idle; the app notices, reconnects and receives
 //
 // Fails on CSP violations, uncaught exceptions, network destinations other
 // than the page's origin and the relay, and key-like secrets in the log.
@@ -72,6 +76,9 @@ const STEP_TIMEOUT_MS = Number(process.env.STEP_TIMEOUT_MS ?? 60_000);
 // without data (libsignal-net's limit), then the app reconnects.
 const FAULT_LINK_TIMEOUT_MS = Number(process.env.FAULT_LINK_TIMEOUT_MS ?? 150_000);
 const LARGE_BACKUP_BYTES = Number(process.env.LARGE_BACKUP_BYTES ?? 32 * 1024 * 1024);
+// (ab): a silently dead connection is noticed after at most 45 s without
+// data (libsignal's limit; Desktop's keepalive every 30 s), then reconnecting.
+const LIVENESS_BOUND_MS = Number(process.env.LIVENESS_BOUND_MS ?? 60_000);
 
 // ts/test-mock/bootstrap.node.ts DEFAULT_REMOTE_CONFIG, without
 // desktop.internalUser (the app should behave as for everyone).
@@ -170,7 +177,11 @@ const site = await serveSite({
 // A fake microphone (a tone) for recording voice notes; its permission
 // prompt is answered "allow" when the app asks (scenario (y)).
 if (FIREFOX) process.env.FIREFOX_DOWNLOAD_DIR ??= await mkdtemp(join(tmp, 'firefox-downloads-'));
-const browser = await launchBrowser({ args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'] });
+const browser = await launchBrowser({
+  args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'],
+  // A known storage limit for (z): 4 GiB in all, so about 800 MiB per site.
+  firefoxPrefs: { 'dom.quotaManager.temporaryStorage.fixedLimit': 4 * 1024 * 1024 },
+});
 
 const logLines = [];
 const pageErrors = [];
@@ -190,9 +201,8 @@ const watchers = [];
 /** Opens a page in `context` (a fresh browser profile: its own storage). */
 async function openPage(context = browser.defaultBrowserContext()) {
   page = await context.newPage();
-  // The relay (Firefox reports the WebSocket's handshake as an http: request).
-  const relayOrigin = new URL(RELAY_URL).origin;
-  watchers.push(await watchPage(page, { allowedOrigins: [relayOrigin, relayOrigin.replace(/^ws/, 'http')] }));
+  // The relay.
+  watchers.push(await watchPage(page, { allowedOrigins: [new URL(RELAY_URL).origin] }));
   const quiet = /\[updateSchema\(\d+\)\] success$/;
   page.on('console', m => {
     const text = m.text();
@@ -306,10 +316,11 @@ async function waitForTimelineText(text, what) {
  * none of `secrets` (ids and numbers the log must not show in full).
  */
 async function checkDebugLog(open, secrets) {
-  if (FIREFOX) return 'not checked in Firefox (saving uses a Chromium-only download setting)';
-  const dir = await mkdtemp(join(tmp, 'download-'));
-  const cdp = await page.createCDPSession();
-  await cdp.send('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: dir, eventsEnabled: true });
+  // Firefox saves downloads to the directory set at launch (harness.mjs).
+  const dir = FIREFOX ? process.env.FIREFOX_DOWNLOAD_DIR : await mkdtemp(join(tmp, 'download-'));
+  const before = new Set(await readdir(dir));
+  const cdp = FIREFOX ? undefined : await page.createCDPSession();
+  await cdp?.send('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: dir, eventsEnabled: true });
   await open();
   await waitForSelector('[data-web-dialog="debug-log"] [data-testid="debug-log-save"]:not([disabled])', 'the debug log view, loaded');
   const shown = await page.$eval('[data-testid="debug-log-text"]', e => e.value);
@@ -319,12 +330,16 @@ async function checkDebugLog(open, secrets) {
     // eslint-disable-next-line no-await-in-loop
     await new Promise(resolve => setTimeout(resolve, 100));
     // eslint-disable-next-line no-await-in-loop
-    file = (await readdir(dir)).find(name => /^receiver-debug-log-.*\.txt$/.test(name));
+    const names = await readdir(dir);
+    // Firefox writes <name>.part first.
+    if (!names.some(name => name.endsWith('.part'))) {
+      file = names.find(name => !before.has(name) && /^receiver-debug-log-.*\.txt$/.test(name));
+    }
   }
   if (!file) throw new Error('"Save as file" saved no file');
   const saved = await readFile(join(dir, file), 'utf8');
   await page.click('[data-testid="debug-log-close"]');
-  await cdp.detach();
+  await cdp?.detach();
   if (saved !== shown) throw new Error('the saved debug log differs from the one shown');
   if (!/========= System info =========/.test(saved) || !/========= Logs =========/.test(saved)) {
     throw new Error('the debug log has no header or log section');
@@ -743,10 +758,8 @@ try {
     const permission = await page.evaluate(() => Notification.permission);
     if (permission !== 'granted') throw new Error(`permission is ${permission}`);
 
-    // Record the notifications Desktop creates, and close the conversation
-    // (no conversation open). With another conversation open, Desktop's
-    // ChatsTab calls scrollToMessage(<open conversation>, <new message>)
-    // and throws: an upstream race, independent of the web build.
+    // Record the notifications Desktop creates. Another conversation (the
+    // group) is open: clicking the notification switches from it.
     await page.evaluate(() => {
       const Original = window.Notification;
       window.__notifications = [];
@@ -756,11 +769,18 @@ try {
           window.__notifications.push({ title, body: options?.body ?? '', notification: this });
         }
       };
-      window.reduxActions.conversations.showConversation({ conversationId: undefined });
     });
-    await page.waitForFunction(() => !document.querySelector('.module-ConversationHeader'), { timeout: STEP_TIMEOUT_MS }).catch(() => {
-      throw new Error('the conversation did not close');
-    });
+    await page.evaluate(title => {
+      const { conversationLookup } = window.reduxStore.getState().conversations;
+      const { id } = Object.values(conversationLookup).find(c => c.type === 'group' && c.title === title);
+      window.reduxActions.conversations.showConversation({ conversationId: id });
+    }, GROUP_TITLE);
+    await page
+      .waitForFunction(t => document.querySelector('.module-ConversationHeader')?.textContent.includes(t), { timeout: STEP_TIMEOUT_MS }, GROUP_TITLE)
+      .catch(() => {
+        throw new Error('the group conversation did not open');
+      });
+    const logLinesBefore = logLines.length;
     // The window loses focus (as when the user switches to another window).
     await page.evaluate(() => {
       document.hasFocus = () => false;
@@ -782,16 +802,66 @@ try {
     await page.waitForFunction(() => document.querySelector('.module-ConversationHeader')?.textContent.includes('Alice'), { timeout: STEP_TIMEOUT_MS }).catch(() => {
       throw new Error("clicking the notification did not open Alice's conversation");
     });
+    // Desktop targets the message before it changes the conversation: the
+    // group's view is asked to scroll to it (logged, no longer thrown).
+    const raced = logLines.slice(logLinesBefore).some(l => /scrollToMessage: .* didn't have conversationId/.test(l));
     await page.evaluate(() => {
       delete document.hasFocus;
       window.dispatchEvent(new Event('focus'));
     });
-    const helpLog = await checkDebugLog(
-      () => page.evaluate(() => window.IPC.showDebugLog()),
+    // The debug log from the inbox: Settings > General > Debug log.
+    const settingsLog = await checkDebugLog(
+      async () => {
+        await page.click('[data-testid="NavTabsItem--Settings"]');
+        const general = await waitForSelector('::-p-xpath(//button[contains(., "General")])', 'General in Settings');
+        await general.click();
+        const item = await waitForSelector('::-p-xpath(//*[normalize-space(text())="Debug log"])', 'Debug log in Settings > General');
+        await item.click();
+      },
       [desktop.aci, desktop.pni, phone.device.aci, phone.device.number, alice.device.aci, alice.device.number, bob.device.aci]
     );
-    console.log(`debug log from Help (show-debug-log): ${helpLog}`);
-    return `permission ${permissionBefore} -> granted via the banner; notification "${shown.title}" for "${text}"; click opened the conversation; debug log: ${helpLog}`;
+    await page.click('[data-testid="NavTabsItem--Chats"]');
+    await openConversation(alice);
+    return `permission ${permissionBefore} -> granted via the banner; notification "${shown.title}" for "${text}"; click opened Alice's conversation from the group's${raced ? ' (scroll request for the group seen)' : ''}; debug log from Settings > General: ${settingsLog}`;
+  });
+
+  // Every connection silently stops delivering (no close, no error), as a
+  // hung Tor circuit or a black-holed bridge connection; new ones work. The
+  // app must notice, reconnect, and get the message sent meanwhile.
+  await scenario('ab', 'liveness: every connection black-holed while idle, the app reconnects and receives', async () => {
+    const lastSocket = server.webSockets.get(desktop);
+    const statuses = new Set();
+    let sampling = true;
+    const sampler = (async () => {
+      while (sampling) {
+        // eslint-disable-next-line no-await-in-loop
+        const status = await page.evaluate(() => window.reduxStore.getState().network.socketStatus).catch(() => undefined);
+        if (status) statuses.add(status);
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise(resolve => setTimeout(resolve, 250));
+      }
+    })();
+    const started = Date.now();
+    relay.stallAll();
+    const text = `Through the outage ${Date.now()}`;
+    await alice.sendText(desktop, text);
+    try {
+      await page
+        .waitForFunction(
+          t => [...document.querySelectorAll('.module-timeline__messages__container .module-message__text')].some(e => e.textContent.includes(t)),
+          { timeout: LIVENESS_BOUND_MS },
+          text
+        )
+        .catch(() => {
+          throw new Error(`the message did not arrive within ${LIVENESS_BOUND_MS / 1000} s of the black hole`);
+        });
+    } finally {
+      sampling = false;
+      await sampler;
+    }
+    const seconds = (Date.now() - started) / 1000;
+    if (server.webSockets.get(desktop) === lastSocket) throw new Error('no new authenticated socket');
+    return `message received ${seconds.toFixed(1)} s after every connection was black-holed (bound ${LIVENESS_BOUND_MS / 1000} s); socket status seen: ${[...statuses].join(', ')}`;
   });
 
   // (p)-(w): attachments (e2e/attachments.mjs).
@@ -932,6 +1002,17 @@ try {
     return summary;
   });
 
+  // Desktop retries the keys upload 3 times, 1 s apart: an outage longer
+  // than that used to fail the link (the phone already shows the device).
+  await scenario('aa', 'link: every connection drops as the keys upload arrives, new ones refused for 20 s', async () => {
+    const { summary } = await linkWithFaults({
+      name: 'Phone aa',
+      maxSeconds: 90,
+      rules: [{ ...dropAllFor(20_000), match: e => e.type === 'ws' && e.method === 'PUT' && e.path.startsWith('/v2/keys') }],
+    });
+    return summary;
+  });
+
   await scenario('o', `link with a large archive (${(LARGE_BACKUP_BYTES / 2 ** 20).toFixed(0)} MiB): progress, a drop half way, resumed with Range`, async () => {
     const ranges = [];
     const archiveDownload = e => e.type === 'http' && e.method === 'GET' && /^\/cdn3\/attachments\//.test(e.path);
@@ -1019,7 +1100,15 @@ try {
   // not failed, in Firefox runs.
   const firefoxMediaErrors = FIREFOX ? pageErrors.filter(e => /A ServiceWorker intercepted the request and encountered an unexpected error/.test(e)) : [];
   if (firefoxMediaErrors.length) console.log(`Firefox: ${firefoxMediaErrors.length} failed local media loads (known issue)`);
-  for (const e of pageErrors) if (!firefoxMediaErrors.includes(e)) problems.push(`uncaught exception: ${e}`);
+  // Firefox also reports a WebSocket whose connection was reset (the relay
+  // dropping it: a fault) as a page error ("... was interrupted while the
+  // page was loading", its text for any reset): a network message, not an
+  // exception.
+  const relayDrops = FIREFOX
+    ? pageErrors.filter(e => e === `The connection to ${RELAY_URL}?host=localhost&port=443 was interrupted while the page was loading.`)
+    : [];
+  if (relayDrops.length) console.log(`Firefox: ${relayDrops.length} dropped relay connections reported as page errors`);
+  for (const e of pageErrors) if (!firefoxMediaErrors.includes(e) && !relayDrops.includes(e)) problems.push(`uncaught exception: ${e}`);
   if (localUrlsOnServer.length) problems.push(`${localUrlsOnServer.length} local (attachment) URLs reached the site's server`);
   for (const line of unhandled) problems.push(`unhandled error: ${line.slice(0, 200)}`);
   for (const line of secrets) problems.push(`secret-looking log line: ${line.slice(0, 80)}...`);

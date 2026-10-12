@@ -118,6 +118,7 @@ import { AxoClickableItem } from '../axo/items/AxoClickableItem.dom.tsx';
 import { AxoTextItem } from '../axo/items/AxoTextItem.dom.tsx';
 import { AxoPanel } from '../axo/AxoPanel.dom.tsx';
 import { PinLearnMoreLink } from './standaloneRegistration/util/StepComponents.dom.tsx';
+import { DebugLogItem } from './preferences/DebugLogItem.dom.tsx'; // WEB-FORK
 
 const { isNumber, noop, partition } = lodash;
 
@@ -1146,6 +1147,8 @@ export function Preferences({
           </List>
         )}
 
+        {/* WEB-FORK: the web build has no Help menu (DebugLogItem.web.tsx) */}
+        <DebugLogItem i18n={i18n} />
         <List>
           {!weArePrimaryDevice && (
             <ItemWithAction

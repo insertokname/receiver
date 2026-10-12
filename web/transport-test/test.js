@@ -8,7 +8,7 @@
 //                           ws = Snowflake WebSocket bridge, webrtc = Snowflake
 //                           volunteer proxy, chain = the full fallback chain
 //                           the app uses (reports which transport won)
-//   only=basic,upload,bulk,hold,directory  which checks to run (default: basic)
+//   only=basic,upload,bulk,hold,liveness,directory  which checks to run (default: basic)
 //                           upload sends large request bodies to Signal,
 //                           bulk downloads ~2.7 MB from a third party through
 //                           Tor and hold keeps a connection open for minutes;
@@ -17,6 +17,14 @@
 //                           the site's snapshot and tampered copies of it (no
 //                           network; needs the plain-text copies run.mjs serves
 //                           at ./tor-plain/)
+//                           liveness: an idle connection is kept, then the
+//                           bridge connection is black-holed (no close, no
+//                           error) by run.mjs's proxy (LIVENESS=1): it must be
+//                           noticed within LIVENESS_BOUND_SECS and a new client
+//                           must work
+//   idleSecs=<n>            liveness: how long the connection stays idle (40)
+//   rounds=<n>              bootstrap rounds over the transports (default 2:
+//                           like the app, one retry after a failed attempt)
 //   uploadKB=64,256,512,1024  request body sizes for the upload check
 //   sustainedMB=<n>         upload check: also send n MB in back-to-back requests
 //   maxBodyKB=256           upload check: largest single request body
@@ -30,6 +38,7 @@ import {
   onTransportLog,
   openSignalSocket,
   TRANSPORTS,
+  sleep,
   verifyTorDirectory,
   withDeadline,
 } from '../transport/index.js';
@@ -42,6 +51,11 @@ const HOLD_MINUTES = Number(params.get('hold') ?? 5);
 const KEEPALIVE_SECS = Number(params.get('keepaliveSecs') ?? 30);
 const UPLOAD_KB = (params.get('uploadKB') ?? '64,256,512,1024').split(',').map(Number);
 const SUSTAINED_MB = Number(params.get('sustainedMB') ?? 0);
+const IDLE_SECS = Number(params.get('idleSecs') ?? 40);
+const ROUNDS = Number(params.get('rounds') ?? 2);
+// webtor closes the channel after 25 s without anything from the bridge,
+// checked every 5 s.
+const LIVENESS_BOUND_SECS = 35;
 const want = name => ONLY.includes(name);
 
 const out = document.getElementById('out');
@@ -104,30 +118,99 @@ async function upload(socket, size, limitMs) {
   return [...new Set(responses.map(r => r.status))].join('/');
 }
 
+async function bootstrap(transports) {
+  const events = [];
+  const [connected, secs] = await timed(
+    () =>
+      connectTor({
+        transports,
+        rounds: ROUNDS,
+        onEvent: e => {
+          if (e.type === 'failed') {
+            events.push(`${e.transport.name} failed after ${e.seconds.toFixed(1)}s (${e.reason})`);
+            log(`transport ${e.transport.name} failed after ${e.seconds.toFixed(1)}s: ${e.reason}`);
+          } else if (e.type === 'attempt') {
+            log(`trying transport ${e.transport.name}`);
+          }
+        },
+      }),
+    15 * 60_000
+  );
+  events.push(`connected via ${connected.transport.name}`);
+  return { client: connected.client, detail: events.join(', then '), secs };
+}
+
+// The runner black-holes the bridge connection when asked (console line)
+// and says so through window.__blackholed.
+async function blackholeBridge() {
+  console.log('ACTION blackhole');
+  const asked = performance.now();
+  while (!window.__blackholed) {
+    if (performance.now() - asked > 10_000) throw new Error('no black hole: run with LIVENESS=1 (transport-test/run.mjs)');
+    await sleep(50);
+  }
+  return performance.now();
+}
+
+async function livenessCheck(label, client, transports) {
+  const socket = await openSignalSocket(client, CHAT_URL);
+  await keepalive(socket);
+  let closed;
+  const channelClosed = client.waitForChannelClose().then(reason => {
+    closed = { at: performance.now(), reason };
+    return closed;
+  });
+  log(`idle for ${IDLE_SECS}s`);
+  await sleep(IDLE_SECS * 1000);
+  if (closed) {
+    record(`${label}: idle connection kept`, false, `closed while idle: ${closed.reason}`);
+    return;
+  }
+  const [, rtt] = await timed(() => keepalive(socket));
+  record(`${label}: idle connection kept`, true, `${IDLE_SECS}s without traffic, then a round trip in ${rtt.toFixed(2)}s`);
+
+  const socketEnded = socket.recv().then(
+    () => performance.now(),
+    () => performance.now()
+  );
+  const start = await blackholeBridge();
+  log('bridge connection black-holed');
+  try {
+    const { at, reason } = await withDeadline(channelClosed, LIVENESS_BOUND_SECS * 1000, `not noticed within ${LIVENESS_BOUND_SECS}s`);
+    const socketAt = await withDeadline(socketEnded, 5000, 'the open socket did not end with the channel');
+    record(
+      `${label}: black-holed bridge noticed`,
+      true,
+      `channel closed after ${((at - start) / 1000).toFixed(1)}s (${reason}), open socket ended after ${((socketAt - start) / 1000).toFixed(1)}s`,
+      (at - start) / 1000
+    );
+  } catch (e) {
+    record(`${label}: black-holed bridge noticed`, false, errorReason(e));
+    return;
+  }
+  try {
+    const { client: fresh, detail } = await bootstrap(transports);
+    try {
+      const next = await openSignalSocket(fresh, CHAT_URL);
+      await keepalive(next);
+      await next.close();
+    } finally {
+      await fresh.close().catch(() => {});
+    }
+    const secs = (performance.now() - start) / 1000;
+    record(`${label}: new client after the black hole`, true, `${detail}; round trip on a new socket ${secs.toFixed(1)}s after the black hole`, secs);
+  } catch (e) {
+    record(`${label}: new client after the black hole`, false, errorReason(e));
+  }
+}
+
 async function runSuite(label, transports) {
   log(`===== ${label} =====`);
   let client;
   try {
-    const events = [];
-    const [connected, secs] = await timed(
-      () =>
-        connectTor({
-          transports,
-          rounds: 1,
-          onEvent: e => {
-            if (e.type === 'failed') {
-              events.push(`${e.transport.name} failed after ${e.seconds.toFixed(1)}s (${e.reason})`);
-              log(`transport ${e.transport.name} failed after ${e.seconds.toFixed(1)}s: ${e.reason}`);
-            } else if (e.type === 'attempt') {
-              log(`trying transport ${e.transport.name}`);
-            }
-          },
-        }),
-      15 * 60_000
-    );
-    client = connected.client;
-    events.push(`connected via ${connected.transport.name}`);
-    record(`${label}: Tor bootstrap`, true, events.join(', then '), secs);
+    const { client: connected, detail, secs } = await bootstrap(transports);
+    client = connected;
+    record(`${label}: Tor bootstrap`, true, detail, secs);
   } catch (e) {
     record(`${label}: Tor bootstrap`, false, errorReason(e));
     return;
@@ -267,6 +350,14 @@ async function runSuite(label, transports) {
       record(`${label}: reconnect after new circuit`, true, 'new circuit + connect + round trip', secs);
     } catch (e) {
       record(`${label}: reconnect after new circuit`, false, errorReason(e));
+    }
+  }
+
+  if (want('liveness')) {
+    try {
+      await livenessCheck(label, client, transports);
+    } catch (e) {
+      record(`${label}: liveness`, false, errorReason(e));
     }
   }
 

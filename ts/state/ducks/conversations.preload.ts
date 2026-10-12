@@ -4456,9 +4456,13 @@ export function scrollToMessage(
       throw new Error(`scrollToMessage: failed to load message ${messageId}`);
     }
     if (message.get('conversationId') !== conversationId) {
-      throw new Error(
+      // WEB-FORK: ChatsTab asks for this while it switches to the message's
+      // own conversation (a notification for it was clicked): the message
+      // is targeted before the selection changes. Nothing to scroll here.
+      log.warn(
         `scrollToMessage: ${messageId} didn't have conversationId ${conversationId}`
       );
+      return;
     }
 
     const state = getState();

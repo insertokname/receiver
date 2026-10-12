@@ -99,6 +99,7 @@ import { maybeParseUrl, urlPathFromComponents } from '../util/url.std.ts';
 import { HOUR, MINUTE, SECOND } from '../util/durations/index.std.ts';
 import { safeParseNumber } from '../util/numbers.std.ts';
 import { getLibsignalNet } from './preconnect.preload.ts';
+import { withRegistrationRetry } from './registrationRetry.std.ts'; // WEB-FORK
 import type { GroupSendToken } from '../types/GroupSendEndorsements.std.ts';
 import { parseUnknown, safeParseUnknown } from '../util/schemas.std.ts';
 import type {
@@ -1876,6 +1877,13 @@ async function _ajax<Type extends AjaxResponseType, OutputShape>(
   };
 
   try {
+    // WEB-FORK: registration requests wait out reconnects (registrationRetry.web.ts)
+    if (param.host === 'chatService' && param.isRegistration) {
+      return await withRegistrationRetry<unknown>(
+        () => _outerAjax(null, outerParams),
+        { abortSignal: param.abortSignal }
+      );
+    }
     return await _outerAjax(null, outerParams);
   } catch (e) {
     if (!(e instanceof HTTPError)) {

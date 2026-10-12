@@ -10,9 +10,11 @@
 // (a new exit); if failures continue, the whole client is replaced
 // (bootstrapped again over the transport chain, with backoff) and every
 // connection on the old one is told it was lost. Some failures say which
-// it is right away: a closed circuit asks for a new circuit, a closed
-// channel (the connection to the first relay) for a new client. While a
-// new circuit is being built, new connections wait for it (bounded by
+// it is right away: a closed circuit or a stalled connection asks for a new
+// circuit, a closed channel (the connection to the bridge) for a new client.
+// The channel is also watched: webtor closes it when the bridge falls
+// silent (no keepalive for 25 s), and the client is replaced at once. While
+// a new circuit is being built, new connections wait for it (bounded by
 // their timeout) instead of failing on the old one.
 //
 // Carrier is the seam for tests: a test build can hand WebNet a different
@@ -132,6 +134,10 @@ export interface Carrier {
 const NEW_CIRCUIT_AFTER = 2;
 const REPLACE_AFTER = 4;
 const NEW_CIRCUIT_DEADLINE_MS = 30_000;
+// A connection attempt its caller gave up on after this long (Desktop's
+// link screen waits 10 s, then 20 s, ...) counts as a failure: a circuit
+// that cannot open a connection in that time is not worth keeping.
+const SLOW_OPEN_MS = 10_000;
 
 // What a failure says about the Tor client (arti's error messages).
 const CHANNEL_DEAD = /channel closed|channel .*(dead|failed|shut ?down)/i;
@@ -297,6 +303,7 @@ class TorCarrier implements Carrier {
         this.#session = session;
         this.#bootstrapping = false;
         this.#failures = 0;
+        this.#watchChannel(session);
         log.info(`Tor ready after ${((performance.now() - started) / 1000).toFixed(1)}s`);
         this.#setStatus({ state: 'ready', transport: transport.label });
         const waiting = this.#waiting;
@@ -310,6 +317,22 @@ class TorCarrier implements Carrier {
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
+  }
+
+  /**
+   * The connection to the bridge closes when it fails, or when the bridge
+   * has not been heard from for a while (webtor's SMUX keepalive: the bridge
+   * sends something every 10 s, silence for 25 s closes it): then every
+   * connection on it is dead, so the client is replaced at once instead of
+   * waiting for each connection to notice.
+   */
+  #watchChannel(session: Session): void {
+    session.client.waitForChannelClose().then(
+      (reason: string) => {
+        if (this.#session === session) this.#replace(session, `lost the bridge: ${reason}`);
+      },
+      (error: unknown) => log.warn(`cannot watch the connection to the bridge: ${errorReason(error)}`)
+    );
   }
 
   #current(signal?: AbortSignal): Promise<Session> {
@@ -386,7 +409,11 @@ class TorCarrier implements Carrier {
   }
 
   reportStall(session: number): void {
-    if (this.#session?.id === session) this.#failed(this.#session, 'connection stalled');
+    if (this.#session?.id !== session) return;
+    this.#failed(this.#session, 'connection stalled');
+    // The bridge is still heard from (or the channel watch would have
+    // replaced the client): the circuit is the suspect.
+    if (this.#session?.id === session) this.#newCircuit(this.#session, 'a connection stalled');
   }
 
   onLost(listener: (session: number) => void): () => void {
@@ -425,6 +452,7 @@ class TorCarrier implements Carrier {
 
   async openSocket(url: string, { rootPem, headers, timeoutMs, signal }: OpenSocketOptions): Promise<OpenedSocket> {
     const session = await this.#usable(timeoutMs, signal);
+    const started = Date.now();
     const opening = openSignalSocket(session.client, url, { rootPem, headers, timeoutMs });
     try {
       const connection = await waitFor(opening, signal);
@@ -448,6 +476,7 @@ class TorCarrier implements Carrier {
           connection => connection.close(1000, 'aborted'),
           () => undefined
         );
+        if (Date.now() - started >= SLOW_OPEN_MS) this.#failed(session, 'connection attempt too slow');
       } else {
         this.#failed(session, errorReason(error));
       }

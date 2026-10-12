@@ -24,7 +24,7 @@ The app is the site's root; `test/` and `libsignal/` are check pages.
 | `sql/` | The SQL worker: Desktop's `ts/sql/Server.node.ts` and migrations on encrypted SQLite in the origin private file system (see below); `build.sh` fetches SQLite3 Multiple Ciphers and builds `tokenizer/`; `test/run.mjs` is the storage test |
 | `sql/tokenizer/` | Signal's FTS5 tokenizer (Signal-FTS5-Extension, the revision `@signalapp/sqlcipher` uses) as a WebAssembly module (Rust) |
 | `net/` | libsignal's `Net` for the web build (`WebNet`): chat and provisioning connections, the typed chat calls, and HTTPS (`node-fetch` replacement), all through one Tor client (`tor.ts`, chosen in `carrier.ts`); `test/run.mjs` checks it against Signal |
-| `shell/` | The app shell around Desktop's UI: one window at a time ("Use here", `tabs.ts`), connection status (`status.ts`), the database error screens (`errors.ts`), storage persistence and wipe detection (`storage.ts`), the notification banner (`notifications.ts`), the service worker's update prompt (`update.ts`); `test/run.mjs` tests the recovery paths |
+| `shell/` | The app shell around Desktop's UI: one window at a time ("Use here", `tabs.ts`), connection status (`status.ts`), the database error screens (`errors.ts`), storage persistence and wipe detection (`storage.ts`), the notification banner (`notifications.ts`), the service worker's update prompt (`update.ts`), the "browser can't run receiver" screen (`support.ts`); `test/run.mjs` tests the recovery paths |
 | `sw/` | The service worker (`sw.ts`, built by `build.mjs` with the app's file list into `sw.js`); `test/run.mjs` tests caching, offline and updates |
 | `renderer/brand/`, `renderer/manifest.webmanifest` | receiver's logo and icons (in place of Signal's), the web app manifest |
 | `e2e/` | End-to-end tests against Desktop's mock server (test-only, never deployed): `run.mjs` (scenarios), `mock.mjs`, `relay.mjs`, the test carrier `relay-carrier.ts`, `config.mjs` |
@@ -34,6 +34,7 @@ The app is the site's root; `test/` and `libsignal/` are check pages.
 | `scripts/build-site.sh` | Assembles `dist/site/`, including a fresh, verified Tor directory snapshot, `SHA256SUMS` and `SOURCE` |
 | `scripts/sri.mjs` | Adds Subresource Integrity to a built page (scripts, stylesheets, an import map with every module's digest) |
 | `scripts/verify-site.sh` | Rebuilds the commit a deployment names and compares it with the deployed files |
+| `scripts/harness.mjs`, `scripts/tunnel-proxy.mjs` | Shared by the browser test runners (site server, Chromium or Firefox, network and CSP watch); a local proxy that black-holes the bridge connection for the liveness tests |
 
 ## Build
 
@@ -214,7 +215,9 @@ deletes (migrations) are deleted by the page on the worker's request.
 
 `CHROMIUM` must point at a Chromium or Chrome executable. The runners serve
 `dist/site/` under `/receiver/` from `http://pages.example:8080` (mapped to
-127.0.0.1), like GitHub Pages.
+127.0.0.1), like GitHub Pages. `BROWSER=firefox FIREFOX=<path>` runs the
+transport checks, the boot test and the end-to-end tests in Firefox
+(WebDriver BiDi) instead.
 
 ```bash
 node transport-test/run.mjs 'only=directory'          # Tor directory verification: the snapshot and tampered copies (no network)
@@ -237,7 +240,14 @@ node sw/test/run.mjs                                  # service worker: cache, o
 node shell/test/run.mjs                               # app shell: database error screens, wiped data, a hung second window, Mac shortcuts
 node shell/test/device-name.mjs                       # the linked device's name for common browsers (Node)
 BLACKHOLE=snowflake.torproject.net node renderer/run.mjs   # link screen while Tor falls back to WebRTC (~50 s): "Connecting...", no error
+LIVENESS=1 node transport-test/run.mjs 'suites=ws&only=liveness'   # an idle connection is kept; a black-holed bridge connection is noticed (CI)
+LIVENESS=1 node renderer/run.mjs                      # the app notices a black-holed bridge and shows a new QR code
 ```
+
+`LIVENESS=1` sends the browser's traffic to the bridge through a local
+proxy (`scripts/tunnel-proxy.mjs`) that can make every open connection stop
+forwarding without closing it, like a bridge connection that silently
+stops delivering; new connections still work.
 
 ### End-to-end tests
 
@@ -256,14 +266,16 @@ image, a file (saved as a browser download), a 31 MiB video (Range, 206,
 bounded memory), a voice note, a profile picture, a sticker and a link
 preview image; sending an image, a file and a video and recording a voice
 note (Alice decrypts each); a download and an upload dropped half way and
-resumed; storage full. `BROWSER=firefox FIREFOX=<path>` runs the runner in
-Firefox (WebDriver BiDi), for the scenarios that need no DevTools protocol.
-Scenarios
-(i)-(o) link while every connection drops or stalls (the relay stops
-forwarding without closing, like a hung Tor circuit) at the critical points
-of linking, including half way through a 32 MiB archive download resumed
-with Range; each must end with contacts synced and messages processed
-within a time bound. It needs the e2e build:
+resumed; storage full. `BROWSER=firefox FIREFOX=<path>` runs all of them in
+Firefox (WebDriver BiDi; CI runs both browsers). Scenarios (i)-(o) and (aa)
+link while every connection drops or stalls (the relay stops forwarding
+without closing, like a hung Tor circuit) at the critical points of
+linking, including half way through a 32 MiB archive download resumed with
+Range and a 20 s outage as the keys are uploaded; each must end with
+contacts synced and messages processed within a time bound. In (ab) every
+connection stalls while the app is idle in the inbox: it must notice,
+reconnect and show the message sent meanwhile within 60 s. It needs the
+e2e build:
 
 - `transport/build.sh --test-relay` compiles webtor-rs with its
   `test-relay` feature (`Carrier::Relay`: TLS carried by a WebSocket to a
@@ -311,6 +323,11 @@ WhatsApp Web:
   first QR code attempt has only 10 s) and shows "Connecting..." instead;
   on the link screen a banner shows reconnects. In the inbox, Desktop's own
   network status applies.
+- **Debug log**: Desktop has it in its Help menu; the web build has no
+  native menu, so it is in Settings > General ("Debug log",
+  `ts/components/preferences/DebugLogItem.web.tsx`), and on the link screen
+  ("Problems linking?"). It can be copied or saved as a file; there is no
+  upload.
 - **Database errors** (Electron's dialogs): another window -> "Use here";
   missing key or corrupted file -> "Delete data and link again" (Desktop's
   remove-db / erase-sql-key paths); storage full -> say so.
@@ -340,6 +357,40 @@ WhatsApp Web:
   grow (10, 20, 30, 60 s).
 - **Mac**: Desktop runs its Linux code paths (`process.platform`), but on a
   Mac `window.platform` is `darwin`, so shortcuts and their labels use Cmd.
+
+## Browsers
+
+The app needs WebAssembly, the origin private file system with writable
+files on the page (`FileSystemFileHandle.createWritable`) and synchronous
+access handles in workers (SQLite's `opfs-sahpool`), Web Locks,
+BroadcastChannel, IndexedDB and Web Crypto. A browser without one of them
+gets "This browser can't run receiver" (`shell/support.ts`) instead of a
+half-working app.
+
+- **Chromium** (Chrome, Edge) and **Firefox**: every test runs in both
+  (CI: transport checks, boot to the QR code and the end-to-end suite;
+  Firefox 155 locally, the runner image's Firefox in CI).
+- **Safari** is not tested on a Mac. On Linux, Playwright's WebKit build
+  (WPE, Safari 26.5 user agent) runs the transport checks (Tor over the
+  Snowflake WebSocket bridge, TLS pinned to Signal's CA, uploads) and the
+  libsignal checks; it has no origin private file system, so the app
+  itself stops at the "can't run" screen there, and storage, the service
+  worker's media route and linking were not exercised in WebKit. Known
+  differences that matter in Safari:
+  - `createWritable` on the page is recent in Safari (Safari 26); older
+    versions get the "can't run" screen. Moving the app's file I/O into a
+    worker (synchronous access handles, available since Safari 15.2) would
+    lift that, and would also let a video play while it downloads.
+  - Storage: Safari may delete a site's data after 7 days without a visit
+    unless the app is added to the Dock / Home Screen; `persist()` is only
+    granted to such an installed app. The link screen says so.
+  - Notifications: Safari on macOS shows them; on iOS the Notification API
+    exists only in an app added to the Home Screen (iOS 16.4 and later).
+  - The Snowflake WebRTC fallback (when the WebSocket bridge is blocked)
+    uses `RTCPeerConnection` data channels, which Safari has; not tested.
+  - iOS suspends a page in the background: the connection drops and is
+    noticed and re-established when the page comes back (see "Network",
+    liveness).
 
 ## Integrity and reproducible builds
 
@@ -410,6 +461,24 @@ headers, timeouts and error codes from libsignal-net's Rust code):
   every Signal host it fetches from (storage service, CDNs, updates2
   resources, upload locations). Requests without a pinned CA (link
   previews via contentproxy, Stripe) are refused for now.
+- Liveness: a connection that silently stops delivering (no close, no
+  error) is noticed at two levels. The Snowflake bridge sends a keepalive
+  every 10 s (SMUX NOP); when nothing at all has come from it for 25 s
+  (checked every 5 s; a check that ran late because the page was
+  suspended gives it 15 s more) webtor closes the channel, the app's
+  carrier sees that at once (`waitForChannelClose`), replaces the Tor
+  client and interrupts every connection on it, so all of them reconnect
+  together: about 25-30 s after the last byte, against 60 s before. An idle
+  connection that works is never dropped (the bridge keeps sending). A
+  single stalled circuit (the bridge still heard from) is noticed by the
+  chat connection itself (libsignal's 45 s without anything from the
+  server, or Desktop's keepalive request every 30 s) and gets a new circuit
+  at once. Shorter chat-level bounds would drop working connections over
+  slow circuits: a WebSocket ping waits behind a large upload in the same
+  stream (a 256 KB request can take 20 s over Tor). Registration requests
+  (linking, uploading the device's keys) are retried across reconnects for
+  up to 3 minutes (`ts/textsecure/registrationRetry.web.ts`; Desktop
+  retries 3 times, 1 s apart).
 - Not available yet, rejecting with typed libsignal errors: CDSI (needs SGX
   attestation), SVR2, registration, key transparency, backups.
 - The User-Agent is `unofficial-web-client/<version> (receiver)`.

@@ -74,15 +74,18 @@ export function serveSite({ extra = {}, siteDir = SITE_DIR, onRequest } = {}) {
   return new Promise(resolve => server.listen(PORT, '127.0.0.1', () => resolve(server)));
 }
 
-/**
- * Launches headless Chromium ($CHROMIUM). With `blackholeHosts`, those hosts
- * resolve to 192.0.2.1 (TEST-NET-1, unroutable): connections to them hang
- * until the caller's timeout, like a blocked bridge.
- */
 /** `BROWSER=firefox` (with $FIREFOX): the runners that support it use Firefox over WebDriver BiDi. */
 export const FIREFOX = process.env.BROWSER === 'firefox';
 
-export async function launchBrowser({ blackholeHosts = [], args = [] } = {}) {
+/**
+ * Launches headless Chromium ($CHROMIUM), or Firefox (see FIREFOX). With
+ * `blackholeHosts` (Chromium), those hosts resolve to 192.0.2.1 (TEST-NET-1,
+ * unroutable): connections to them hang until the caller's timeout, like a
+ * blocked bridge. With `proxyPort`, everything but the page's origin goes
+ * through the HTTP proxy on 127.0.0.1:<proxyPort>.
+ */
+
+export async function launchBrowser({ blackholeHosts = [], args = [], firefoxPrefs = {}, proxyPort } = {}) {
   if (FIREFOX) {
     if (!process.env.FIREFOX) throw new Error('set FIREFOX to a Firefox executable');
     return puppeteer.launch({
@@ -107,10 +110,23 @@ export async function launchBrowser({ blackholeHosts = [], args = [] } = {}) {
               'browser.download.folderList': 2,
               'browser.download.useDownloadDir': true,
               'browser.download.always_ask_before_handling_new_types': false,
-              'browser.helperApps.neverAsk.saveToDisk': 'application/octet-stream,application/pdf,application/zip',
+              'browser.helperApps.neverAsk.saveToDisk': 'application/octet-stream,application/pdf,application/zip,text/plain',
               'pdfjs.disabled': true,
             }
           : {}),
+        // Everything but the page's own origin through the test proxy
+        // (scripts/tunnel-proxy.mjs).
+        ...(proxyPort
+          ? {
+              'network.proxy.type': 1,
+              'network.proxy.http': '127.0.0.1',
+              'network.proxy.http_port': proxyPort,
+              'network.proxy.ssl': '127.0.0.1',
+              'network.proxy.ssl_port': proxyPort,
+              'network.proxy.no_proxies_on': HOST,
+            }
+          : {}),
+        ...firefoxPrefs,
       },
     });
   }
@@ -124,6 +140,7 @@ export async function launchBrowser({ blackholeHosts = [], args = [] } = {}) {
       `--host-resolver-rules=${rules.join(', ')}`,
       `--unsafely-treat-insecure-origin-as-secure=${LOCAL_ORIGIN}`,
       ...(process.env.CI ? ['--no-sandbox'] : []),
+      ...(proxyPort ? [`--proxy-server=http://127.0.0.1:${proxyPort}`, `--proxy-bypass-list=${HOST}`] : []),
       ...args,
     ],
   });
@@ -149,7 +166,11 @@ export async function watchPage(page, { allowedOrigins = ALLOWED_DIRECT_ORIGINS 
     if (protocol === 'data:' || protocol === 'blob:') return;
     destinations.set(origin, (destinations.get(origin) ?? 0) + 1);
   };
-  page.on('request', r => note(r.url()));
+  page.on('request', r => {
+    // Firefox reports a WebSocket's handshake as an http(s): request.
+    const handshake = Object.keys(r.headers()).some(name => name.toLowerCase() === 'sec-websocket-key');
+    note(handshake ? r.url().replace(/^http/, 'ws') : r.url());
+  });
   if (!FIREFOX) {
     // WebSockets (Firefox's BiDi requests do not include them).
     const cdp = await page.createCDPSession();

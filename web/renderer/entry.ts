@@ -3,6 +3,8 @@
 // Entry point of the web app (index.html loads this, no inline scripts).
 //
 // Order matters, as in Electron:
+//   -. a browser without what the app needs (shell/support.ts) gets a
+//      screen saying so, and nothing starts;
 //   0. the app shell (web/shell) makes sure no other window uses the app
 //      ("Use here"); then Tor starts bootstrapping (web/net/carrier.ts), in
 //      the background;
@@ -28,6 +30,7 @@ import { showDatabaseError, showQuotaError, showRuntimeDatabaseError } from '../
 import { installNotificationBanner } from '../shell/notifications.ts';
 import { installConnectionStatus } from '../shell/status.ts';
 import { checkForWipedData, installStorageGuards } from '../shell/storage.ts';
+import { missingFeatures, showUnsupportedBrowser } from '../shell/support.ts';
 import { claimTab, onRelease } from '../shell/tabs.ts';
 import { installServiceWorker } from '../shell/update.ts';
 
@@ -89,6 +92,15 @@ function isMac(): boolean {
 
 async function boot(): Promise<void> {
   step('start');
+
+  const missing = missingFeatures();
+  if (missing.length) {
+    document.documentElement.dataset.boot = 'unsupported';
+    // oxlint-disable-next-line no-console
+    console.error(`web boot: this browser lacks ${missing.join(', ')}`);
+    showUnsupportedBrowser(missing);
+    return;
+  }
 
   // The app shell: its service worker (updates only with the user's
   // consent), connection status and banners. They show only when relevant.

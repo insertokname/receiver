@@ -6,6 +6,10 @@
 //   node transport-test/run.mjs [query]             e.g. 'suites=ws&only=basic,bulk'
 //   node transport-test/run.mjs 'only=directory'    Tor directory verification (no network)
 //   BLACKHOLE=snowflake.torproject.net node ...     make that host unreachable
+//   LIVENESS=1 node transport-test/run.mjs 'only=liveness'
+//                                    the bridge is reached through a local
+//                                    proxy that black-holes it when the page asks
+//   BROWSER=firefox FIREFOX=<firefox> node ...      in Firefox
 //
 // Needs: web/scripts/build-site.sh output, CHROMIUM=<browser executable>.
 
@@ -14,6 +18,7 @@ import { join } from 'node:path';
 import { brotliDecompressSync } from 'node:zlib';
 
 import { BASE_PATH, LOCAL_ORIGIN, SITE_DIR, launchBrowser, pipePageOutput, serveSite, watchPage } from '../scripts/harness.mjs';
+import { startTunnelProxy } from '../scripts/tunnel-proxy.mjs';
 
 const query = process.argv[2] ?? 'suites=ws';
 const blackholeHosts = (process.env.BLACKHOLE ?? '').split(',').filter(Boolean);
@@ -35,12 +40,22 @@ if (new URLSearchParams(query).get('only')?.split(',').includes('directory')) {
 }
 
 const server = await serveSite({ extra });
-const browser = await launchBrowser({ blackholeHosts });
+const proxy = process.env.LIVENESS ? await startTunnelProxy() : undefined;
+const browser = await launchBrowser({ blackholeHosts, proxyPort: proxy?.port });
 let failed = true;
 try {
   const page = await browser.newPage();
   pipePageOutput(page);
   const watcher = await watchPage(page);
+  page.on('console', message => {
+    if (message.text() !== 'ACTION blackhole') return;
+    if (!proxy) return;
+    proxy.blackholeAll();
+    console.log(`proxy: ${proxy.stats.blackholed} tunnel(s) black-holed`);
+    page.evaluate(() => {
+      window.__blackholed = true;
+    }).catch(() => undefined);
+  });
   if (blackholeHosts.length) console.log(`unreachable for this run: ${blackholeHosts.join(', ')}`);
   await page.goto(`${LOCAL_ORIGIN}${BASE_PATH}test/?autorun&${query}`);
   const results = await page
@@ -57,5 +72,6 @@ try {
 } finally {
   await browser.close();
   server.close();
+  await proxy?.close();
 }
 process.exit(failed ? 1 : 0);

@@ -22,8 +22,14 @@
 // code attempts time out after 10 s; the app waits for Tor first and shows
 // "Connecting...", see web/shell/status.ts): the states seen are printed.
 // SCREENSHOT=<file.png> saves the final screen.
+// LIVENESS=1: the bridge is reached through a local proxy; once the QR code
+// is shown, the proxy black-holes the bridge connection (it stops delivering,
+// without closing). The app must notice (webtor's keepalive), replace its Tor
+// client and show a new QR code (a new provisioning connection, whose address
+// Signal pushes) within LIVENESS_BOUND_SECS (default 60).
 
 import { BASE_PATH, LOCAL_ORIGIN, decodeLinkQrCode, launchBrowser, serveSite, watchPage } from '../scripts/harness.mjs';
+import { startTunnelProxy } from '../scripts/tunnel-proxy.mjs';
 
 const target = process.argv[2];
 const SETTLE_MS = Number(process.env.SETTLE_MS ?? 5000);
@@ -31,7 +37,9 @@ const server = target ? null : await serveSite();
 // BLACKHOLE=host1,host2 makes those hosts unreachable (e.g. the Snowflake
 // WebSocket bridge, forcing the slower WebRTC fallback).
 const blackholeHosts = (process.env.BLACKHOLE ?? '').split(',').filter(Boolean);
-const browser = await launchBrowser({ blackholeHosts });
+const proxy = process.env.LIVENESS ? await startTunnelProxy() : undefined;
+const LIVENESS_BOUND_SECS = Number(process.env.LIVENESS_BOUND_SECS ?? 60);
+const browser = await launchBrowser({ blackholeHosts, proxyPort: proxy?.port });
 
 // Desktop's install screen (React), and on it the rendered link QR code.
 const INSTALL_SCREEN = '[class^="module-InstallScreen"], [class*=" module-InstallScreen"]';
@@ -46,10 +54,12 @@ try {
   const watcher = await watchPage(page);
   const pageErrors = [];
   const logLines = [];
+  let bridgeLostAt;
   const quiet = /\[updateSchema\(\d+\)\] success$/;
   page.on('console', m => {
     const text = m.text();
     logLines.push(text);
+    if (!bridgeLostAt && /replacing the Tor client \(lost the bridge/.test(text)) bridgeLostAt = Date.now();
     if (!quiet.test(text)) console.log(`  | ${text.slice(0, 400)}`);
   });
   page.on('pageerror', e => {
@@ -116,6 +126,26 @@ try {
   const qr = await decodeLinkQrCode(page, EXPECTED_STOP);
   await new Promise(resolve => setTimeout(resolve, SETTLE_MS));
 
+  let liveness;
+  if (proxy && qr.ok) {
+    proxy.blackholeAll();
+    const blackholed = Date.now();
+    console.log(`liveness: ${proxy.stats.blackholed} bridge connection(s) black-holed`);
+    let next;
+    while (Date.now() - blackholed < LIVENESS_BOUND_SECS * 1000) {
+      // eslint-disable-next-line no-await-in-loop
+      await new Promise(resolve => setTimeout(resolve, 500));
+      // eslint-disable-next-line no-await-in-loop
+      next = await decodeLinkQrCode(page, EXPECTED_STOP).catch(() => undefined);
+      if (next?.ok && next.url !== qr.url) break;
+    }
+    const seconds = (Date.now() - blackholed) / 1000;
+    liveness = {
+      noticed: bridgeLostAt ? (bridgeLostAt - blackholed) / 1000 : undefined,
+      newQr: next?.ok && next.url !== qr.url ? seconds : undefined,
+    };
+  }
+
   const state = await page.evaluate(selector => {
     const loading = document.querySelector('.app-loading-screen');
     const dialog = document.querySelector('[role="alertdialog"], [role="dialog"]');
@@ -158,6 +188,11 @@ try {
   console.log(`link screen errors seen: ${seen.errors.size}${seen.errors.size ? ` (${[...seen.errors].join(' | ')})` : ''}`);
   if (process.env.SCREENSHOT) await page.screenshot({ path: process.env.SCREENSHOT });
   if (qr.ok) console.log(`qr-seconds: ${qrSeconds.toFixed(1)}`);
+  if (liveness) {
+    console.log(
+      `liveness: bridge loss noticed after ${liveness.noticed?.toFixed(1) ?? '(never)'} s, new QR code after ${liveness.newQr?.toFixed(1) ?? '(none)'} s (bound ${LIVENESS_BOUND_SECS} s)`
+    );
+  }
   const ipcStubs = logLines.filter(l => l.startsWith('web main:'));
   console.log(`web main notes (${ipcStubs.length}):`);
   for (const line of ipcStubs) console.log(`  ${line}`);
@@ -177,6 +212,10 @@ try {
   if (!state.storage?.info) problems.push(`database not open: ${state.storage?.error ?? 'no storage status'}`);
   if (!state.installScreen) problems.push('the install screen (React) was not rendered');
   if (!qr.ok) problems.push(`no valid link QR code: ${qr.reason}`);
+  if (proxy && qr.ok && liveness?.newQr === undefined) {
+    problems.push(`no new QR code within ${LIVENESS_BOUND_SECS} s of the black hole`);
+  }
+  if (proxy && qr.ok && liveness?.noticed === undefined) problems.push('the lost bridge was not noticed');
   for (const error of seen.errors) problems.push(`the link screen showed an error: ${error}`);
   if (state.loadingScreenVisible) problems.push('the loading screen is still visible');
   for (const e of pageErrors) problems.push(`uncaught exception: ${e.message}`);
@@ -190,6 +229,7 @@ try {
 } finally {
   await browser.close();
   server?.close();
+  await proxy?.close();
 }
 if (!ok && process.env.GITHUB_ACTIONS) {
   console.log('::error title=web app boot failed::the web app did not show the link QR code');

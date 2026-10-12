@@ -12,9 +12,10 @@
 // storage service) and messages the server pushes to a device. Like
 // Signal's server: a device's new authenticated socket ends its old one
 // (aborted if it does not close), and messages the old one never got
-// acknowledged go to the new one. CDN 3 attachments are served here, with
-// Range requests (206), which the mock does not support, and interrupted
-// uploads can be resumed (tus HEAD and PATCH).
+// acknowledged go to the new one; keys uploaded again are accepted. CDN 3
+// attachments are served here, with Range requests (206), which the mock
+// does not support, and interrupted uploads can be resumed (tus HEAD and
+// PATCH).
 //
 // Calls the mock serves only over gRPC (multi-recipient send, usernames,
 // upload forms, backups) have no REST routes in the mock; the web build's
@@ -149,6 +150,19 @@ export async function startMockServer({ onDeviceLink, onEvent = () => undefined,
   server.send = (target, message) => {
     onEvent({ type: 'push', method: 'PUT', path: '/api/v1/message', target });
     return send(target, message);
+  };
+
+  // Uploading the same keys again (a retry whose first answer was lost) is
+  // fine for Signal's server; the mock's linking bookkeeping asserts it
+  // sees each kind once, after it stored the keys. Same keys, so success.
+  const updateDeviceKeys = server.updateDeviceKeys.bind(server);
+  server.updateDeviceKeys = async (...args) => {
+    try {
+      return await updateDeviceKeys(...args);
+    } catch (error) {
+      if (/^Duplicate service id kind /.test(error?.message ?? '')) return undefined;
+      throw error;
+    }
   };
 
   // A device's new authenticated socket replaces the old one: the mock

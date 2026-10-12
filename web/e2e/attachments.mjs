@@ -39,8 +39,9 @@
 //   (y) record a voice note (Desktop's recorder: the MP3 encoder worklet,
 //       a fake microphone) and send it: the microphone permission is asked
 //       only when recording starts; Alice decrypts an MP3
-//   (z) storage full: with the origin's quota lowered (CDP), a received
-//       file cannot be stored; the app says so (the shell's storage-full
+//   (z) storage full: with the origin's quota lowered (CDP; in Firefox the
+//       storage is filled up to 2 MiB below its limit), a received file
+//       cannot be stored; the app says so (the shell's storage-full
 //       screen) instead of failing silently. Runs last: it leaves the
 //       window on that screen.
 
@@ -488,6 +489,19 @@ export async function runAttachmentScenarios(ctx) {
         // eslint-disable-next-line no-await-in-loop
         const menuItem = await page().waitForSelector(`::-p-xpath(//*[@role="menuitem"][contains(., "${item}")])`, { timeout: 10_000 });
         // eslint-disable-next-line no-await-in-loop
+        if (FIREFOX) {
+          // Firefox over BiDi reports only some file dialogs (often not a
+          // second one in the same page): fill the input the menu item opens.
+          // eslint-disable-next-line no-await-in-loop
+          await page().keyboard.press('Escape');
+          const testId = item === 'File' ? 'attachfile-input' : 'attachfile-input-media';
+          // eslint-disable-next-line no-await-in-loop
+          const input = await page().waitForSelector(`.Inbox__conversation input[data-testid="${testId}"]`, { timeout: 10_000 });
+          // eslint-disable-next-line no-await-in-loop
+          await input.uploadFile(file);
+          break;
+        }
+        // eslint-disable-next-line no-await-in-loop
         const [chooser] = await Promise.all([page().waitForFileChooser({ timeout: 10_000 }), menuItem.click()]);
         // eslint-disable-next-line no-await-in-loop
         await chooser.accept([file]);
@@ -866,10 +880,32 @@ export async function runAttachmentScenarios(ctx) {
   });
 
   await scenario('z', 'storage full while storing an attachment: the app says so', async () => {
-    const cdp = await page().createCDPSession();
+    const cdp = FIREFOX ? undefined : await page().createCDPSession();
     const origin = new URL(page().url()).origin;
     const { usage } = await page().evaluate(() => navigator.storage.estimate());
-    await cdp.send('Storage.overrideQuotaForOrigin', { origin, quotaSize: usage + 2 * 1024 * 1024 });
+    let how;
+    if (cdp) {
+      await cdp.send('Storage.overrideQuotaForOrigin', { origin, quotaSize: usage + 2 * 1024 * 1024 });
+      how = 'quota set to usage + 2 MiB';
+    } else {
+      // Firefox has no quota override: the runner limits its storage
+      // (harness.mjs), and a file outside the app's directories takes all
+      // but 2 MiB of what is left.
+      const filled = await page().evaluate(async () => {
+        const { quota, usage: used } = await navigator.storage.estimate();
+        const size = quota - used - 2 * 1024 * 1024;
+        const root = await navigator.storage.getDirectory();
+        const writable = await (await root.getFileHandle('e2e-filler', { create: true })).createWritable();
+        const chunk = new Uint8Array(8 * 1024 * 1024);
+        for (let left = size; left > 0; left -= chunk.length) {
+          // eslint-disable-next-line no-await-in-loop
+          await writable.write(left >= chunk.length ? chunk : chunk.subarray(0, left));
+        }
+        await writable.close();
+        return { quota, size };
+      });
+      how = `quota ${(filled.quota / 2 ** 20).toFixed(0)} MiB, filled to 2 MiB below it`;
+    }
     try {
       const data = randomBytes(8 * 1024 * 1024);
       const fileName = `too-big-${Date.now()}.zip`;
@@ -885,10 +921,16 @@ export async function runAttachmentScenarios(ctx) {
           throw new Error('no storage-full message');
         });
       const text = await page().$eval('[data-web-screen="storage-full"]', e => e.querySelector('h1, h2')?.innerText ?? e.innerText);
-      return `quota set to usage + 2 MiB, an 8 MiB file received: "${text.slice(0, 80)}..."`;
+      return `${how}, an 8 MiB file received: "${text.slice(0, 80)}..."`;
     } finally {
-      await cdp.send('Storage.overrideQuotaForOrigin', { origin }).catch(() => undefined);
-      await cdp.detach();
+      if (cdp) {
+        await cdp.send('Storage.overrideQuotaForOrigin', { origin }).catch(() => undefined);
+        await cdp.detach();
+      } else {
+        await page()
+          .evaluate(async () => (await navigator.storage.getDirectory()).removeEntry('e2e-filler'))
+          .catch(() => undefined);
+      }
     }
   });
 }
