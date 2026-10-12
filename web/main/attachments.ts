@@ -8,7 +8,7 @@
 
 import { initialize } from '../../app/attachment_channel.main.ts';
 import type { MainSQL } from '../../ts/sql/main.main.ts';
-import { renewLocalUrl, unsealLocalUrl } from './local-urls.ts';
+import { reloadFailedMedia, renewLocalUrl, unsealLocalUrl } from './local-urls.ts';
 import { serveLocalRequests } from './protocols.ts';
 
 type SqlCalls = {
@@ -24,4 +24,5 @@ export function installAttachments({ configDir, sql }: { configDir: string; sql:
   } as unknown as MainSQL;
   initialize({ configDir, sql: mainSql });
   serveLocalRequests(unsealLocalUrl, renewLocalUrl);
+  navigator.serviceWorker?.addEventListener('controllerchange', reloadFailedMedia);
 }

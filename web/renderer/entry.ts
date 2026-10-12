@@ -102,11 +102,6 @@ async function boot(): Promise<void> {
     return;
   }
 
-  // Media is served by the service worker: a page loaded without it (hard
-  // reload) is taken over first (may reload once).
-  window.__webBoot.control = await ensureControlled();
-  step('sw');
-
   // The app shell: its service worker (updates only with the user's
   // consent), connection status and banners. They show only when relevant.
   window.addEventListener('load', () => setTimeout(installServiceWorker, 1000), { once: true });
@@ -114,6 +109,12 @@ async function boot(): Promise<void> {
   installNotificationBanner();
   installDebugLogLink();
   installStorageGuards();
+
+  // Media is served by the service worker: a page loaded without it (hard
+  // reload) is taken over first (may reload once). After the listeners
+  // above: the page's load event may pass while this waits.
+  window.__webBoot.control = await ensureControlled();
+  step('sw');
 
   // One window at a time: nothing starts while another window uses the app.
   await claimTab();

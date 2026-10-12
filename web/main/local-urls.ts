@@ -45,8 +45,15 @@ export function localUrlBase(): string {
 
 // One web URL per local URL while the page lives: components ask again on
 // every render, and a new URL makes an <img> load again (it flickers).
+// Only once the service worker controls the page: before that (first visit,
+// the worker still installing) a request fails, and a new URL on the next
+// render is what loads it again.
 const sealedUrls = new Map<string, string>();
 const MAX_SEALED_URLS = 5000;
+
+function isControlled(): boolean {
+  return Boolean(navigator.serviceWorker?.controller);
+}
 
 /** The web URL for one of Desktop's local URLs (attachment://...). */
 export function sealLocalUrl(url: string): string {
@@ -60,12 +67,30 @@ export function sealLocalUrl(url: string): string {
   token.set(sealed, NONCE_LENGTH);
   const webUrl = localUrlBase() + base64url(token);
 
+  if (!isControlled()) return webUrl;
   if (sealedUrls.size >= MAX_SEALED_URLS) {
     const oldest = sealedUrls.keys().next().value;
     if (oldest !== undefined) sealedUrls.delete(oldest);
   }
   sealedUrls.set(url, webUrl);
   return webUrl;
+}
+
+/**
+ * The service worker took this page over: images and media that failed
+ * before (their requests went to the server) load again through it.
+ */
+export function reloadFailedMedia(): void {
+  const base = localUrlBase();
+  for (const element of document.querySelectorAll<HTMLImageElement | HTMLMediaElement>('img, video, audio')) {
+    const failed =
+      element instanceof HTMLImageElement ? !element.complete || element.naturalWidth === 0 : element.error !== null;
+    if (!failed || !element.src.startsWith(base)) continue;
+    const url = unsealLocalUrl(element.src);
+    if (url === undefined) continue;
+    element.src = sealLocalUrl(url);
+    if (element instanceof HTMLMediaElement) element.load();
+  }
 }
 
 /** Desktop's local URL behind a web URL made by sealLocalUrl() in this page, or undefined. */
