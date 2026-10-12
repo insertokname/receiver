@@ -12,7 +12,8 @@
 // that exists only in this page's memory. If a request ever reached the
 // network instead of the service worker (a page the worker does not
 // control), the server would see only random bytes; and only the page that
-// made a URL can open it. A reload makes new URLs.
+// made a URL can open it. A reload makes new URLs; within a page the same
+// local URL always gets the same web URL.
 
 import { gcm } from '@noble/ciphers/aes.js';
 
@@ -42,14 +43,29 @@ export function localUrlBase(): string {
   return new URL(DIRECTORY, document.baseURI).href;
 }
 
+// One web URL per local URL while the page lives: components ask again on
+// every render, and a new URL makes an <img> load again (it flickers).
+const sealedUrls = new Map<string, string>();
+const MAX_SEALED_URLS = 5000;
+
 /** The web URL for one of Desktop's local URLs (attachment://...). */
 export function sealLocalUrl(url: string): string {
+  const known = sealedUrls.get(url);
+  if (known !== undefined) return known;
+
   const nonce = crypto.getRandomValues(new Uint8Array(NONCE_LENGTH));
   const sealed = gcm(KEY, nonce).encrypt(encoder.encode(url));
   const token = new Uint8Array(NONCE_LENGTH + sealed.length);
   token.set(nonce);
   token.set(sealed, NONCE_LENGTH);
-  return localUrlBase() + base64url(token);
+  const webUrl = localUrlBase() + base64url(token);
+
+  if (sealedUrls.size >= MAX_SEALED_URLS) {
+    const oldest = sealedUrls.keys().next().value;
+    if (oldest !== undefined) sealedUrls.delete(oldest);
+  }
+  sealedUrls.set(url, webUrl);
+  return webUrl;
 }
 
 /** Desktop's local URL behind a web URL made by sealLocalUrl() in this page, or undefined. */
