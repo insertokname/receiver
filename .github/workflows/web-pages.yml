@@ -280,12 +280,12 @@ jobs:
         run: node web/transport-test/run.mjs 'only=directory'
 
       - name: Transport checks, local (Snowflake WebSocket)
-        run: node web/transport-test/run.mjs 'suites=ws&only=basic,upload'
+        run: bash web/scripts/real-tor.sh node web/transport-test/run.mjs 'suites=ws&only=basic,upload'
 
       - name: Transport checks, local, Firefox
         env:
           BROWSER: firefox
-        run: node web/transport-test/run.mjs 'suites=ws&only=basic'
+        run: bash web/scripts/real-tor.sh node web/transport-test/run.mjs 'suites=ws&only=basic'
 
       # Real Tor speed varies a lot between circuits and over the day: a
       # record for the logs, never a reason to fail the build.
@@ -302,7 +302,7 @@ jobs:
       - name: Transport liveness, local
         env:
           LIVENESS: '1'
-        run: node web/transport-test/run.mjs 'suites=ws&only=liveness'
+        run: bash web/scripts/real-tor.sh node web/transport-test/run.mjs 'suites=ws&only=liveness'
 
       - name: libsignal checks, local (WebAssembly under the site's CSP)
         run: node web/libsignal/check/run.mjs
@@ -314,12 +314,12 @@ jobs:
         run: node web/renderer/test/fs-shim.mjs
 
       - name: Web app boot, local (to the link QR code, decoded)
-        run: node web/renderer/run.mjs
+        run: bash web/scripts/real-tor.sh node web/renderer/run.mjs
 
       - name: Web app boot, local, Firefox
         env:
           BROWSER: firefox
-        run: node web/renderer/run.mjs
+        run: bash web/scripts/real-tor.sh node web/renderer/run.mjs
 
       - name: Service worker, local (cache, offline, updates only with the user's consent, manifest)
         run: node web/sw/test/run.mjs
@@ -330,7 +330,7 @@ jobs:
           node web/shell/test/run.mjs
 
       - name: Network layer checks, local (WebNet and HTTPS through Tor against Signal)
-        run: node web/net/test/run.mjs
+        run: bash web/scripts/real-tor.sh node web/net/test/run.mjs
 
       # The app linked to Desktop's mock server (packages/mock-server), reached
       # through a local relay instead of Tor: link, sync, receive, send,
@@ -433,4 +433,4 @@ jobs:
         run: node web/libsignal/check/run.mjs "$LIVE_URL"
 
       - name: Web app boot, live site (to the link QR code, decoded)
-        run: node web/renderer/run.mjs "$LIVE_URL"
+        run: bash web/scripts/real-tor.sh node web/renderer/run.mjs "$LIVE_URL"

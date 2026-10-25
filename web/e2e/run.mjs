@@ -763,7 +763,8 @@ try {
     await waitForSelector('[data-web-screen="open-elsewhere"] [data-testid="use-here"]', 'the "open in another window" screen');
     const screenSeconds = (Date.now() - opened) / 1000;
     const secondBoot = await second.evaluate(() => ({ boot: document.documentElement.dataset.boot, storage: window.__webStorage ?? null }));
-    if (secondBoot.boot !== 'start' || secondBoot.storage) throw new Error(`the second window started anyway: ${JSON.stringify(secondBoot)}`);
+    // Stopped before the tab step (the service worker step comes first).
+    if (!['start', 'sw'].includes(secondBoot.boot) || secondBoot.storage) throw new Error(`the second window started anyway: ${JSON.stringify(secondBoot)}`);
 
     const clicked = Date.now();
     await second.click('[data-testid="use-here"]');
@@ -773,7 +774,7 @@ try {
         throw new Error('the first window does not show "open in another window"');
       });
     const firstState = await first.evaluate(() => ({ boot: document.documentElement.dataset.boot, storage: window.__webStorage ?? null }));
-    if (firstState.boot !== 'start' || firstState.storage) throw new Error(`the first window kept running: ${JSON.stringify(firstState)}`);
+    if (!['start', 'sw'].includes(firstState.boot) || firstState.storage) throw new Error(`the first window kept running: ${JSON.stringify(firstState)}`);
     await waitForSelector('#LeftPane', 'the inbox in the second window', 120_000);
     const inboxSeconds = (Date.now() - clicked) / 1000;
     const releaseMs = await second.evaluate(() => document.documentElement.dataset.webUseHereMs);

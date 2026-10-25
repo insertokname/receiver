@@ -28,8 +28,9 @@ export { CHUNK, FIRST_CHUNK, contentRange, fetchRanged, requestedRange } from '.
 export const DEFAULT_USER_AGENT = 'unofficial-web-client/0.1';
 const DEFAULT_OPEN_TIMEOUT_MS = 30_000;
 
-// Budgets are per attempt and cover bridge connection + Tor handshake + first
-// circuit. WebSocket bridges answer in 1-3 s when they work.
+// Budgets are per attempt and per stage: the bridge connection + Tor handshake,
+// then the first circuit (a stale directory snapshot adds a fetch through the
+// bridge in between, DIRECTORY_FETCH_MS). WebSocket bridges answer in 1-3 s when they work.
 // WebRTC: webtor tries up to 3 volunteer proxies, each with a fresh broker
 // request (a few seconds, retried by webtor when no proxy is free), ICE
 // gathering (up to 10 s) and DataChannel open (up to 30 s). About 3 x 45 s
@@ -53,6 +54,10 @@ const BACKOFF_INITIAL_MS = 2_000;
 const BACKOFF_MAX_MS = 60_000;
 // Our own deadline fires this long after webtor's, in case the WASM side hangs.
 const DEADLINE_GRACE_MS = 10_000;
+// webtor's limit for fetching the Tor directory through the bridge, a stage of
+// its own between the bridge connection and the first circuit (each of those
+// has the transport's budget), needed only when the snapshot is not usable.
+const DIRECTORY_FETCH_MS = 120_000;
 
 const logListeners = new Set();
 
@@ -135,13 +140,10 @@ function clientOptions(transport, directoryUrl, congestionControl) {
 
 async function attempt(transport, directoryUrl, congestionControl) {
   const creating = TorClient.create(clientOptions(transport, directoryUrl, congestionControl));
+  const deadlineMs = 2 * transport.budgetMs + DIRECTORY_FETCH_MS + DEADLINE_GRACE_MS;
   let client;
   try {
-    client = await withDeadline(
-      creating,
-      transport.budgetMs + DEADLINE_GRACE_MS,
-      `no Tor circuit after ${(transport.budgetMs + DEADLINE_GRACE_MS) / 1000}s`
-    );
+    client = await withDeadline(creating, deadlineMs, `no Tor circuit after ${deadlineMs / 1000}s`);
   } catch (error) {
     // If webtor finishes after our deadline, don't leave its connection open.
     creating.then(late => late.close(), () => {});

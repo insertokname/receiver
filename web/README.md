@@ -35,6 +35,7 @@ The app is the site's root; `test/` and `libsignal/` are check pages.
 | `scripts/sri.mjs` | Adds Subresource Integrity to a built page (scripts, stylesheets, an import map with every module's digest) |
 | `scripts/verify-site.sh` | Rebuilds the commit a deployment names and compares it with the deployed files |
 | `scripts/harness.mjs`, `scripts/tunnel-proxy.mjs` | Shared by the browser test runners (site server, Chromium or Firefox, network and CSP watch); a local proxy that black-holes the bridge connection for the liveness tests |
+| `scripts/real-tor.sh` | Runs a CI check that goes through the real Tor network once more if it fails (a Snowflake or circuit failure outside this code must not stop the daily Tor directory refresh) |
 
 ## Build
 
@@ -552,7 +553,9 @@ headers, timeouts and error codes from libsignal-net's Rust code):
   time by `transport/webtor-rs/scripts/fetch-consensus.sh` and verified by
   `transport/verify-directory.mjs`, so a build with a bad snapshot fails).
   If the snapshot is missing, too old or does not verify, the client
-  fetches the documents through the bridge (BEGIN_DIR) and verifies those;
+  fetches the documents through the bridge (BEGIN_DIR, a stage with its
+  own time limit of 120 s, so a slow bridge is not given up on while it is
+  sending them) and verifies those;
   a directory that does not verify is never used, and the shell shows
   "The list of Tor relays could not be verified" (or asks to correct the
   device's clock when even a fresh one is not valid at its time) while it

@@ -475,6 +475,14 @@ export async function runAttachmentScenarios(ctx) {
 
   await scenario('s', 'receive a voice note: duration shown, plays, seeks', async () => {
     const data = await readFile(join(REPO, 'fixtures/incompetech-com-Agnus-Dei-X.mp3'));
+    // From the start: the duration shown loads the file too, and Firefox may
+    // then play it from its media cache (one URL per attachment).
+    const responses = [];
+    const onResponse = response => {
+      if (!new URL(response.url()).pathname.includes('/attachment/')) return;
+      responses.push({ status: response.status(), range: response.request().headers().range, sw: viaServiceWorker(response) });
+    };
+    page().on('response', onResponse);
     const pointer = await helpers.encryptAttachment(data, 'audio/mpeg', store, { flags: 1 });
     const timestamp = await aliceSends(null, [pointer]);
     const message = messageSelector(timestamp);
@@ -487,12 +495,6 @@ export async function runAttachmentScenarios(ctx) {
         }, countdown),
       "the voice note's duration"
     );
-    const responses = [];
-    const onResponse = response => {
-      if (!new URL(response.url()).pathname.includes('/attachment/')) return;
-      responses.push({ status: response.status(), range: response.request().headers().range, sw: viaServiceWorker(response) });
-    };
-    page().on('response', onResponse);
     const playing = () => page().evaluate(() => window.reduxStore.getState().audioPlayer.active);
     try {
       await page().click(`${message} .PlaybackButton`);
@@ -506,7 +508,7 @@ export async function runAttachmentScenarios(ctx) {
       }, 'the voice note to continue from the clicked position');
       await page().click(`${message} .PlaybackButton`);
       const partial = responses.filter(r => r.status === 206);
-      if (!partial.length || responses.some(r => !r.sw)) throw new Error(`requests: ${JSON.stringify(responses)}`);
+      if (!responses.length || (!FIREFOX && !partial.length) || responses.some(r => !r.sw)) throw new Error(`requests: ${JSON.stringify(responses)}`);
       return (
         `${(data.length / 2 ** 20).toFixed(1)} MiB MP3 voice note: duration shown "${shown}", played, seek by waveform ` +
         `to ${after.currentTime.toFixed(1)} s of ${after.duration?.toFixed?.(1) ?? '?'} s; ` +
