@@ -197,7 +197,8 @@ function _validateResponse(response: any, schema: any) {
 }
 
 const FIVE_MINUTES = 5 * MINUTE;
-const GET_ATTACHMENT_CHUNK_TIMEOUT = 10 * SECOND;
+// WEB-FORK: over Tor (a circuit that stalls is replaced, web/transport/src/ranged.js), not 10 s
+const GET_ATTACHMENT_CHUNK_TIMEOUT = 30 * SECOND;
 
 type AgentCacheType = {
   [name: string]: {

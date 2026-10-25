@@ -34,6 +34,11 @@
 //   stops at the cut (dropping its connection, as its response would go on).
 // - A lane much slower than the best one gets a new circuit (`renewLane`,
 //   if the caller provides it; otherwise its worker stops).
+// - Circuits also stall outright (nothing for many seconds, then the rest at
+//   once), and the caller gives up on a body that brings nothing for a while
+//   (Desktop: 10 s). A spare worker on another lane, there for every
+//   download, takes over the rest of the range the caller waits for once it
+//   brought nothing for STALLED_MS; the stalled connection is dropped.
 
 export const FIRST_CHUNK = 1024 * 1024;
 export const CHUNK = 2 * 1024 * 1024;
@@ -51,6 +56,11 @@ const MIN_MEASURED = 256 * 1024;
 const RECHECK_MS = 500;
 // A lane this many times slower than the best one gets a new circuit.
 const SLOW_LANE_FACTOR = 3;
+// The range the caller waits for is taken over by another lane after this
+// long without a byte; a request still waiting for its first byte (a new
+// stream on a slow circuit can take several seconds) gets longer.
+const STALLED_MS = 4_000;
+const STALLED_FIRST_BYTE_MS = 8_000;
 
 const header = (headers, name) => headers.find(([n]) => n.toLowerCase() === name)?.[1];
 const without = (headers, ...names) => headers.filter(([n]) => !names.includes(n.toLowerCase()));
@@ -126,7 +136,7 @@ export async function fetchRanged(sendOrHttps, options = {}) {
   const send = typeof sendOrHttps === 'function' ? sendOrHttps : wrapSignalHttps(sendOrHttps, options);
   const renewLane =
     options.renewLane ?? (typeof sendOrHttps?.renewLane === 'function' ? lane => sendOrHttps.renewLane(lane) : undefined);
-  const noStats = () => ({ lanes: {}, cuts: 0, renewed: [] });
+  const noStats = () => ({ lanes: {}, cuts: 0, takeovers: 0, renewed: [] });
   const asked = requestedRange(headers);
   if (asked === undefined) {
     // Not a range we split: as is.
@@ -176,7 +186,7 @@ export async function fetchRanged(sendOrHttps, options = {}) {
   const active = new Set();
   // Measured speed of each lane (bytes per ms, from its last range).
   const speed = new Map();
-  const stats = { lanes: {}, cuts: 0, renewed: [] };
+  const stats = { lanes: {}, cuts: 0, takeovers: 0, renewed: [] };
   let wakeUp = [];
   const wake = () => {
     const waiting = wakeUp;
@@ -191,7 +201,18 @@ export async function fetchRanged(sendOrHttps, options = {}) {
     active.clear();
     wake();
   };
-  const range = (from, to) => ({ start: from, end: to, pieces: [], received: 0, attempts: 0, lane: undefined, since: 0, from: 0 });
+  const range = (from, to) => ({
+    start: from,
+    end: to,
+    pieces: [],
+    received: 0,
+    attempts: 0,
+    lane: undefined,
+    since: 0,
+    from: 0,
+    lastData: 0,
+    body: undefined,
+  });
   const complete = r => r.received >= r.end - r.start + 1;
   const length = r => r.end - r.start + 1;
 
@@ -199,6 +220,7 @@ export async function fetchRanged(sendOrHttps, options = {}) {
   // until the range is complete; resolves when it is. Runs within fetchingBy.
   async function receive(r, response, askedEnd, lane) {
     active.add(response.body);
+    r.body = response.body;
     try {
       while (!complete(r)) {
         if (failure || cancelled) {
@@ -215,6 +237,7 @@ export async function fetchRanged(sendOrHttps, options = {}) {
         const take = piece.byteLength > room ? piece.subarray(0, room) : piece;
         r.pieces.push(take);
         r.received += take.byteLength;
+        r.lastData = performance.now();
         stats.lanes[lane] = (stats.lanes[lane] ?? 0) + take.byteLength;
         wake();
       }
@@ -233,6 +256,7 @@ export async function fetchRanged(sendOrHttps, options = {}) {
       throw error;
     } finally {
       active.delete(response.body);
+      if (r.body === response.body) r.body = undefined;
     }
   }
 
@@ -241,6 +265,7 @@ export async function fetchRanged(sendOrHttps, options = {}) {
   async function fetchingBy(r, lane, fetching) {
     r.lane = lane;
     r.since = performance.now();
+    r.lastData = r.since;
     r.from = r.received;
     try {
       return await fetching();
@@ -264,6 +289,26 @@ export async function fetchRanged(sendOrHttps, options = {}) {
       );
     }
     await receive(r, response, askedEnd, lane);
+  }
+
+  // The range the caller waits for, if its lane brought nothing for
+  // STALLED_MS: the rest of it, for `lane` (a new range); its lane's
+  // connection is dropped.
+  function takeOverStalledRange(lane) {
+    const index = ranges.findIndex((r, i) => i >= rangeIndex && !complete(r));
+    const r = ranges[index];
+    if (r?.lane === undefined || r.lane === lane) return undefined;
+    const waited = performance.now() - r.lastData;
+    if (waited < (r.received > r.from ? STALLED_MS : STALLED_FIRST_BYTE_MS)) return undefined;
+    const tail = range(r.start + r.received, r.end);
+    r.end = tail.start - 1;
+    ranges.splice(index + 1, 0, tail);
+    stats.takeovers += 1;
+    if (r.body) {
+      active.delete(r.body);
+      r.body.cancel();
+    }
+    return tail;
   }
 
   // The range the caller waits for, cut where `lane` and the lane fetching
@@ -313,7 +358,7 @@ export async function fetchRanged(sendOrHttps, options = {}) {
         nextStart = r.end + 1;
         return r;
       }
-      const part = cutSlowRange(lane);
+      const part = takeOverStalledRange(lane) ?? cutSlowRange(lane);
       if (part) return part;
       if (nextStart > end && ranges.every(complete)) return undefined;
       // Progress wakes us; so does time (a stalled lane makes none).
@@ -347,6 +392,8 @@ export async function fetchRanged(sendOrHttps, options = {}) {
           await fetchingBy(r, lane, () => fetchRange(r, lane));
         } catch (error) {
           if (failure || cancelled) return;
+          // Taken over by another lane: nothing of it is missing here.
+          if (complete(r)) continue;
           r.attempts += 1;
           if (r.attempts >= RANGE_ATTEMPTS) {
             fail(error);
@@ -368,14 +415,15 @@ export async function fetchRanged(sendOrHttps, options = {}) {
   ranges.push(firstRange);
   firstRange.attempts = 1;
   const firstDone = fetchingBy(firstRange, firstLane, () => receive(firstRange, first, got.last, firstLane)).catch(error => {
-    if (failure || cancelled) return;
+    if (failure || cancelled || complete(firstRange)) return;
     retries.push(firstRange);
     wake();
   });
   // The first lane continues once its first range is in (and fetches that
   // range again if it failed); the others start at once.
   const workers = [firstDone.then(() => worker(firstLane))];
-  const more = Math.min(lanes, Math.ceil((end - got.last) / chunkBytes));
+  // At least one more: the spare that takes over a stalled range.
+  const more = Math.min(lanes, Math.max(2, Math.ceil((end - got.last) / chunkBytes)));
   for (let i = 1; i < more; i++) workers.push(worker(firstLane + i));
   Promise.all(workers).then(() => {
     if (!failure && !cancelled && !ranges.every(complete)) {

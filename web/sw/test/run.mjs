@@ -12,7 +12,8 @@
 //      update is offered, the new snapshot is fetched;
 //   5. a redeployment with changed code (a new sw.js): "A new version of
 //      receiver is available" appears, the running version keeps being
-//      served (also after a reload) until the user clicks it; then the new
+//      served (also after a reload, and after a hard reload: the page loads
+//      again through the worker) until the user clicks it; then the new
 //      version is served.
 //
 // Also checks the web app manifest (what Chromium needs to offer installing
@@ -206,6 +207,19 @@ try {
     'code change: update offered, the running version kept until accepted',
     !before.includes(MARKER) && !afterReload.includes(MARKER),
     `banner after ${bannerSeconds.toFixed(1)} s; old version served before and after a reload`
+  );
+  // A hard reload loads the newest deployment from the server, without the
+  // worker; the page reloads once through it, all of it in the version in
+  // use (taking it over as it is would mix the two versions).
+  await page.reload({ ignoreCache: true, waitUntil: 'domcontentloaded' });
+  await waitFor(() => window.__webBoot?.control != null && document.documentElement.dataset.boot === 'startApp', 'the app after a hard reload');
+  await waitFor(() => document.querySelector('[data-web-banner="update"]'), 'the update banner after a hard reload', 30_000);
+  const hard = await page.evaluate(() => ({ control: window.__webBoot.control, controlled: navigator.serviceWorker.controller != null }));
+  const afterHardReload = await shellCss();
+  check(
+    'code change: after a hard reload, the version in use, through the worker',
+    hard.control === 'reloaded' && hard.controlled && !afterHardReload.includes(MARKER),
+    JSON.stringify(hard)
   );
   await Promise.all([page.waitForNavigation({ waitUntil: 'domcontentloaded' }), page.click('[data-testid="update-reload"]')]);
   await waitFor(() => window.__webServiceWorker?.status != null, 'the service worker status');

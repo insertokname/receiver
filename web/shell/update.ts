@@ -58,15 +58,20 @@ function showUpdateBanner(onReload: () => void): void {
   document.body.append(banner);
 }
 
-// A hard reload (Shift+Reload) loads the page without the service worker;
-// its attachment/ URLs (images, video, stickers, avatars) would then go to
-// the server and fail. The worker takes such a page over when asked; if it
-// doesn't (a worker from before 'claim'), one normal reload does.
+// A hard reload (Shift+Reload) loads the page without the service worker:
+// its code comes from the server, the newest deployment, which need not be
+// the version this browser runs (a new one waits for the user's consent),
+// and its attachment/ URLs (images, video, stickers, avatars) would go to
+// the server and fail. One normal reload loads it through the worker again,
+// all of it in the version in use. Only when that is not possible (no
+// session storage to prevent a loop) the worker is asked to take the page
+// over, and only if the version it serves is the newest it knows (taking
+// over a page of another version would mix the two: its code checks fail).
 const CONTROL_TIMEOUT_MS = 3000;
 const CONTROL_RELOAD_KEY = 'receiver-sw-control-reload';
 
 /** How this page got its service worker (read by the tests). */
-export type Control = 'controlled' | 'claimed' | 'none' | 'uncontrolled';
+export type Control = 'controlled' | 'reloaded' | 'claimed' | 'none' | 'uncontrolled';
 
 export async function ensureControlled(): Promise<Control> {
   if (!('serviceWorker' in navigator)) {
@@ -83,28 +88,13 @@ export async function ensureControlled(): Promise<Control> {
     }
   })();
   if (serviceWorker.controller) {
-    return 'controlled';
+    return reloaded ? 'reloaded' : 'controlled';
   }
   const registration = await serviceWorker.getRegistration(new URL('./', document.baseURI)).catch(() => undefined);
   const active = registration?.active;
   if (!active) {
     // First visit: the new worker takes this page over when it activates.
     return 'none';
-  }
-  const controlled = await new Promise<boolean>(resolve => {
-    const timer = setTimeout(() => resolve(false), CONTROL_TIMEOUT_MS);
-    serviceWorker.addEventListener(
-      'controllerchange',
-      () => {
-        clearTimeout(timer);
-        resolve(true);
-      },
-      { once: true }
-    );
-    ask(active, 'claim').catch(() => undefined);
-  });
-  if (controlled || serviceWorker.controller) {
-    return 'claimed';
   }
   if (reloaded === false) {
     try {
@@ -113,6 +103,24 @@ export async function ensureControlled(): Promise<Control> {
       await new Promise(() => undefined);
     } catch {
       // No reload without the mark that prevents a loop.
+    }
+  }
+  const status = await ask(active, 'status').catch(() => undefined);
+  if (status && status.approved === status.build) {
+    const controlled = await new Promise<boolean>(resolve => {
+      const timer = setTimeout(() => resolve(false), CONTROL_TIMEOUT_MS);
+      serviceWorker.addEventListener(
+        'controllerchange',
+        () => {
+          clearTimeout(timer);
+          resolve(true);
+        },
+        { once: true }
+      );
+      ask(active, 'claim').catch(() => undefined);
+    });
+    if (controlled || serviceWorker.controller) {
+      return 'claimed';
     }
   }
   // oxlint-disable-next-line no-console

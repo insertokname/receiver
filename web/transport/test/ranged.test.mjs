@@ -14,7 +14,8 @@ const MiB = 1024 * 1024;
 /**
  * A server for `data` that answers Range requests like a CDN, in pieces of
  * `pieceBytes`. Hooks: `faults(request)` returns 'drop' to cut a body half
- * way; `ranges` false ignores ranges; `etag`.
+ * way, or {stallAfter, stallMs} to stop sending for stallMs after that many
+ * bytes; `ranges` false ignores ranges; `etag`.
  */
 function fakeServer(data, { ranges = true, etag = '"v1"', pieceBytes = 64 * 1024, faults = () => undefined, pieceDelayMs = () => 0, headDelayMs = () => 0 } = {}) {
   const log = [];
@@ -58,6 +59,12 @@ function fakeServer(data, { ranges = true, etag = '"v1"', pieceBytes = 64 * 1024
         async next() {
           if (cancelled) throw new Error('cancelled');
           await new Promise(resolve => setTimeout(resolve, pieceDelayMs(lane)));
+          if (fault?.stallAfter !== undefined && !fault.stalled && offset - first >= fault.stallAfter) {
+            // The circuit stops delivering for a while, then goes on.
+            fault.stalled = true;
+            await new Promise(resolve => setTimeout(resolve, fault.stallMs));
+            if (cancelled) throw new Error('cancelled');
+          }
           if (fault === 'drop' && offset - first >= (last - first + 1) / 2) {
             close();
             throw new Error('connection dropped');
@@ -315,4 +322,46 @@ test('a lane slow to answer: its range is taken over before any byte arrives', a
   const seconds = (Date.now() - started) / 1000;
   assert.ok(seconds < 4, `took ${seconds} s`);
   assert.ok(response.stats().cuts >= 1);
+});
+
+// Desktop gives up on a body that brings nothing for 10 s; a circuit that
+// stalls must not make it wait that long.
+for (const [name, size] of [
+  ['a file larger than the first range (the 1.3 MiB transfer archive)', 1.3 * MiB],
+  ['a file within the first range', 0.6 * MiB],
+]) {
+  test(`a stalled circuit: ${name} is taken over by the spare lane`, async () => {
+    const data = randomBytes(Math.round(size));
+    // Lane 1 stops after 300 KiB for 30 s.
+    const server = fakeServer(data, {
+      faults: request => (request.lane === 1 && request.range?.startsWith('bytes=0-') ? { stallAfter: 300 * 1024, stallMs: 30_000 } : undefined),
+    });
+    const started = Date.now();
+    const response = await fetchRanged(server.send, {});
+    let longestWait = 0;
+    let last = Date.now();
+    const body = await readAll(response.body, {
+      onPiece: () => {
+        longestWait = Math.max(longestWait, Date.now() - last);
+        last = Date.now();
+      },
+    });
+    assert.equal(sha(body), sha(data));
+    assert.equal(response.stats().takeovers, 1);
+    assert.ok(longestWait < 6_000, `waited ${longestWait} ms for a piece`);
+    assert.ok(Date.now() - started < 10_000);
+    // The stalled connection was dropped (the last one ends just after the
+    // body is read).
+    await new Promise(resolve => setTimeout(resolve, 100));
+    assert.equal(server.stats().open, 0);
+  });
+}
+
+test('a range that has not answered yet is not taken over before STALLED_FIRST_BYTE_MS', async () => {
+  const data = randomBytes(1.5 * MiB);
+  // Lane 2's answer takes 6 s: slow, not stalled (a cut may still share it).
+  const server = fakeServer(data, { headDelayMs: lane => (lane === 2 ? 6_000 : 0) });
+  const response = await fetchRanged(server.send, {});
+  assert.equal(sha(await readAll(response.body)), sha(data));
+  assert.equal(response.stats().takeovers, 0);
 });

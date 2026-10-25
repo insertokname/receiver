@@ -318,6 +318,7 @@ export async function runAttachmentScenarios(ctx) {
       await page().reload({ ignoreCache: true, waitUntil: 'domcontentloaded' });
       await ctx.waitForSelector('#LeftPane', 'the inbox after a hard reload', 120_000);
       const control = await page().evaluate(() => window.__webBoot?.control);
+      if (control !== 'reloaded') throw new Error(`after a hard reload the page should reload through the service worker, not: ${control}`);
       await ctx.openConversation(alice);
       await page()
         .waitForSelector(image, { timeout: STEP_TIMEOUT_MS })
