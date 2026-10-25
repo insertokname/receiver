@@ -82,10 +82,11 @@ export const FIREFOX = process.env.BROWSER === 'firefox';
  * `blackholeHosts` (Chromium), those hosts resolve to 192.0.2.1 (TEST-NET-1,
  * unroutable): connections to them hang until the caller's timeout, like a
  * blocked bridge. With `proxyPort`, everything but the page's origin goes
- * through the HTTP proxy on 127.0.0.1:<proxyPort>.
+ * through the HTTP proxy on 127.0.0.1:<proxyPort>. `ignoreDefaultArgs`
+ * (Chromium): puppeteer's default flags to leave out.
  */
 
-export async function launchBrowser({ blackholeHosts = [], args = [], firefoxPrefs = {}, proxyPort } = {}) {
+export async function launchBrowser({ blackholeHosts = [], args = [], firefoxPrefs = {}, proxyPort, ignoreDefaultArgs } = {}) {
   if (FIREFOX) {
     if (!process.env.FIREFOX) throw new Error('set FIREFOX to a Firefox executable');
     return puppeteer.launch({
@@ -136,6 +137,7 @@ export async function launchBrowser({ blackholeHosts = [], args = [], firefoxPre
     executablePath: process.env.CHROMIUM,
     headless: true,
     protocolTimeout: 0,
+    ...(ignoreDefaultArgs ? { ignoreDefaultArgs } : {}),
     args: [
       `--host-resolver-rules=${rules.join(', ')}`,
       `--unsafely-treat-insecure-origin-as-secure=${LOCAL_ORIGIN}`,

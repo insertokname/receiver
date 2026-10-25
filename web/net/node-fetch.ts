@@ -20,6 +20,12 @@
 // arrive within an idle timeout, so a hung connection fails the body
 // instead of stalling it. Aborting the signal drops the connection.
 //
+// Downloads from Signal's CDNs (attachments, stickers, avatars: the
+// `cdnUrl*` hosts of Desktop's config) are fetched in byte ranges over a few
+// circuits in parallel (the carrier's `parallel`), delivered to Desktop as
+// the one response it asked for; its resumption (`Range: bytes=<offset>-`)
+// and checks (size, digest, incremental MAC) see the same bytes.
+//
 // Request bodies that are streams (uploads: Desktop passes a file's read
 // stream) are streamed too: the transport pulls each piece when the
 // connection takes it, so the file is never in memory as a whole and the
@@ -81,6 +87,22 @@ function requestBody(body: unknown, signal: AbortSignal | undefined): RequestBod
   throw new FetchError('unsupported request body in the web build', 'system');
 }
 
+/** The origins of Desktop's CDNs (from its config; none outside the app). */
+function cdnOrigins(): Set<string> {
+  const config = (globalThis as { SignalContext?: { config?: Record<string, unknown> } }).SignalContext?.config;
+  const origins = new Set<string>();
+  for (const key of ['cdnUrl0', 'cdnUrl2', 'cdnUrl3']) {
+    const value = config?.[key];
+    if (typeof value !== 'string') continue;
+    try {
+      origins.add(new URL(value).origin);
+    } catch {
+      // not a URL: no CDN there
+    }
+  }
+  return origins;
+}
+
 function failure(host: string, what: string, error: unknown): FetchError {
   const reason = errorReason(error);
   log.warn(`${what} ${host} failed: ${reason}`);
@@ -139,16 +161,20 @@ export default async function fetch(input: RequestInfo, init: WebRequestInit = {
   const body = requestBody(init.body, signal as AbortSignal | undefined);
   const timeout = init.timeout ? Math.min(init.timeout, MAX_TIMEOUT_MS) : init.timeout === 0 ? MAX_TIMEOUT_MS : DEFAULT_TIMEOUT_MS;
 
+  const idleMs = Math.max(MIN_BODY_IDLE_MS, Math.min(timeout, MAX_BODY_IDLE_MS));
+  const method = (init.method ?? 'GET').toUpperCase();
   let result;
   try {
     result = await getCarrier().request(
       {
-        method: (init.method ?? 'GET').toUpperCase(),
+        method,
         url: url.href,
         headers,
         body,
         rootPem: init.ca,
         timeoutMs: timeout,
+        parallel: method === 'GET' && body === undefined && cdnOrigins().has(url.origin),
+        idleMs,
       },
       signal as AbortSignal | undefined
     );
@@ -160,8 +186,6 @@ export default async function fetch(input: RequestInfo, init: WebRequestInit = {
     result.body.cancel();
     throw new AbortError('The operation was aborted.');
   }
-  const idleMs = Math.max(MIN_BODY_IDLE_MS, Math.min(timeout, MAX_BODY_IDLE_MS));
-  const method = (init.method ?? 'GET').toUpperCase();
   const noBody = method === 'HEAD' || result.status === 204 || result.status === 304;
   // No body: reading its end returns the connection to the pool.
   if (noBody) result.body.next(idleMs).catch(() => undefined);

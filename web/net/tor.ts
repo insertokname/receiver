@@ -24,6 +24,7 @@
 import {
   connectTor,
   errorReason,
+  fetchRanged,
   onTransportLog,
   openSignalSocket,
   SIGNAL_CA_PEM,
@@ -62,6 +63,14 @@ export type HttpsRequest = Readonly<{
    * the response after the last one).
    */
   timeoutMs: number;
+  /**
+   * A large download (a GET from a CDN): fetched in byte ranges over up to
+   * PARALLEL_LANES circuits in parallel, delivered in order (the transport's
+   * fetchRanged); servers without ranges answer as usual.
+   */
+  parallel?: boolean;
+  /** Longest wait for the next piece of the body (parallel downloads). */
+  idleMs?: number;
 }>;
 
 /** A response body, received piece by piece (SignalHttpsBody). */
@@ -129,6 +138,14 @@ export interface Carrier {
   onNetworkChange(): void;
 }
 
+// Circuit lanes: the chat connections (WebSockets) are alone on lane 0's
+// circuit (the transport's default for sockets), HTTPS requests use lane 1,
+// and parallel downloads lanes 1 to PARALLEL_LANES, each a circuit of its
+// own, so a download never delays a message. At most 4: Snowflake is
+// capacity donated for people in censored places.
+const HTTPS_LANE = 1;
+const PARALLEL_LANES = 4;
+
 // After this many consecutive failures, ask Tor for a new circuit; after
 // REPLACE_AFTER, rebuild the client.
 const NEW_CIRCUIT_AFTER = 2;
@@ -184,6 +201,31 @@ export function bodyReader(body: SignalHttpsBody, onError: (error: unknown) => v
       finish();
     },
   };
+}
+
+type LaneSend = (headers: HeaderPairs, lane: number) => Promise<{ status: number; headers: HeaderPairs; body: HttpsBodyReader }>;
+
+/**
+ * Sends `request` with `send` (one request over a lane): a plain request on
+ * the HTTPS lane, or a parallel download in byte ranges over several lanes
+ * when it asks for one (see HttpsRequest.parallel); `renewLane` gives a lane
+ * that is far slower than the others a new circuit.
+ */
+export function sendOnLanes(
+  send: LaneSend,
+  request: HttpsRequest,
+  renewLane?: (lane: number) => Promise<void>
+): Promise<{ status: number; headers: HeaderPairs; body: HttpsBodyReader }> {
+  if (request.parallel && request.method === 'GET' && request.body === undefined) {
+    return fetchRanged(send, {
+      headers: request.headers,
+      lanes: PARALLEL_LANES,
+      firstLane: HTTPS_LANE,
+      idleMs: request.idleMs,
+      renewLane,
+    });
+  }
+  return send(request.headers, HTTPS_LANE);
 }
 
 function abortError(signal: AbortSignal): unknown {
@@ -486,25 +528,34 @@ class TorCarrier implements Carrier {
 
   async request(request: HttpsRequest, signal?: AbortSignal): Promise<HttpsResponse> {
     const session = await this.#usable(request.timeoutMs, signal);
-    try {
-      const response = await waitFor(
-        session.https.request(
-          request.method,
-          request.url,
-          request.headers,
-          request.body,
-          request.rootPem,
-          request.timeoutMs
-        ) as Promise<{ status: number; headers: HeaderPairs; body: SignalHttpsBody }>,
-        signal
-      );
-      this.#succeeded();
+    const send = async (headers: HeaderPairs, lane: number) => {
+      const response = (await session.https.request(
+        request.method,
+        request.url,
+        headers,
+        request.body,
+        request.rootPem,
+        request.timeoutMs,
+        lane
+      )) as { status: number; headers: HeaderPairs; body: SignalHttpsBody };
       if (response.status === 429) this.#newCircuit(session, 'rate limited');
       return {
         status: response.status,
         headers: response.headers,
-        session: session.id,
         body: bodyReader(response.body, error => this.#failed(session, errorReason(error))),
+      };
+    };
+    try {
+      const response = await waitFor(
+        sendOnLanes(send, request, lane => session.https.renewLane(lane) as Promise<void>),
+        signal
+      );
+      this.#succeeded();
+      return {
+        status: response.status,
+        headers: response.headers,
+        session: session.id,
+        body: response.body,
       };
     } catch (error) {
       if (!signal?.aborted) this.#failed(session, errorReason(error));

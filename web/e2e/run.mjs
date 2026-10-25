@@ -1060,6 +1060,7 @@ try {
 
   await scenario('o', `link with a large archive (${(LARGE_BACKUP_BYTES / 2 ** 20).toFixed(0)} MiB): progress, a drop half way, resumed with Range`, async () => {
     const ranges = [];
+    let rangesAtDrop;
     const archiveDownload = e => e.type === 'http' && e.method === 'GET' && /^\/cdn3\/attachments\//.test(e.path);
     const started = Date.now();
     const { summary, backupSize } = await linkWithFaults({
@@ -1071,14 +1072,18 @@ try {
           name: 'drop all connections half way through the archive download',
           match: archiveDownload,
           times: 1,
-          run: () => relay.afterBytesDown(Math.floor(LARGE_BACKUP_BYTES / 2), () => relay.dropAll()),
+          run: () =>
+            relay.afterBytesDown(Math.floor(LARGE_BACKUP_BYTES / 2), () => {
+              rangesAtDrop = ranges.length;
+              relay.dropAll();
+            }),
         },
         {
           name: 'archive download',
           match: archiveDownload,
           times: Infinity,
           run: e => {
-            if (e.range) ranges.push(e.range);
+            ranges.push(e.range ?? 'whole');
           },
         },
       ],
@@ -1104,7 +1109,18 @@ try {
     const { progress, heap } = await page.evaluate(() => ({ progress: window.__backupProgress, heap: window.__heap }));
     const distinct = new Set(progress.map(p => p.currentBytes)).size;
     if (distinct < 5) throw new Error(`download progress did not advance in steps: ${JSON.stringify(progress.slice(0, 10))}`);
-    if (!ranges.some(r => /^bytes=[1-9]\d*-$/.test(r))) throw new Error(`the download was not resumed with a Range request: ${JSON.stringify(ranges)}`);
+    // Resumed: a request after the drop starts inside one cut by it (Desktop
+    // resuming with bytes=<offset>-, or the transport fetching a range of a
+    // parallel download again from where it stopped).
+    const span = r => {
+      const match = /^bytes=(\d+)-(\d*)$/.exec(r);
+      return match ? [Number(match[1]), match[2] === '' ? Infinity : Number(match[2])] : [0, Infinity];
+    };
+    const cut = ranges.slice(0, rangesAtDrop ?? ranges.length).map(span);
+    const resumed = ranges
+      .slice(rangesAtDrop ?? ranges.length)
+      .some(r => r !== 'whole' && cut.some(([first, last]) => first < span(r)[0] && span(r)[0] <= last));
+    if (rangesAtDrop === undefined || !resumed) throw new Error(`the download was not resumed with a Range request: ${JSON.stringify(ranges)}`);
     const maxHeap = heap.length ? Math.max(...heap) : 0;
     const minHeap = heap.length ? Math.min(...heap) : 0;
     const total = progress.at(-1)?.totalBytes;

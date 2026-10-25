@@ -146,6 +146,24 @@ export async function runAttachmentScenarios(ctx) {
     }, timestamp);
   }
 
+  /**
+   * Starts the download of the message's first attachment unless Desktop
+   * already does (it downloads attachments on its own): a click on a
+   * download in progress cancels it, and the state can show it as pending a
+   * moment after the button appears.
+   */
+  async function startDownload(timestamp, button) {
+    const started = Date.now();
+    while (Date.now() - started < 3000) {
+      // eslint-disable-next-line no-await-in-loop
+      const state = (await attachmentsOf(timestamp))[0];
+      if (state?.path || state?.pending) return;
+      // eslint-disable-next-line no-await-in-loop
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    await page().click(button);
+  }
+
   async function waitFor(fn, what, timeout = STEP_TIMEOUT_MS) {
     const deadline = Date.now() + timeout;
     for (;;) {
@@ -784,26 +802,41 @@ export async function runAttachmentScenarios(ctx) {
     const path = `/cdn3/attachments/${pointer.attachmentIdentifier.cdnKey}`;
     const requests = [];
     let dropped = false;
+    let droppedAfter;
     ctx.onMockEvent(event => {
       if (event.type !== 'http' || event.method !== 'GET' || event.path !== path) return;
       requests.push(event.range ?? 'whole');
       if (!dropped) {
         dropped = true;
-        relay.afterBytesDown(Math.floor(size / 2), () => relay.dropAll());
+        relay.afterBytesDown(Math.floor(size / 2), () => {
+          droppedAfter = requests.length;
+          relay.dropAll();
+        });
       }
     });
     const timestamp = await aliceSends(`A big file ${Date.now()}`, [pointer]);
     const button = `${messageSelector(timestamp)} .module-message__simple-attachment`;
     await page().waitForSelector(button, { timeout: STEP_TIMEOUT_MS });
     const started = Date.now();
-    const state = (await attachmentsOf(timestamp))[0];
-    if (!state?.path && !state?.pending) await page().click(button);
-    // Desktop retries a failed download after 30 s, from where it stopped.
+    await startDownload(timestamp, button);
+    // The transport fetches a dropped range again from where it stopped
+    // (downloads from the CDN go in parallel ranges); failing that, Desktop
+    // retries the download after 30 s, from where it stopped (bytes=<n>-).
     await waitFor(async () => (await attachmentsOf(timestamp))[0]?.path, 'the download to complete after the drop', 150_000);
     const seconds = (Date.now() - started) / 1000;
-    if (!dropped) throw new Error('the download was never interrupted');
-    const resumed = requests.filter(range => /^bytes=[1-9]\d*-$/.test(range));
-    if (!resumed.length) throw new Error(`no resumed (Range) request: ${JSON.stringify(requests)}`);
+    if (!dropped || droppedAfter === undefined) throw new Error('the download was never interrupted');
+    // Resumed: a request after the drop starts inside a range requested
+    // before it (bytes already received are not fetched again).
+    const span = range => {
+      const match = /^bytes=(\d+)-(\d*)$/.exec(range);
+      if (!match) return [0, size - 1];
+      return [Number(match[1]), match[2] === '' ? size - 1 : Number(match[2])];
+    };
+    const cut = requests.slice(0, droppedAfter).map(span);
+    const resumed = requests
+      .slice(droppedAfter)
+      .filter(range => range !== 'whole' && cut.some(([first, last]) => first < span(range)[0] && span(range)[0] <= last));
+    if (!resumed.length) throw new Error(`no resumed (Range) request after the drop: ${JSON.stringify(requests)}`);
     const downloads = await captureDownloads();
     try {
       await page().click(button);
@@ -812,7 +845,7 @@ export async function runAttachmentScenarios(ctx) {
     } finally {
       await downloads.close();
     }
-    return `${(size / 2 ** 20).toFixed(1)} MiB file: connections dropped half way; requests ${requests.join(', ')}; complete ${seconds.toFixed(1)} s after it started (Desktop's first retry is after 30 s); saved file identical`;
+    return `${(size / 2 ** 20).toFixed(1)} MiB file: connections dropped half way (after ${droppedAfter} requests); requests ${requests.join(', ')}; complete ${seconds.toFixed(1)} s after it started (Desktop's first retry is after 30 s); saved file identical`;
   });
 
   await scenario('x', 'an upload dropped half way is resumed by the tus client', async () => {
@@ -932,8 +965,7 @@ export async function runAttachmentScenarios(ctx) {
       const timestamp = await aliceSends(`No room ${Date.now()}`, [pointer]);
       const button = `${messageSelector(timestamp)} .module-message__simple-attachment`;
       await page().waitForSelector(button, { timeout: STEP_TIMEOUT_MS });
-      const state = (await attachmentsOf(timestamp))[0];
-      if (!state?.path && !state?.pending) await page().click(button);
+      await startDownload(timestamp, button);
       await page()
         .waitForSelector('[data-web-screen="storage-full"]', { timeout: STEP_TIMEOUT_MS })
         .catch(() => {

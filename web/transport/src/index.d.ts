@@ -41,6 +41,7 @@ export declare function connectTor(options?: {
   onEvent?: (event: TorEvent) => void;
   signal?: AbortSignal;
   wasm?: WasmSource;
+  congestionControl?: boolean;
 }): Promise<{ client: TorClient; transport: Transport }>;
 
 export type HeaderPairs = Array<[string, string]>;
@@ -68,3 +69,32 @@ export declare function openSignalSocket(
     timeoutMs?: number;
   }
 ): Promise<SignalConnection>;
+
+/** A response body read piece by piece (`undefined` at the end). */
+export type RangedBody = {
+  next(idleMs?: number): Promise<Uint8Array | undefined>;
+  cancel(): void;
+  done?(): void;
+};
+export type RangedResponse = { status: number; headers: HeaderPairs; body: RangedBody };
+
+export declare const FIRST_CHUNK: number;
+export declare const CHUNK: number;
+export declare function requestedRange(headers: HeaderPairs): { start: number; end?: number } | null | undefined;
+export declare function contentRange(value: string | undefined): { first: number; last: number; total?: number } | undefined;
+/** A large GET in parallel byte ranges over several lanes, one in-order body (ranged.js). */
+export declare function fetchRanged(
+  send: ((headers: HeaderPairs, lane: number) => Promise<RangedResponse>) | import('./pkg/webtor_wasm.js').SignalHttps,
+  options?: {
+    url?: string;
+    rootPem?: string;
+    timeoutMs?: number;
+    headers?: HeaderPairs;
+    lanes?: number;
+    firstLane?: number;
+    idleMs?: number;
+    chunkBytes?: number;
+    firstChunkBytes?: number;
+    aheadBytes?: number;
+  }
+): Promise<RangedResponse & { split: boolean }>;

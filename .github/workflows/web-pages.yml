@@ -244,11 +244,14 @@ jobs:
       - name: Fetch the Tor directory snapshot
         run: bash web/transport/webtor-rs/scripts/fetch-consensus.sh web/dist/tor-directory
 
-      - name: Tor directory verification tests (native, on that snapshot)
+      - name: Tor directory verification and circuit tests (native, on that snapshot)
         working-directory: web/transport/webtor-rs
         env:
           WEBTOR_TEST_DIRECTORY: ${{ github.workspace }}/web/dist/tor-directory
-        run: cargo test --locked -p webtor --lib directory
+        run: cargo test --locked -p webtor --lib -- directory circuit
+
+      - name: Parallel ranged downloads (unit tests)
+        run: node --test web/transport/test/ranged.test.mjs
 
       - name: Build the site (verifies the snapshot, adds SHA256SUMS)
         run: bash web/scripts/build-site.sh --tor-dir web/dist/tor-directory
@@ -256,10 +259,15 @@ jobs:
       - id: sums
         run: echo "digest=$(sha256sum web/dist/site/SHA256SUMS | cut -c1-64)" >> "$GITHUB_OUTPUT"
 
-      - name: The site contains no test relay code
+      - name: The site contains no test-only code
         run: |
           if grep -rlE 'openRelay|relay-carrier|web-e2e-config|ws://127\.0\.0\.1' web/dist/site; then
             echo '::error::test-only relay code in the site'
+            exit 1
+          fi
+          # The measurement page (transport-test/perf.*) is served by its runner only.
+          if ls web/dist/site/test/perf.* 2>/dev/null || grep -rl 'ACTION hide' web/dist/site; then
+            echo '::error::the transport measurement page is in the site'
             exit 1
           fi
 
@@ -278,6 +286,16 @@ jobs:
         env:
           BROWSER: firefox
         run: node web/transport-test/run.mjs 'suites=ws&only=basic'
+
+      # Real Tor speed varies a lot between circuits and over the day: a
+      # record for the logs, never a reason to fail the build.
+      - name: Transport measurements, local (report only)
+        continue-on-error: true
+        timeout-minutes: 10
+        env:
+          RUNS: '1'
+          SIZE_MB: '8'
+        run: node web/transport-test/perf.mjs
 
       # The bridge connection is black-holed (a local proxy stops forwarding
       # without closing it): it must be noticed within 35 s, an idle one kept.

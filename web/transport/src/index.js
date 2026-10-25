@@ -22,6 +22,7 @@ import SIGNAL_CA_PEM from './signal-ca.js';
 import WASM_INTEGRITY from './wasm-integrity.js';
 
 export { SIGNAL_CA_PEM, SignalHttps, SignalHttpsBody, SignalSocket, verifyTorDirectory };
+export { CHUNK, FIRST_CHUNK, contentRange, fetchRanged, requestedRange } from './ranged.js';
 
 /** Sent when the caller does not set one: honest, never the official client's. */
 export const DEFAULT_USER_AGENT = 'unofficial-web-client/0.1';
@@ -121,18 +122,19 @@ export function backoffDelay(round) {
   return Math.round(base * (0.75 + Math.random() * 0.5));
 }
 
-function clientOptions(transport, directoryUrl) {
+function clientOptions(transport, directoryUrl, congestionControl) {
   const options = transport.webrtc
     ? TorClientOptions.snowflakeWebRtc()
     : new TorClientOptions(transport.bridgeUrl);
   return options
     .withConnectionTimeout(transport.budgetMs)
     .withCircuitTimeout(transport.budgetMs)
-    .withDirectoryUrl(directoryUrl);
+    .withDirectoryUrl(directoryUrl)
+    .withCongestionControl(congestionControl);
 }
 
-async function attempt(transport, directoryUrl) {
-  const creating = TorClient.create(clientOptions(transport, directoryUrl));
+async function attempt(transport, directoryUrl, congestionControl) {
+  const creating = TorClient.create(clientOptions(transport, directoryUrl, congestionControl));
   let client;
   try {
     client = await withDeadline(
@@ -161,7 +163,8 @@ async function attempt(transport, directoryUrl) {
  * (exponential backoff) and starts over, up to `rounds` rounds (default: no
  * limit). `onEvent` receives {type: 'attempt' | 'failed' | 'connected' |
  * 'backoff', ...} for every step. Resolves to {client, transport}; rejects
- * when `signal` aborts or the rounds are used up.
+ * when `signal` aborts or the rounds are used up. `congestionControl: false`
+ * makes circuits use Tor's fixed window instead of Vegas (measurements).
  */
 export async function connectTor({
   transports = TRANSPORTS,
@@ -170,6 +173,7 @@ export async function connectTor({
   onEvent = () => {},
   signal,
   wasm,
+  congestionControl = true,
 } = {}) {
   await loadTransport(wasm);
   const failures = [];
@@ -179,7 +183,7 @@ export async function connectTor({
       onEvent({ type: 'attempt', transport, round });
       const started = performance.now();
       try {
-        const client = await attempt(transport, directoryUrl);
+        const client = await attempt(transport, directoryUrl, congestionControl);
         if (signal?.aborted) {
           await client.close().catch(() => {});
           signal.throwIfAborted();

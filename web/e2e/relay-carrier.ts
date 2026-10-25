@@ -20,7 +20,7 @@ import {
 } from '../transport/dist/index.js';
 import type { HeaderPairs, SignalHttpsBody } from '../transport/dist/index.js';
 import { createLogger } from '../../ts/logging/log.std.ts';
-import { bodyReader, UpgradeRefusedError } from '../net/tor.ts';
+import { bodyReader, sendOnLanes, UpgradeRefusedError } from '../net/tor.ts';
 import type {
   Carrier,
   HttpsRequest,
@@ -89,20 +89,25 @@ class RelayCarrier implements Carrier {
   async request(request: HttpsRequest): Promise<HttpsResponse> {
     await this.#load();
     try {
-      const response = (await (this.#https as SignalHttps).request(
-        request.method,
-        request.url,
-        request.headers,
-        request.body,
-        request.rootPem,
-        request.timeoutMs
-      )) as { status: number; headers: HeaderPairs; body: SignalHttpsBody };
-      return {
-        status: response.status,
-        headers: response.headers,
-        session: SESSION,
-        body: bodyReader(response.body, error => log.warn(`response body failed: ${errorReason(error)}`)),
-      };
+      // Lanes as in production: each its own pool of connections (here,
+      // WebSockets to the relay), so parallel downloads are exercised too.
+      const response = await sendOnLanes(async (headers, lane) => {
+        const answer = (await (this.#https as SignalHttps).request(
+          request.method,
+          request.url,
+          headers,
+          request.body,
+          request.rootPem,
+          request.timeoutMs,
+          lane
+        )) as { status: number; headers: HeaderPairs; body: SignalHttpsBody };
+        return {
+          status: answer.status,
+          headers: answer.headers,
+          body: bodyReader(answer.body, error => log.warn(`response body failed: ${errorReason(error)}`)),
+        };
+      }, request, lane => (this.#https as SignalHttps).renewLane(lane) as Promise<void>);
+      return { ...response, session: SESSION };
     } catch (error) {
       log.warn(`request failed: ${errorReason(error)}`);
       throw error;

@@ -60,7 +60,8 @@ export function loadMockServer() {
 
 /**
  * GET /cdn3/attachments/<key>, as CDN 3 answers it: 200, or 206 for a Range
- * request. (The mock's own route has no Range support and crashes when a
+ * request (`bytes=<first>-` or `bytes=<first>-<last>`), with an ETag and
+ * If-Range. (The mock's own route has no Range support and crashes when a
  * client goes away mid-download.)
  */
 async function serveCdn3Attachment(cdn3Path, req, res) {
@@ -68,23 +69,30 @@ async function serveCdn3Attachment(cdn3Path, req, res) {
   if (req.method !== 'GET' || !match || !cdn3Path) return false;
   const file = normalize(join(cdn3Path, 'attachments', match[1]));
   let size;
+  let etag;
   try {
-    ({ size } = await stat(file));
+    const info = await stat(file);
+    size = info.size;
+    etag = `"${size.toString(16)}-${Math.floor(info.mtimeMs).toString(16)}"`;
   } catch {
     res.writeHead(404).end();
     return true;
   }
-  const range = /^bytes=(\d+)-$/.exec(req.headers.range ?? '');
+  const ifRange = req.headers['if-range'];
+  const range = ifRange && ifRange !== etag ? null : /^bytes=(\d+)-(\d*)$/.exec(req.headers.range ?? '');
   const start = range ? Number(range[1]) : 0;
-  if (range && start >= size) {
+  const end = range && range[2] !== '' ? Math.min(Number(range[2]), size - 1) : size - 1;
+  if (range && (start >= size || end < start)) {
     res.writeHead(416, { 'Content-Range': `bytes */${size}` }).end();
     return true;
   }
   res.writeHead(range ? 206 : 200, {
-    'Content-Length': size - start,
-    ...(range ? { 'Content-Range': `bytes ${start}-${size - 1}/${size}` } : {}),
+    'Content-Length': end - start + 1,
+    ETag: etag,
+    'Accept-Ranges': 'bytes',
+    ...(range ? { 'Content-Range': `bytes ${start}-${end}/${size}` } : {}),
   });
-  const stream = createReadStream(file, { start });
+  const stream = createReadStream(file, { start, end });
   stream.on('error', () => res.destroy());
   res.on('close', () => stream.destroy());
   stream.pipe(res);

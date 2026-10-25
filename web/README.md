@@ -242,7 +242,26 @@ node shell/test/device-name.mjs                       # the linked device's name
 BLACKHOLE=snowflake.torproject.net node renderer/run.mjs   # link screen while Tor falls back to WebRTC (~50 s): "Connecting...", no error
 LIVENESS=1 node transport-test/run.mjs 'suites=ws&only=liveness'   # an idle connection is kept; a black-holed bridge connection is noticed (CI)
 LIVENESS=1 node renderer/run.mjs                      # the app notices a black-holed bridge and shows a new QR code
+node --test transport/test/ranged.test.mjs            # parallel ranged downloads against a fake server (Node)
+node transport-test/perf.mjs                          # measurements over real Tor (see below)
 ```
+
+`transport-test/perf.mjs` measures the transport over real Snowflake and
+Tor, a fresh browser profile per run (`RUNS`, default 3), and prints the
+median and range of: bootstrap time and its stages, chat connection time,
+chat round trip idle and during a large download, HTTPS time to the
+response head on a new and on a kept-alive connection, and the speed of a
+`SIZE_MB` (16) download as one stream and in parallel ranges. `HIDDEN=1`
+repeats the download with the page hidden (Chromium and Firefox then run
+its timers once a second), `APP=1` measures the app instead (page load to
+Tor ready and to the link QR code, cold and after a reload served by the
+service worker), `CC=0` uses Tor's fixed window instead of congestion
+control, `SITE=<dir>` measures another build. It uses only Signal's hosts
+(no account): the chat server and Desktop's public release files on
+`updates2.signal.org` (Signal's CA, Range requests) as the download. The
+page is served by the runner only, never part of the site. Real Tor varies
+a lot between circuits and over the day: compare builds run back to back,
+over several runs; CI records one run and never fails on it.
 
 `LIVENESS=1` sends the browser's traffic to the bridge through a local
 proxy (`scripts/tunnel-proxy.mjs`) that can make every open connection stop
@@ -441,7 +460,8 @@ headers, timeouts and error codes from libsignal-net's Rust code):
 
 - One Tor client per page (`net/tor.ts`), bootstrapped when the app starts
   (`renderer/entry.ts`). Each Signal connection is its own Tor stream with
-  TLS 1.3 (rustls, in the transport's Rust code) trusting only Signal's CA.
+  TLS 1.3 (rustls, in the transport's Rust code) trusting only Signal's CA
+  (the CDNs included: they use certificates from Signal's CA too).
   Repeated failures or HTTP 429 get a new circuit; continued failures
   replace the Tor client (bootstrapped again with backoff) and interrupt
   every connection on the old one.
@@ -461,6 +481,39 @@ headers, timeouts and error codes from libsignal-net's Rust code):
   every Signal host it fetches from (storage service, CDNs, updates2
   resources, upload locations). Requests without a pinned CA (link
   previews via contentproxy, Stripe) are refused for now.
+- Circuits: chat connections (lane 0) have a circuit of their own, never
+  shared with HTTPS requests (lane 1) or the other circuits of a parallel
+  download (lanes 2-4), so a download does not delay messages. A lane keeps
+  its circuit while it works (and for at most an hour of new connections);
+  a spare circuit is kept ready, so a lane that needs a new one rarely
+  waits for a build. A build that takes more than three times the median
+  of recent builds (at least 3 s) is given up and built again through
+  other relays, as Tor's circuit build timeout does; a connection that does
+  not open within 10 s is tried once more on another circuit, as Tor does.
+  Relays are extended to with ntor v3 and their real protocol lists, which
+  negotiates congestion control (Vegas, what the consensus asks for:
+  `cc_alg=2`) with every relay that supports it; others use Tor's fixed
+  window. Vegas comes from Arti (`tor-proto`'s `flowctl-cc` feature,
+  marked experimental there; the circuit parameters are mapped from the
+  consensus as Arti's circuit manager does).
+- Downloads from Signal's CDNs (attachments, stickers, avatars, the link
+  archive) go in parallel byte ranges over up to 4 circuits
+  (`transport/src/ranged.js`), delivered to Desktop as the one response it
+  asked for (status, length, its own Range when it resumes); at most 8 MiB
+  is buffered ahead of what Desktop has read. Later ranges carry If-Range
+  (the first response's ETag): a file that changed fails instead of
+  mixing versions, and Desktop's own size, digest and MAC checks run as
+  before. A range that fails is fetched again from where it stopped (up to
+  3 times), so a dropped connection costs seconds instead of Desktop's
+  30 s retry. Circuits differ a lot in speed: a lane that has nothing to do
+  takes over the part of a slow lane's range the reader waits for (cut
+  where both finish together), and a lane three times slower than the best
+  gets a new circuit. Servers that do not answer ranges are used as they
+  answer. Four circuits at most: Snowflake is capacity donated for people
+  in censored places.
+- The Snowflake session layers use the Snowflake client's own KCP window
+  (65535 segments; it was 128, about 176 KB in flight per round trip to
+  the bridge); the SMUX window (4 MiB) bounds what is in flight.
 - Liveness: a connection that silently stops delivering (no close, no
   error) is noticed at two levels. The Snowflake bridge sends a keepalive
   every 10 s (SMUX NOP); when nothing at all has come from it for 25 s
