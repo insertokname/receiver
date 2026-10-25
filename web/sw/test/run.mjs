@@ -126,7 +126,12 @@ try {
     JSON.stringify(installability.installabilityErrors ?? installability.error)
   );
 
-  // 2. Second load: from the cache.
+  // 2. Second load: from the cache. First the first load and the worker's
+  // caching of what it loaded finish (the server hears nothing for 2 s).
+  for (let seen = -1, quietSince = Date.now(); Date.now() - quietSince < 2000; ) {
+    if (requests.length !== seen) [seen, quietSince] = [requests.length, Date.now()];
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
   requests.length = 0;
   started = Date.now();
   const fromWorker = [];
