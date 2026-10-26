@@ -36,6 +36,7 @@ The app is the site's root; `test/` and `libsignal/` are check pages.
 | `scripts/verify-site.sh` | Rebuilds the commit a deployment names and compares it with the deployed files |
 | `scripts/harness.mjs`, `scripts/tunnel-proxy.mjs` | Shared by the browser test runners (site server, Chromium or Firefox, network and CSP watch); a local proxy that black-holes the bridge connection for the liveness tests |
 | `scripts/real-tor.sh` | Runs a CI check that goes through the real Tor network once more if it fails (a Snowflake or circuit failure outside this code must not stop the daily Tor directory refresh) |
+| `scripts/merge-upstream.sh`, `scripts/upstream-release.mjs` | Merge a Signal Desktop release on a branch, with a pull request and the build and tests on it; the release to merge next (README, Merging upstream) |
 
 ## Build
 

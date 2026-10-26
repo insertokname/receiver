@@ -3,7 +3,8 @@
 # Builds the static web app in web/ and deploys it to GitHub Pages
 # (https://receiver.insertokname.com/), then checks the live site.
 # Runs daily as well, so the Tor directory snapshot shipped with the site
-# stays fresh.
+# stays fresh. Started by hand (or by web-upstream.yml) on another branch, it
+# builds and tests that branch without deploying it.
 
 name: Web (GitHub Pages)
 
@@ -18,7 +19,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: web-pages
+  group: web-pages-${{ github.ref }}
   cancel-in-progress: false
 
 env:
@@ -373,6 +374,7 @@ jobs:
 
   deploy:
     needs: build
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -387,6 +389,7 @@ jobs:
 
   live-smoke:
     needs: [build, deploy]
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

@@ -1,0 +1,42 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+#
+# Watches Signal Desktop's releases: once a week, if Signal published a
+# stable release newer than the one receiver is based on (package.json's
+# version), this check fails with its name, and GitHub sends the usual
+# failed-run email. Merging it is done locally with
+# web/scripts/merge-upstream.sh (README, Merging upstream): a token of a
+# workflow cannot push Signal's history, which changes Signal's workflows.
+
+name: Web upstream (Signal Desktop releases)
+
+on:
+  schedule:
+    - cron: '41 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: A Signal Desktop release newer than receiver's base
+        run: |
+          git remote add upstream https://github.com/signalapp/Signal-Desktop.git
+          git fetch --quiet --no-tags upstream '+refs/tags/v*:refs/tags/v*'
+          current=$(node -p "require('./package.json').version")
+          tag=$(git tag -l 'v*' | node web/scripts/upstream-release.mjs "$current")
+          if [ -z "$tag" ] || git merge-base --is-ancestor "$tag" HEAD; then
+            echo "receiver is based on $current; no newer Signal Desktop release"
+            exit 0
+          fi
+          message="Signal Desktop $tag is out (receiver is based on $current): merge it with bash web/scripts/merge-upstream.sh $tag"
+          echo "$message" >> "$GITHUB_STEP_SUMMARY"
+          echo "::error::$message"
+          exit 1

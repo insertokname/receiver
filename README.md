@@ -134,22 +134,31 @@ next to the module they replace), not edits.
 
 ## Merging upstream
 
-receiver tracks Signal Desktop's releases:
+receiver follows Signal Desktop's **releases** (stable tags `vX.Y.Z`),
+never Signal's `main`. Once a week the workflow *Web upstream* checks for a
+release newer than the one receiver is based on (the version in
+`package.json`) and fails, with its name, when there is one. Then:
 
 ```bash
-git remote add upstream https://github.com/signalapp/Signal-Desktop.git   # once
-git fetch upstream --tags
-git merge v<version>          # a release tag, not main
+bash web/scripts/merge-upstream.sh            # or: merge-upstream.sh v<version>
 ```
 
-Then rebuild and run the tests in [web/README.md](web/README.md). When the
-merge changes the libsignal version Desktop pins
-(`@signalapp/libsignal-client` in `package.json`), update the libsignal fork
-too: [insertokname/libsignal](https://github.com/insertokname/libsignal),
-branch `web-wasm`, rebased onto the new libsignal tag, then the submodule
-`web/libsignal/libsignal`. The Tor client is the submodule
-`web/transport/webtor-rs` ([insertokname/webtor-rs](https://github.com/insertokname/webtor-rs),
-branch `signal-web-transport`), which merges upstream webtor-rs the same way.
+merges the release on a branch `upstream/v<version>`, pushes it, opens a
+pull request and starts the build and tests on that branch (*Web (GitHub
+Pages)* deploys only `main`). After conflicts: resolve them, `git commit`,
+then `merge-upstream.sh --finish`. Merge the pull request once the checks
+pass. `.github/` is receiver's own; Signal's workflows and templates are
+left out of every merge.
+
+When the release changes the libsignal version Desktop pins
+(`@signalapp/libsignal-client` in `package.json`; the pull request says so),
+update the libsignal fork too:
+[insertokname/libsignal](https://github.com/insertokname/libsignal), branch
+`web-wasm`, rebased onto the new libsignal tag, then the submodule
+`web/libsignal/libsignal` on the same branch. The Tor client is the
+submodule `web/transport/webtor-rs`
+([insertokname/webtor-rs](https://github.com/insertokname/webtor-rs), branch
+`signal-web-transport`), which merges upstream webtor-rs the same way.
 
 ## License
 
