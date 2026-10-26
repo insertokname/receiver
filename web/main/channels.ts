@@ -11,6 +11,7 @@
 
 import type { RendererConfigType } from '../../ts/types/RendererConfig.std.ts';
 import { handle, logOnce, onSend, onSync, sendToRenderer, stub } from './ipc.ts';
+import { setUnreadBadge } from '../shell/badge.ts';
 import { showDebugLog } from '../shell/debug-log.ts';
 import { fetchLogData, formatDebugLog, installDebugLogChannels } from './debug-log.ts';
 import { clearLog } from './logs.ts';
@@ -77,11 +78,9 @@ export function installChannels({ config }: { config: RendererConfigType }): voi
     document.documentElement.dataset.appLoaded = 'true';
   });
 
-  // Unread count in the tab title, like WhatsApp Web: "(3) receiver".
+  // Unread count in the tab title and on its icon, like WhatsApp Web.
   onSend('set-badge-count', (_event, count: unknown) => {
-    const n = typeof count === 'number' && count > 0 ? count : 0;
-    const base = document.title.replace(/^\(\d+\) /, '');
-    document.title = n > 0 ? `(${n}) ${base}` : base;
+    setUnreadBadge(typeof count === 'number' ? count : 0);
   });
 
   // DB-backed settings changed in the renderer: notify listeners (Electron

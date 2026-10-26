@@ -43,6 +43,7 @@
 //                idle; the app notices, reconnects and receives
 //   (ac)         keyboard: browser shortcuts stay the browser's, the app's
 //                take Ctrl+Alt (Cmd+Ctrl on macOS)
+//   (ad)         unread badge: the count in the tab title and on its icon
 //
 // Fails on CSP violations, uncaught exceptions, network destinations other
 // than the page's origin and the relay, and key-like secrets in the log.
@@ -713,6 +714,41 @@ try {
     if (!keys.includes('Ctrl+b')) throw new Error(`the composer did not get Ctrl+B (${keys.join(', ')})`);
     if (!opened.includes(alice.profileName)) await openConversation(alice);
     return `Ctrl+Alt+1 opened "${opened}" (first in the list: "${first}"); the app saw: ${keys.join(', ')}`;
+  });
+
+  await scenario('ad', 'unread badge: the count in the tab title and on its icon, cleared once read', async () => {
+    const state = () =>
+      page.evaluate(() => ({ title: document.title, icon: document.querySelector('link[rel="icon"]')?.getAttribute('href') ?? '' }));
+    // A message in a conversation that is not open.
+    await page.keyboard.down('Control');
+    await page.keyboard.down('Alt');
+    await page.keyboard.down('Shift');
+    await page.keyboard.press('KeyC');
+    await page.keyboard.up('Shift');
+    await page.keyboard.up('Alt');
+    await page.keyboard.up('Control');
+    await page.waitForFunction(() => !document.querySelector('.module-ConversationHeader'), { timeout: 10_000 });
+    await alice.sendText(desktop, `Unread ${Date.now()}`);
+    await page
+      .waitForFunction(
+        () => /^\(1\) /.test(document.title) && document.querySelector('link[rel="icon"]')?.getAttribute('href')?.startsWith('data:image/png'),
+        { timeout: STEP_TIMEOUT_MS, polling: 200 }
+      )
+      .catch(async () => {
+        throw new Error(`no unread badge: ${JSON.stringify(await state())}`);
+      });
+    const unread = await state();
+    // Read: the badge goes away.
+    await openConversation(alice);
+    await page
+      .waitForFunction(() => !/\(\d+\)/.test(document.title) && document.querySelector('link[rel="icon"]')?.getAttribute('href') === './favicon.svg', {
+        timeout: STEP_TIMEOUT_MS,
+        polling: 200,
+      })
+      .catch(async () => {
+        throw new Error(`the badge stayed after reading: ${JSON.stringify(await state())}`);
+      });
+    return `unread: "${unread.title}", icon ${unread.icon.slice(0, 22)}... (${unread.icon.length} chars); read: "${(await state()).title}"`;
   });
 
   await scenario('e', 'persistence: reload, still linked, reconnects, receives; then survives a dropped connection', async () => {
