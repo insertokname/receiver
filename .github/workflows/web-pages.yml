@@ -156,7 +156,9 @@ jobs:
             --target wasm32-unknown-unknown --component rustfmt,clippy
           rustc --version
 
-      - name: Install wasm-pack ${{ env.WASM_PACK_VERSION }}
+      # wasm-pack runs the wasm-opt it finds; without one it would download
+      # a version of its own choosing (reproducible builds).
+      - name: Install wasm-pack ${{ env.WASM_PACK_VERSION }} and binaryen ${{ env.BINARYEN_VERSION }}
         run: |
           name="wasm-pack-v${WASM_PACK_VERSION}-x86_64-unknown-linux-musl"
           curl -sSfL -o "$RUNNER_TEMP/$name.tar.gz" \
@@ -164,6 +166,12 @@ jobs:
           echo "$WASM_PACK_SHA256  $RUNNER_TEMP/$name.tar.gz" | sha256sum -c -
           tar -xzf "$RUNNER_TEMP/$name.tar.gz" -C "$RUNNER_TEMP"
           echo "$RUNNER_TEMP/$name" >> "$GITHUB_PATH"
+          name="binaryen-version_${BINARYEN_VERSION}"
+          curl -sSfL -o "$RUNNER_TEMP/$name.tar.gz" \
+            "https://github.com/WebAssembly/binaryen/releases/download/version_${BINARYEN_VERSION}/$name-x86_64-linux.tar.gz"
+          echo "$BINARYEN_SHA256  $RUNNER_TEMP/$name.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/$name.tar.gz" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/$name/bin" >> "$GITHUB_PATH"
 
       # One clang version, always: ring's C code is part of the transport's
       # WebAssembly, which must not change with the runner image

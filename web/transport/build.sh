@@ -9,7 +9,8 @@
 #   ranged.js     large downloads in parallel byte ranges (src/ranged.js)
 #
 # Needs: the Rust toolchain pinned in webtor-rs/rust-toolchain.toml with the
-# wasm32-unknown-unknown target, wasm-pack, clang + llvm-ar that can target
+# wasm32-unknown-unknown target, wasm-pack, wasm-opt (binaryen; wasm-pack
+# would otherwise download one of its own), clang + llvm-ar that can target
 # wasm32 (for ring; override with CC_wasm32_unknown_unknown /
 # AR_wasm32_unknown_unknown), node.
 #
@@ -31,6 +32,11 @@ while [ $# -gt 0 ]; do
     *) echo "unknown argument: $1" >&2; exit 2 ;;
   esac
 done
+
+if ! command -v wasm-opt > /dev/null; then
+  echo "wasm-opt not found: install binaryen (the version in .github/workflows/web-pages.yml)" >&2
+  exit 1
+fi
 
 if [ ! -f "$HERE/webtor-rs/Cargo.toml" ]; then
   echo "webtor-rs submodule missing: git submodule update --init web/transport/webtor-rs" >&2

@@ -41,11 +41,11 @@ The app is the site's root; `test/` and `libsignal/` are check pages.
 ## Build
 
 Needs the Rust toolchain pinned in `transport/webtor-rs/rust-toolchain.toml`
-(with the `wasm32-unknown-unknown` target), wasm-pack 0.15, clang and llvm-ar
-able to target wasm32 (for ring), node 24, pnpm 11, brotli, openssl and curl. For
-libsignal also the toolchain pinned in `libsignal/libsignal/rust-toolchain`
-with the `wasm32-wasip1` target and the `rust-src` component, protoc and
-wasm-opt (binaryen); for the app the toolchain in
+(with the `wasm32-unknown-unknown` target), wasm-pack 0.15, wasm-opt
+(binaryen), clang and llvm-ar able to target wasm32 (for ring), node 24,
+pnpm 11, brotli, openssl and curl. For libsignal also the toolchain pinned
+in `libsignal/libsignal/rust-toolchain` with the `wasm32-wasip1` target and
+the `rust-src` component and protoc; for the app the toolchain in
 `sql/tokenizer/rust-toolchain.toml` (`wasm32-wasip1`) and unzip.
 
 ```bash
