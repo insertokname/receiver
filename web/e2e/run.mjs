@@ -571,6 +571,10 @@ try {
       await page.click('[data-testid="debug-log-link"]');
     }, []);
     console.log(`debug log from the link screen: ${linkScreenLog}`);
+    // The AGPL source link, in the link screen's footer.
+    await waitForSelector('[data-testid="source-link"]', 'the source code link');
+    const source = await page.$eval('[data-testid="source-link"]', a => a.href);
+    if (source !== 'https://github.com/insertokname/receiver') throw new Error(`source code link: ${source}`);
 
     const provision = await withTimeout(provisioning, STEP_TIMEOUT_MS, 'the provisioning socket at the mock');
     desktop = await withTimeout(

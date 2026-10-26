@@ -10,6 +10,7 @@
 // - Safari deletes a site's storage after 7 days without use unless the
 //   site is installed (Dock / Home Screen): the link screen says so. Where
 //   the browser offers to install the app, the link screen offers it too.
+//   Its footer also links to the source code (AGPL).
 // - Wiped data: if this browser had a linked app ('linked' in
 //   localStorage) but the database had to be created anew (its files or
 //   key were removed, e.g. by clearing site data or storage pressure), the
@@ -18,7 +19,7 @@
 //
 
 import { getStored, setStored } from '../main/storage.ts';
-import { desktopView, everySecond, h, showScreen } from './ui.ts';
+import { desktopView, everySecond, h, showScreen, SOURCE_URL } from './ui.ts';
 
 const LINKED_KEY = 'linked';
 
@@ -148,10 +149,12 @@ export function installStorageGuards(): void {
         'Safari deletes website data after 7 days without use. To keep your messages, add receiver to your Dock (File > Add to Dock) or Home Screen (Share > Add to Home Screen) and use it from there.'
       );
     }
-    if (!hint) {
-      return;
-    }
-    footer = h('div', { class: 'web-shell web-shell-footer', 'data-web-footer': '' }, hint);
+    const source = h(
+      'p',
+      {},
+      h('a', { href: SOURCE_URL, target: '_blank', rel: 'noreferrer', 'data-testid': 'source-link' }, 'Source code')
+    );
+    footer = h('div', { class: 'web-shell web-shell-footer', 'data-web-footer': '' }, hint, source);
     document.body.append(footer);
   });
 }
