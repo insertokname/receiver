@@ -18,6 +18,8 @@ if (!outDir) throw new Error('usage: node build.mjs OUT_DIR');
 await rm(outDir, { recursive: true, force: true });
 await mkdir(outDir, { recursive: true });
 await build({
+  // Module paths in the output are relative to this (reproducible builds).
+  cwd: fileURLToPath(new URL('../../..', import.meta.url)),
   input: { check: join(here, 'main.js') },
   platform: 'browser',
   // Plain JS; ../tsconfig.json extends the submodule, which CI's build job doesn't check out.

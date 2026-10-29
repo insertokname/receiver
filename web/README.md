@@ -481,7 +481,15 @@ half-working app.
   (clang 18.1.8 and 21.1.8 give different modules) and the files that
   carry its digest: `transport/wasm-integrity.js`, `app.js`, `index.html`,
   `sw.js`, `test/index.html`). libsignal's WebAssembly built on a NixOS machine is
-  byte-identical to the deployed one.
+  byte-identical to the deployed one. On a machine without that package,
+  run ring's compiler from an `ubuntu:24.04` container with `clang-18` and
+  `llvm-18` installed (`CC_wasm32_unknown_unknown` and
+  `AR_wasm32_unknown_unknown` pointing at small wrappers around `docker
+  run`, with the checkout mounted at the same path). The Node build does
+  not matter: the export names of the Node modules the browser build stubs
+  come from `renderer/node-exports.json` (regenerated with `node
+  renderer/node-exports.mjs` after a Node upgrade), not from the Node that
+  runs the build.
 - `scripts/verify-site.sh [URL]` downloads `URL`'s `SOURCE` and
   `SHA256SUMS`, checks every deployed file against `SHA256SUMS`, rebuilds
   that commit from source and compares; `--deployed-only` does the first

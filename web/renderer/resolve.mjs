@@ -13,7 +13,7 @@
 // Every bare import that is neither a dependency nor listed here makes the
 // build fail (see build.mjs), so nothing reaches the bundle unshimmed.
 
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { createRequire, builtinModules } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -86,6 +86,27 @@ const UNAVAILABLE_BUILTINS = [
   'vm',
   'worker_threads',
 ];
+
+// Builtins stubbed in whole or in part (the SQL worker's overrides are
+// among these too).
+export const STUBBED_BUILTINS = [
+  ...UNAVAILABLE_BUILTINS,
+  ...Object.keys(BUILTINS).filter(name => BUILTINS[name][0] === 'partial'),
+].sort();
+
+// Their export names, from node-exports.json rather than from the Node
+// that runs the build: Node builds differ (OpenSSL, libuv constants), and
+// the bundle must not (reproducible builds). Regenerate the file with
+// `node renderer/node-exports.mjs` after a Node upgrade.
+let NODE_EXPORTS;
+
+function nodeExports(name) {
+  NODE_EXPORTS ??= JSON.parse(readFileSync(join(WEB, 'renderer/node-exports.json'), 'utf8'));
+  if (!Object.hasOwn(NODE_EXPORTS, name)) {
+    throw new Error(`renderer/node-exports.json lists no exports for "${name}": run node renderer/node-exports.mjs`);
+  }
+  return NODE_EXPORTS[name];
+}
 
 // Packages with native code or Electron-only behaviour that the renderer
 // graph imports. (@signalapp/sqlcipher, @signalapp/windows-ucv and
@@ -223,8 +244,7 @@ export function webResolvePlugin({ overrides = {} } = {}) {
           const rest = id.slice(PARTIAL_PREFIX.length);
           const name = rest.slice(0, rest.indexOf(':'));
           const target = rest.slice(name.length + 1);
-          const real = await import(`node:${name}`);
-          const keys = Object.keys(real).filter(k => k !== 'default' && /^[A-Za-z_$][\w$]*$/.test(k));
+          const keys = nodeExports(name);
           // CommonJS, like the unavailable modules below (graceful-fs patches it).
           return [
             `const impl = require(${JSON.stringify(target)});`,
@@ -242,8 +262,7 @@ export function webResolvePlugin({ overrides = {} } = {}) {
         // Same export names as Node's module, so named imports link; each one
         // throws when called or constructed. CommonJS, so that modules which
         // patch Node's exports (graceful-fs) get a plain, mutable object.
-        const real = await import(`node:${name}`);
-        const keys = Object.keys(real).filter(k => k !== 'default' && /^[A-Za-z_$][\w$]*$/.test(k));
+        const keys = nodeExports(name);
         return [
           `const { unavailable } = require(${JSON.stringify(join(SHIMS, 'node/unavailable.ts'))});`,
           `const m = ${JSON.stringify(name)};`,
