@@ -28,6 +28,12 @@
 // only. Needs the built site (scripts/build-site.sh).
 //
 //   node net/test/run.mjs
+//   node net/test/run.mjs background   only this, instead of (a)-(h): the
+//          page hidden behind another tab for BACKGROUND_MINUTES (30), the
+//          browser throttling it as usual (Chromium: intensive throttling
+//          after INTENSIVE_AFTER seconds, default its own 5 minutes), one
+//          chat connection kept as Desktop keeps it; fails on a keepalive
+//          that went unanswered, an interruption or a Tor client replaced
 
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -85,7 +91,18 @@ const server = await serveSite({
     [`${app}net-test.js`]: ['text/javascript', pageJs],
   },
 });
-const browser = await launchBrowser();
+const BACKGROUND = process.argv[2] === 'background';
+const BACKGROUND_MINUTES = Number(process.env.BACKGROUND_MINUTES ?? 30);
+const INTENSIVE_AFTER = process.env.INTENSIVE_AFTER;
+const browser = await launchBrowser(
+  BACKGROUND
+    ? {
+        // Throttled as in a user's browser (puppeteer turns it off).
+        ignoreDefaultArgs: ['--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows'],
+        args: INTENSIVE_AFTER ? [`--enable-features=IntensiveWakeUpThrottling:grace_period_seconds/${INTENSIVE_AFTER}`] : [],
+      }
+    : {}
+);
 const problems = [];
 const logLines = [];
 
@@ -118,76 +135,96 @@ try {
   await page.evaluate(() => window.netTest.ready);
   console.log(`Tor ready after ${((Date.now() - started) / 1000).toFixed(1)} s`);
 
-  console.log('(a) unauthenticated chat');
-  const a = await run('unauthenticatedKeepalive');
-  console.log(`  ${JSON.stringify(a)}`);
-  check(a.status === 200, `GET /v1/keepalive -> ${a.status} (connect ${a.connectMs} ms, request ${a.ms} ms)`);
-  check(a.interruptions.length === 1 && a.interruptions[0].code === null, 'disconnect() reports a deliberate close (cause null)');
+  if (BACKGROUND) {
+    console.log(`background: hidden for ${BACKGROUND_MINUTES} min${INTENSIVE_AFTER ? `, intensive throttling after ${INTENSIVE_AFTER} s` : ''}`);
+    const holding = run('backgroundHold', BACKGROUND_MINUTES);
+    const front = await browser.newPage();
+    await front.goto('about:blank');
+    await front.bringToFront();
+    const r = await holding;
+    console.log(`  ${JSON.stringify(r)}`);
+    // One keepalive 30 s after each answer: fewer than one per 30 s when
+    // round trips are slow.
+    const expected = Math.floor((BACKGROUND_MINUTES * 60) / 35);
+    check(r.keepalives >= expected && r.failures.length === 0, `${r.keepalives} keepalives answered (round trip median ${r.rttMs?.median} ms, max ${r.rttMs?.max} ms), ${r.failures.length} failed`);
+    check(r.longestGapMs < 90_000, `longest time between two answers ${(r.longestGapMs / 1000).toFixed(1)} s`);
+    check(r.interruptions.length === 0 && r.reconnects === 0, `${r.interruptions.length} interruptions, ${r.reconnects} reconnects`);
+    check(r.torLost === 0, `${r.torLost} Tor clients replaced`);
+    problems.push(...(await watcher.report()));
+    ok = problems.length === 0;
+  } else {
 
-  console.log('(b) authenticated chat, bogus credentials');
-  const b = await run('authenticatedBogus');
-  console.log(`  ${JSON.stringify(b)}`);
-  check(!b.connected && b.error?.code === 'DeviceDelinked', `refused with ${b.error?.code} (${b.error?.message})`);
+    console.log('(a) unauthenticated chat');
+    const a = await run('unauthenticatedKeepalive');
+    console.log(`  ${JSON.stringify(a)}`);
+    check(a.status === 200, `GET /v1/keepalive -> ${a.status} (connect ${a.connectMs} ms, request ${a.ms} ms)`);
+    check(a.interruptions.length === 1 && a.interruptions[0].code === null, 'disconnect() reports a deliberate close (cause null)');
 
-  console.log('(c) provisioning');
-  const c = await run('provisioning');
-  console.log(`  ${JSON.stringify(c)}`);
-  check(c.received?.length > 0 && c.received.acked, `provisioning address of ${c.received?.length} chars received and acked after ${c.ms} ms`);
+    console.log('(b) authenticated chat, bogus credentials');
+    const b = await run('authenticatedBogus');
+    console.log(`  ${JSON.stringify(b)}`);
+    check(!b.connected && b.error?.code === 'DeviceDelinked', `refused with ${b.error?.code} (${b.error?.message})`);
 
-  console.log('(e) network change on a healthy connection');
-  const e = await run('networkChangeProbe');
-  console.log(`  ${JSON.stringify(e)}`);
-  check(e.status === 200 && e.interruptedBeforeDisconnect === 0, 'connection survives onNetworkChange (liveness check passed)');
+    console.log('(c) provisioning');
+    const c = await run('provisioning');
+    console.log(`  ${JSON.stringify(c)}`);
+    check(c.received?.length > 0 && c.received.acked, `provisioning address of ${c.received?.length} chars received and acked after ${c.ms} ms`);
 
-  console.log('(f) HTTPS client');
-  const f1 = await run('storageUnauthenticated');
-  console.log(`  ${JSON.stringify(f1)}`);
-  check(f1.status === 401 && f1.hasTimestamp, `storage.signal.org without credentials -> ${f1.status} (x-signal-timestamp: ${f1.hasTimestamp}, ${f1.ms} ms)`);
-  const f4 = await run('storageStreamedUpload');
-  console.log(`  ${JSON.stringify(f4)}`);
-  check(f4.status >= 400 && f4.status < 500 && f4.hasTimestamp, `streamed 1 MiB request body -> ${f4.status} (${f4.pulled} bytes pulled, ${f4.ms} ms)`);
-  const f2 = await run('storageWrongCa', wrongCa);
-  console.log(`  ${JSON.stringify(f2)}`);
-  check(f2.rejected && /UnknownIssuer|certificate/i.test(f2.error?.message ?? ''), `wrong CA rejected: ${f2.error?.message}`);
-  const f3 = await run('noPinnedCa');
-  console.log(`  ${JSON.stringify(f3)}`);
-  check(f3.rejected && f3.error?.code === 'ERR_WEB_UNSUPPORTED', `request without a pinned CA refused: ${f3.error?.message}`);
+    console.log('(e) network change on a healthy connection');
+    const e = await run('networkChangeProbe');
+    console.log(`  ${JSON.stringify(e)}`);
+    check(e.status === 200 && e.interruptedBeforeDisconnect === 0, 'connection survives onNetworkChange (liveness check passed)');
 
-  console.log('(g) not available yet');
-  const g = await run('unavailable');
-  console.log(`  ${JSON.stringify(g)}`);
-  check(g.cdsiLookup?.name === 'LibSignalError' && g.svr2?.name === 'LibSignalError', 'CDSI and SVR2 reject with typed libsignal errors');
+    console.log('(f) HTTPS client');
+    const f1 = await run('storageUnauthenticated');
+    console.log(`  ${JSON.stringify(f1)}`);
+    check(f1.status === 401 && f1.hasTimestamp, `storage.signal.org without credentials -> ${f1.status} (x-signal-timestamp: ${f1.hasTimestamp}, ${f1.ms} ms)`);
+    const f4 = await run('storageStreamedUpload');
+    console.log(`  ${JSON.stringify(f4)}`);
+    check(f4.status >= 400 && f4.status < 500 && f4.hasTimestamp, `streamed 1 MiB request body -> ${f4.status} (${f4.pulled} bytes pulled, ${f4.ms} ms)`);
+    const f2 = await run('storageWrongCa', wrongCa);
+    console.log(`  ${JSON.stringify(f2)}`);
+    check(f2.rejected && /UnknownIssuer|certificate/i.test(f2.error?.message ?? ''), `wrong CA rejected: ${f2.error?.message}`);
+    const f3 = await run('noPinnedCa');
+    console.log(`  ${JSON.stringify(f3)}`);
+    check(f3.rejected && f3.error?.code === 'ERR_WEB_UNSUPPORTED', `request without a pinned CA refused: ${f3.error?.message}`);
 
-  console.log('(h) large uploads (prekey-sized requests, then 1 MB)');
-  const h = await run('largeUploads');
-  console.log(`  ${JSON.stringify(h)}`);
-  check(
-    !h.failed &&
-    h.prekeyStatuses.every(s => s === 401) && h.bulkStatuses.every(s => s === 401) && h.keepaliveAfter === 200 && h.interruptedBeforeDisconnect === 0,
-    h.failed ? `upload failed after ${h.afterMs} ms: ${h.failed.code} ${h.failed.message}` : `2 x ${Math.round(h.prekeyBytes[0] / 1024)} KB in ${(h.prekeyMs / 1000).toFixed(1)} s, 1 MB in ${(h.bulkMs / 1000).toFixed(1)} s, all answered; connection still healthy`
-  );
+    console.log('(g) not available yet');
+    const g = await run('unavailable');
+    console.log(`  ${JSON.stringify(g)}`);
+    check(g.cdsiLookup?.name === 'LibSignalError' && g.svr2?.name === 'LibSignalError', 'CDSI and SVR2 reject with typed libsignal errors');
 
-  console.log('(d) forced transport drop');
-  const d0 = await run('openForDrop');
-  check(d0.status === 200, `connection open (keepalive ${d0.ms} ms)`);
-  const droppedAt = await run('nowMs');
-  await setOffline(true);
-  const d1 = await Promise.race([
-    run('awaitDropInterruption', droppedAt),
-    new Promise(resolve => setTimeout(() => resolve(null), DROP_DETECTION_LIMIT_MS + 15_000)),
-  ]);
-  console.log(`  ${JSON.stringify(d1)}`);
-  check(d1 !== null && d1.afterMs <= DROP_DETECTION_LIMIT_MS && d1.code === 'IoError', `onConnectionInterrupted(${d1?.code}) ${d1 ? `${(d1.afterMs / 1000).toFixed(1)} s` : 'never'} after the drop (${d1?.message})`);
-  const onlineAt = await run('nowMs');
-  await setOffline(false);
-  const d2 = await run('reconnect', onlineAt);
-  console.log(`  ${JSON.stringify(d2)}`);
-  check(d2.ok, `reconnect succeeded ${(d2.afterMs / 1000).toFixed(1)} s after going online (${d2.attempts.length} failed attempts)`);
+    console.log('(h) large uploads (prekey-sized requests, then 1 MB)');
+    const h = await run('largeUploads');
+    console.log(`  ${JSON.stringify(h)}`);
+    check(
+      !h.failed &&
+      h.prekeyStatuses.every(s => s === 401) && h.bulkStatuses.every(s => s === 401) && h.keepaliveAfter === 200 && h.interruptedBeforeDisconnect === 0,
+      h.failed ? `upload failed after ${h.afterMs} ms: ${h.failed.code} ${h.failed.message}` : `2 x ${Math.round(h.prekeyBytes[0] / 1024)} KB in ${(h.prekeyMs / 1000).toFixed(1)} s, 1 MB in ${(h.bulkMs / 1000).toFixed(1)} s, all answered; connection still healthy`
+    );
 
-  const secrets = logLines.filter(l => SECRET_PATTERNS.some(p => p.test(l)));
-  check(secrets.length === 0, `no credentials in the log (${logLines.length} lines)`);
-  problems.push(...(await watcher.report()));
-  ok = problems.length === 0;
+    console.log('(d) forced transport drop');
+    const d0 = await run('openForDrop');
+    check(d0.status === 200, `connection open (keepalive ${d0.ms} ms)`);
+    const droppedAt = await run('nowMs');
+    await setOffline(true);
+    const d1 = await Promise.race([
+      run('awaitDropInterruption', droppedAt),
+      new Promise(resolve => setTimeout(() => resolve(null), DROP_DETECTION_LIMIT_MS + 15_000)),
+    ]);
+    console.log(`  ${JSON.stringify(d1)}`);
+    check(d1 !== null && d1.afterMs <= DROP_DETECTION_LIMIT_MS && d1.code === 'IoError', `onConnectionInterrupted(${d1?.code}) ${d1 ? `${(d1.afterMs / 1000).toFixed(1)} s` : 'never'} after the drop (${d1?.message})`);
+    const onlineAt = await run('nowMs');
+    await setOffline(false);
+    const d2 = await run('reconnect', onlineAt);
+    console.log(`  ${JSON.stringify(d2)}`);
+    check(d2.ok, `reconnect succeeded ${(d2.afterMs / 1000).toFixed(1)} s after going online (${d2.attempts.length} failed attempts)`);
+
+    const secrets = logLines.filter(l => SECRET_PATTERNS.some(p => p.test(l)));
+    check(secrets.length === 0, `no credentials in the log (${logLines.length} lines)`);
+    problems.push(...(await watcher.report()));
+    ok = problems.length === 0;
+  }
 } catch (error) {
   problems.push(error.stack ?? String(error));
 } finally {

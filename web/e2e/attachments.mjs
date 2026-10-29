@@ -32,6 +32,9 @@
 //   (w) a download interrupted half way (every connection dropped) is
 //       resumed by Desktop's retry with a Range request and completes; the
 //       saved file has the sent bytes
+//   (af) a download the CDN fails (HTTP 500) is retried within seconds
+//       (the web build's quick retries before Desktop's 30 s, 5 min, ...)
+//       and completes
 //   (x) an upload interrupted half way (every connection dropped) is
 //       resumed by Desktop's tus client (HEAD for the offset, PATCH the
 //       rest); the upload streams (chunked, not buffered); Alice decrypts
@@ -56,6 +59,10 @@ import { loadAttachmentHelpers } from './backup-generator.mjs';
 // Firefox (WebDriver BiDi) does not say whether a service worker answered;
 // there, that no local URL reached the site's server (run.mjs) shows it.
 const viaServiceWorker = response => FIREFOX || response.fromServiceWorker();
+// (af): how soon a failed download must be tried again (the web build's
+// first retry is after 3 s; Desktop's after 30 s, started by a tick that
+// runs once a minute).
+const RETRY_BOUND_S = Number(process.env.RETRY_BOUND_S ?? 10);
 
 /** The top-level boxes of an MP4 file. */
 function mp4Boxes(data, start = 0, end = data.length) {
@@ -849,6 +856,29 @@ export async function runAttachmentScenarios(ctx) {
       await downloads.close();
     }
     return `${(size / 2 ** 20).toFixed(1)} MiB file: connections dropped half way (after ${droppedAfter} requests); requests ${requests.join(', ')}; complete ${seconds.toFixed(1)} s after it started (Desktop's first retry is after 30 s); saved file identical`;
+  });
+
+  await scenario('af', 'a download the CDN fails is retried within seconds and completes', async () => {
+    const data = randomBytes(256 * 1024 + 7);
+    const fileName = `report-${Date.now()}.zip`;
+    const pointer = await helpers.encryptAttachment(data, 'application/zip', store, { fileName });
+    const path = `/cdn3/attachments/${pointer.attachmentIdentifier.cdnKey}`;
+    const requests = [];
+    ctx.onMockEvent(event => {
+      if (event.type === 'http' && event.method === 'GET' && event.path === path) requests.push(Date.now());
+    });
+    server.failHttp(path, 500, 1);
+    const timestamp = await aliceSends(`A file the CDN fails once ${Date.now()}`, [pointer]);
+    const button = `${messageSelector(timestamp)} .module-message__simple-attachment`;
+    await page().waitForSelector(button, { timeout: STEP_TIMEOUT_MS });
+    // Desktop downloads it on its own; the retry must come without a click
+    // (one would start the download again at once).
+    await waitFor(async () => requests.length > 0, 'the download to start', STEP_TIMEOUT_MS);
+    await waitFor(async () => (await attachmentsOf(timestamp))[0]?.path, 'the download to complete after the failure', 120_000);
+    if (requests.length < 2) throw new Error(`the CDN saw ${requests.length} request(s)`);
+    const retriedAfter = (requests[1] - requests[0]) / 1000;
+    if (retriedAfter > RETRY_BOUND_S) throw new Error(`retried ${retriedAfter.toFixed(1)} s after the failure (bound ${RETRY_BOUND_S} s)`);
+    return `HTTP 500 at first; retried ${retriedAfter.toFixed(1)} s later (bound ${RETRY_BOUND_S} s), ${requests.length} requests, complete`;
   });
 
   await scenario('x', 'an upload dropped half way is resumed by the tus client', async () => {

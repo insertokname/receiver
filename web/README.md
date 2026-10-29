@@ -12,6 +12,7 @@ The app is the site's root; `test/` and `libsignal/` are check pages.
 |---|---|
 | `transport/webtor-rs/` | Tor client in Rust/WASM: git submodule, [insertokname/webtor-rs](https://github.com/insertokname/webtor-rs) branch `signal-web-transport` |
 | `transport/src/index.js` | Connection policy: Snowflake WebSocket first, then Snowflake WebRTC, retried with backoff; Signal sockets pinned to Signal's CA |
+| `transport/src/timers.js`, `timer-worker.js` | Timers on a dedicated worker, kept on time while the tab is in the background (connection keepalives, see App shell) |
 | `transport/build.sh` | Builds `transport/dist/` (WASM and its SRI digest, `signal-ca.js` from `config/default.json`, policy); `--test-relay` builds the end-to-end tests' variant into `transport/dist-e2e/` |
 | `transport/verify-directory.mjs` | Verifies a Tor directory snapshot with the transport's own WebAssembly (build-site.sh runs it) |
 | `libsignal/libsignal/` | libsignal 0.103.0 (the version Desktop pins): git submodule, [insertokname/libsignal](https://github.com/insertokname/libsignal) branch `web-wasm` |
@@ -24,7 +25,7 @@ The app is the site's root; `test/` and `libsignal/` are check pages.
 | `sql/` | The SQL worker: Desktop's `ts/sql/Server.node.ts` and migrations on encrypted SQLite in the origin private file system (see below); `build.sh` fetches SQLite3 Multiple Ciphers and builds `tokenizer/`; `test/run.mjs` is the storage test |
 | `sql/tokenizer/` | Signal's FTS5 tokenizer (Signal-FTS5-Extension, the revision `@signalapp/sqlcipher` uses) as a WebAssembly module (Rust) |
 | `net/` | libsignal's `Net` for the web build (`WebNet`): chat and provisioning connections, the typed chat calls, and HTTPS (`node-fetch` replacement), all through one Tor client (`tor.ts`, chosen in `carrier.ts`); `test/run.mjs` checks it against Signal |
-| `shell/` | The app shell around Desktop's UI: one window at a time ("Use here", `tabs.ts`), connection status (`status.ts`), the database error screens (`errors.ts`), storage persistence and wipe detection (`storage.ts`), the notification banner (`notifications.ts`), the service worker's update prompt (`update.ts`), the "browser can't run receiver" screen (`support.ts`); `test/run.mjs` tests the recovery paths |
+| `shell/` | The app shell around Desktop's UI: one window at a time ("Use here", `tabs.ts`), connection status (`status.ts`), the database error screens (`errors.ts`), storage persistence and wipe detection (`storage.ts`), the notification banner (`notifications.ts`), the service worker's update prompt (`update.ts`), the "browser can't run receiver" screen (`support.ts`), checking connections when the tab comes back from the background (`background.ts`); `test/run.mjs` tests the recovery paths |
 | `sw/` | The service worker (`sw.ts`, built by `build.mjs` with the app's file list into `sw.js`); `test/run.mjs` tests caching, offline and updates |
 | `renderer/brand/`, `renderer/manifest.webmanifest` | receiver's logo and icons (in place of Signal's), the web app manifest |
 | `e2e/` | End-to-end tests against Desktop's mock server (test-only, never deployed): `run.mjs` (scenarios), `mock.mjs`, `relay.mjs`, the test carrier `relay-carrier.ts`, `config.mjs` |
@@ -203,7 +204,12 @@ deletes (migrations) are deleted by the page on the worker's request.
   (`ts/windows/main/attachments.web.ts`).
 - **Downloading and uploading** use Desktop's own code (download jobs,
   resumed with Range; tus uploads to CDN 3, resumed with HEAD + PATCH)
-  over the HTTPS client through Tor. Request bodies are streamed: the
+  over the HTTPS client through Tor. A failed download is retried after 3,
+  10 and 20 s before Desktop's own schedule (30 s, 5 min, 50 min, then
+  hours; `ts/jobs/attachmentDownloadRetry.web.ts`): over Tor a failure is
+  usually one bad circuit, and the next attempt gets another one. The rest
+  is Desktop's: as many later attempts, the same failure shown once they
+  are used up. Request bodies are streamed: the
   transport pulls the file piece by piece (`net/node-fetch.ts`, webtor-rs
   `RequestBody::Stream`); the request's timeout then bounds each wait.
 - **Voice notes** are recorded with Desktop's MP3 encoder worklet
@@ -238,6 +244,8 @@ node renderer/test/crypto-shim.mjs                    # node:crypto shim against
 node renderer/test/fs-shim.mjs                        # node:fs on the origin private file system, in the browser
 node net/test/run.mjs                                 # WebNet + HTTPS through Tor against Signal (bogus credentials only)
 node e2e/run.mjs                                      # end-to-end against Desktop's mock server (see below)
+node net/test/run.mjs background                      # one chat connection kept for 30 min in a hidden, throttled tab (real Tor)
+HIDDEN=1 LIVENESS=1 node transport-test/run.mjs 'suites=ws&only=liveness&hidden&idleSecs=60'   # the same black hole in a hidden, throttled tab
 node sw/test/run.mjs                                  # service worker: cache, offline, updates only with consent, manifest
 node shell/test/run.mjs                               # app shell: database error screens, wiped data, a hung second window, Mac shortcuts
 node shell/test/device-name.mjs                       # the linked device's name for common browsers (Node)
@@ -257,8 +265,12 @@ response head on a new and on a kept-alive connection, and the speed of a
 repeats the download with the page hidden (Chromium and Firefox then run
 its timers once a second), `APP=1` measures the app instead (page load to
 Tor ready and to the link QR code, cold and after a reload served by the
-service worker), `CC=0` uses Tor's fixed window instead of congestion
-control, `SITE=<dir>` measures another build. It uses only Signal's hosts
+service worker, with the boot steps, bytes transferred and the transport's
+memory), `NET=<Mbit/s>:<ms>` serves the site over an emulated link (gzip,
+revalidation, one shared bandwidth, as GitHub Pages over that link; Tor is
+not slowed down), `MEMORY=1` serves cross-origin isolated pages so that the
+page's whole memory is measured too, `CC=0` uses Tor's fixed window instead
+of congestion control, `SITE=<dir>` measures another build. It uses only Signal's hosts
 (no account): the chat server and Desktop's public release files on
 `updates2.signal.org` (Signal's CA, Range requests) as the download. The
 page is served by the runner only, never part of the site. Real Tor varies
@@ -295,8 +307,12 @@ linking, including half way through a 32 MiB archive download resumed with
 Range and a 20 s outage as the keys are uploaded; each must end with
 contacts synced and messages processed within a time bound. In (ab) every
 connection stalls while the app is idle in the inbox: it must notice,
-reconnect and show the message sent meanwhile within 60 s. It needs the
-e2e build:
+reconnect and show the message sent meanwhile within 60 s. In (ae) the
+app's tab is in the background for minutes, throttled as in a user's
+browser (Chromium's intensive throttling after 10 s instead of 5 minutes):
+messages must notify within 10 s, the connection must be kept, and it is
+checked when the tab comes back. (af): a download the CDN fails is retried
+within seconds. It needs the e2e build:
 
 - `transport/build.sh --test-relay` compiles webtor-rs with its
   `test-relay` feature (`Carrier::Relay`: TLS carried by a WebSocket to a
@@ -331,7 +347,10 @@ WhatsApp Web:
   data: fetched from the network when possible, from the cache offline,
   and not part of the build id, so the daily redeployment offers no update.
   Builds are deterministic (the build expiration comes from the commit's
-  date: 90 days, as a packaged Desktop build).
+  date: 90 days, as a packaged Desktop build). On a first visit the worker
+  is registered once the app is up (its first screen shown and Tor ready,
+  at most 30 s): its download of the code would otherwise compete with the
+  app's own start.
 - **One window at a time** ("Use here", `shell/tabs.ts`): the window using
   the app holds the Web Lock `receiver:window`; a new window that finds it
   held asks on the BroadcastChannel `receiver:tabs` and, if answered, shows
@@ -376,6 +395,21 @@ WhatsApp Web:
   with backoff behind "Connecting...", and the provisioning connection's
   timeout is reported as Desktop's `ConnectTimeoutError` so its timeouts
   grow (10, 20, 30, 60 s).
+- **Background tab**: WhatsApp Web keeps receiving in a tab left behind
+  others for hours, and so does receiver. Browsers throttle a hidden page's
+  timers to once a second, and Chromium, after five minutes hidden, runs
+  chained timers once a minute (a WebSocket does not exempt a page; audio
+  playing and WebRTC do; Firefox keeps 1 Hz). What keeps the connections
+  alive therefore runs on a dedicated worker's timers, which keep time
+  (`transport/src/timers.js`): the bridge connection's keepalive and
+  silence check (webtor-rs `timer.rs`) and the chat connections' liveness
+  check (`net/chat.ts`). Network events are not throttled, so messages
+  arrive at once; Desktop's processing then waits on its own timers (once a
+  second), so a message notifies about 3-4 s after it arrives (1.3 s in a
+  visible window). A tab back after a minute or more in the background has
+  its connections checked at once, as Desktop does when the computer wakes
+  up (`shell/background.ts`: the 'online' event; a Tor start waiting for
+  its backoff retries now).
 - **Mac**: Desktop runs its Linux code paths (`process.platform`), but on a
   Mac `window.platform` is `darwin`, so shortcuts and their labels use Cmd.
 
@@ -519,8 +553,9 @@ headers, timeouts and error codes from libsignal-net's Rust code):
 - Liveness: a connection that silently stops delivering (no close, no
   error) is noticed at two levels. The Snowflake bridge sends a keepalive
   every 10 s (SMUX NOP); when nothing at all has come from it for 25 s
-  (checked every 5 s; a check that ran late because the page was
-  suspended gives it 15 s more) webtor closes the channel, the app's
+  (checked every 5 s, on the timer worker so that a hidden tab checks on
+  time too; a check that ran late because the page was suspended gives it
+  15 s more) webtor closes the channel, the app's
   carrier sees that at once (`waitForChannelClose`), replaces the Tor
   client and interrupts every connection on it, so all of them reconnect
   together: about 25-30 s after the last byte, against 60 s before. An idle
@@ -553,7 +588,8 @@ headers, timeouts and error codes from libsignal-net's Rust code):
   authority certificates, every relay's microdescriptor; fetched at build
   time by `transport/webtor-rs/scripts/fetch-consensus.sh` and verified by
   `transport/verify-directory.mjs`, so a build with a bad snapshot fails).
-  If the snapshot is missing, too old or does not verify, the client
+  The client connects to the bridge while it loads and verifies the
+  snapshot. If the snapshot is missing, too old or does not verify, the client
   fetches the documents through the bridge (BEGIN_DIR, a stage with its
   own time limit of 120 s, so a slow bridge is not given up on while it is
   sending them) and verifies those;

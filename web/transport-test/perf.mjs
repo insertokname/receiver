@@ -19,6 +19,14 @@
 //                                                instead of congestion control
 //   SITE=<dir> node ...                          another build of the site
 //   PERF_OUT=<file>                              append each run's JSON
+//   MEMORY=1 node ...                            cross-origin isolated pages, so
+//                                                that the page's memory can be
+//                                                measured too (Chromium)
+//   NET=<Mbit/s>:<ms> APP=1 node ...             the site over an emulated link
+//                                                (gzip, revalidation and
+//                                                bandwidth as GitHub Pages over
+//                                                that link; Tor itself is not
+//                                                slowed down)
 //
 // Needs: web/scripts/build-site.sh output, CHROMIUM=<browser executable>.
 
@@ -37,6 +45,9 @@ const query = new URLSearchParams({
 });
 if (HIDDEN) query.set('hidden', '');
 if (process.env.CC === '0') query.set('cc', '0');
+const MEMORY = Boolean(process.env.MEMORY);
+const [linkMbps, linkRttMs] = (process.env.NET ?? '').split(':').map(Number);
+const link = process.env.NET ? { mbps: linkMbps, rttMs: linkRttMs || 0 } : undefined;
 const siteDir = process.env.SITE ? resolve(process.env.SITE) + '/' : SITE_DIR;
 const label = process.env.LABEL ?? (process.env.BROWSER === 'firefox' ? 'firefox' : 'chromium');
 
@@ -57,14 +68,35 @@ const UNTHROTTLED = [
 const INSTALL_QR = '.module-InstallScreenQrCodeNotScannedStep__qr-code--loaded svg';
 
 async function measureApp(browser, page) {
+  let transportMB;
+  page.on('console', message => {
+    const match = /Tor ready after .*transport memory ([\d.]+) MB/.exec(message.text());
+    if (match) transportMB = Number(match[1]);
+  });
   const boot = async () => {
+    transportMB = undefined;
     const tor = await page.waitForFunction(() => document.documentElement.dataset.tor === 'ready' && performance.now(), {
       timeout: 180_000,
       polling: 100,
     });
     const torSeconds = (await tor.jsonValue()) / 1000;
     const qr = await page.waitForFunction(sel => document.querySelector(sel) && performance.now(), { timeout: 180_000, polling: 100 }, INSTALL_QR);
-    return { torReady: Math.round(torSeconds * 100) / 100, qr: Math.round(((await qr.jsonValue()) / 1000) * 100) / 100 };
+    const result = { torReady: Math.round(torSeconds * 100) / 100, qr: Math.round(((await qr.jsonValue()) / 1000) * 100) / 100 };
+    Object.assign(
+      result,
+      await page.evaluate(async () => {
+        const steps = Object.fromEntries((window.__webBoot?.steps ?? []).map(s => [s.step, Math.round(s.ms) / 1000]));
+        const resources = performance.getEntriesByType('resource');
+        const transferredMB = Math.round(resources.reduce((sum, r) => sum + (r.transferSize ?? 0), 0) / 1e5) / 10;
+        let pageMB;
+        if (globalThis.crossOriginIsolated && performance.measureUserAgentSpecificMemory) {
+          pageMB = Math.round((await performance.measureUserAgentSpecificMemory()).bytes / 1e5) / 10;
+        }
+        return { steps, transferredMB, pageMB };
+      })
+    );
+    result.transportMB = transportMB;
+    return result;
   };
   await page.goto(`${LOCAL_ORIGIN}${BASE_PATH}`);
   const cold = await boot();
@@ -87,13 +119,25 @@ async function measureTransport(browser, page) {
   return handle.jsonValue();
 }
 
-const server = await serveSite({ extra, siteDir });
+// Cross-origin isolation (measureUserAgentSpecificMemory needs it).
+const ISOLATED = { 'cross-origin-opener-policy': 'same-origin', 'cross-origin-embedder-policy': 'require-corp' };
+const server = await serveSite({
+  extra,
+  siteDir,
+  gzip: Boolean(link),
+  link,
+  headers: { ...(link ? { 'cache-control': 'max-age=600' } : {}), ...(MEMORY ? ISOLATED : {}) },
+});
 const results = [];
 let problems = 0;
 try {
   for (let run = 1; run <= RUNS; run++) {
     console.log(`--- run ${run}/${RUNS} (${label}${APP ? ', app' : ''}) ---`);
-    const browser = await launchBrowser(HIDDEN ? { ignoreDefaultArgs: UNTHROTTLED } : {});
+    const browser = await launchBrowser({
+      ...(HIDDEN ? { ignoreDefaultArgs: UNTHROTTLED } : {}),
+      // Measure at once instead of at the next garbage collection.
+      args: MEMORY ? ['--enable-blink-features=ForceEagerMeasureMemory'] : [],
+    });
     try {
       const page = await browser.newPage();
       page.on('console', m => {
@@ -141,12 +185,21 @@ const add = (name, value) => {
 for (const r of results) {
   if (r.app) {
     for (const phase of ['cold', 'warm']) {
-      add(`app ${phase}: Tor ready (s)`, r.app[phase].torReady);
-      add(`app ${phase}: link QR code (s)`, r.app[phase].qr);
+      const a = r.app[phase];
+      add(`app ${phase}: Tor ready (s)`, a.torReady);
+      add(`app ${phase}: link QR code (s)`, a.qr);
+      for (const [step, at] of Object.entries(a.steps ?? {})) add(`app ${phase}:   boot step ${step} at (s)`, at);
+      add(`app ${phase}: transferred before the QR code (MB)`, a.transferredMB);
+      add(`app ${phase}: transport memory (MB)`, a.transportMB);
+      add(`app ${phase}: page memory (MB)`, a.pageMB);
     }
     continue;
   }
   add('wasm load (s)', r.wasmLoad);
+  for (const [when, m] of Object.entries(r.memory ?? {})) {
+    add(`transport memory ${when} (MB)`, m.transportMB);
+    add(`page memory ${when} (MB)`, m.pageMB);
+  }
   add('bootstrap (s)', r.bootstrap?.seconds);
   for (const [stage, at] of Object.entries(r.bootstrap?.stages ?? {})) add(`  stage ${stage} at (s)`, at);
   add('chat connect (s, median of 3)', median(r.chatConnect ?? []));

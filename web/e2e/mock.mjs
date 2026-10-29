@@ -147,6 +147,8 @@ async function resumeCdn3Upload(cdn3Path, req, res) {
  * every request when it arrives. `profileAvatars` maps an ACI to
  * { path, data }: that profile has an avatar (the mock has none), served
  * encrypted at CDN 0's `/<path>` as Signal's CDN serves profile avatars.
+ * `server.failHttp(path, status, times)` answers the next `times` requests
+ * for `path` with `status` (a CDN that fails), before anything else.
  */
 export async function startMockServer({ onDeviceLink, onEvent = () => undefined, profileAvatars = new Map(), ...options } = {}) {
   const { mock, Connection, WebSocketServer } = loadMockServer();
@@ -188,6 +190,9 @@ export async function startMockServer({ onDeviceLink, onEvent = () => undefined,
     }
   };
 
+  const failures = new Map();
+  server.failHttp = (path, status, times = 1) => failures.set(path, { status, times });
+
   const handlers = server.https.listeners('request');
   server.https.removeAllListeners('request');
   server.https.on('request', (req, res) => {
@@ -200,6 +205,12 @@ export async function startMockServer({ onDeviceLink, onEvent = () => undefined,
       length: req.headers['content-length'],
       offset: req.headers['upload-offset'],
     });
+    const failure = failures.get(req.url);
+    if (failure && failure.times > 0) {
+      failure.times -= 1;
+      res.writeHead(failure.status, { 'Content-Length': 0 }).end();
+      return;
+    }
     const avatar = req.method === 'GET' ? [...profileAvatars.values()].find(a => `/${a.path}` === req.url) : undefined;
     if (avatar) {
       res.writeHead(200, { 'Content-Length': avatar.data.length, 'Content-Type': 'application/octet-stream' }).end(avatar.data);

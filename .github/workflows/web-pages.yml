@@ -313,6 +313,15 @@ jobs:
           LIVENESS: '1'
         run: bash web/scripts/real-tor.sh node web/transport-test/run.mjs 'suites=ws&only=liveness'
 
+      # The same in a tab hidden behind another one, which the browser
+      # throttles (intensive throttling after 10 s instead of 5 minutes): the
+      # keepalive checks run on the transport's timer worker and keep time.
+      - name: Transport liveness in a background tab, local
+        env:
+          LIVENESS: '1'
+          HIDDEN: '1'
+        run: bash web/scripts/real-tor.sh node web/transport-test/run.mjs 'suites=ws&only=liveness&hidden&idleSecs=60'
+
       - name: libsignal checks, local (WebAssembly under the site's CSP)
         run: node web/libsignal/check/run.mjs
 

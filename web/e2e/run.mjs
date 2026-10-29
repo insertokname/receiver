@@ -44,6 +44,12 @@
 //   (ac)         keyboard: browser shortcuts stay the browser's, the app's
 //                take Ctrl+Alt (Cmd+Ctrl on macOS)
 //   (ad)         unread badge: the count in the tab title and on its icon
+//   (ae)         background tab: the app's tab hidden behind another one,
+//                with the browser's throttling of hidden pages (Chromium's
+//                intensive throttling after 10 s instead of 5 minutes):
+//                messages arrive and notify within seconds, no reconnects;
+//                then every connection black-holed, still hidden: noticed
+//                and reconnected within 60 s, the next message notifies
 //
 // Fails on CSP violations, uncaught exceptions, network destinations other
 // than the page's origin and the relay, and key-like secrets in the log.
@@ -82,6 +88,16 @@ const LARGE_BACKUP_BYTES = Number(process.env.LARGE_BACKUP_BYTES ?? 32 * 1024 * 
 // (ab): a silently dead connection is noticed after at most 45 s without
 // data (libsignal's limit; Desktop's keepalive every 30 s), then reconnecting.
 const LIVENESS_BOUND_MS = Number(process.env.LIVENESS_BOUND_MS ?? 60_000);
+// (ae): how long the tab stays in the background (a message about every
+// minute; the first after 75 s, once chained timers run once a minute), and
+// how soon each must have notified.
+const BACKGROUND_MINUTES = Number(process.env.BACKGROUND_MINUTES ?? (FIREFOX ? 1.5 : 2.5));
+const BACKGROUND_NOTIFY_MS = Number(process.env.BACKGROUND_NOTIFY_MS ?? 10_000);
+// Chromium throttles hidden pages only without these (puppeteer adds them),
+// and intensively (chained timers once a minute) after 5 minutes hidden;
+// the tests shorten that to 10 s. Firefox throttles hidden pages by default.
+const THROTTLING_DISABLED = ['--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows'];
+const INTENSIVE_THROTTLING_AFTER_S = 10;
 
 // ts/test-mock/bootstrap.node.ts DEFAULT_REMOTE_CONFIG, without
 // desktop.internalUser (the app should behave as for everyone).
@@ -181,7 +197,13 @@ const site = await serveSite({
 // prompt is answered "allow" when the app asks (scenario (y)).
 if (FIREFOX) process.env.FIREFOX_DOWNLOAD_DIR ??= await mkdtemp(join(tmp, 'firefox-downloads-'));
 const browser = await launchBrowser({
-  args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'],
+  args: [
+    '--use-fake-device-for-media-stream',
+    '--use-fake-ui-for-media-stream',
+    `--enable-features=IntensiveWakeUpThrottling:grace_period_seconds/${INTENSIVE_THROTTLING_AFTER_S}`,
+  ],
+  // Hidden pages are throttled as in a user's browser.
+  ignoreDefaultArgs: THROTTLING_DISABLED,
   // A known storage limit for (z): 4 GiB in all, so about 800 MiB per site.
   firefoxPrefs: { 'dom.quotaManager.temporaryStorage.fixedLimit': 4 * 1024 * 1024 },
 });
@@ -765,16 +787,21 @@ try {
       }
     };
     const before = server.webSockets.get(desktop);
+    const reloaded = Date.now();
     await page.reload({ waitUntil: 'domcontentloaded' });
     await waitForSelector('#LeftPane', 'the inbox after reload', 120_000);
+    const inboxSeconds = (Date.now() - reloaded) / 1000;
     if (await page.$('[class*="module-InstallScreen"]')) throw new Error('the install screen is shown after reload');
+    await waitForNewSocket(before, 'after reload');
+    const socketSeconds = (Date.now() - reloaded) / 1000;
+    const bootSteps = await page.evaluate(() => window.__webBoot.steps.map(s => `${s.step}@${s.ms}`).join(' '));
     await new Promise(resolve => setTimeout(resolve, 1500));
     if (await page.evaluate(() => window.__webPersist?.asked === true)) throw new Error('persistent storage was asked for again after a reload');
-    await waitForNewSocket(before, 'after reload');
     const text = `Welcome back ${Date.now()}`;
     await alice.sendText(desktop, text);
     await openConversation(alice);
     await waitForTimelineText(text, 'the message received after reload');
+    console.log(`after reload: inbox ${inboxSeconds.toFixed(2)} s, authenticated socket ${socketSeconds.toFixed(2)} s; boot ${bootSteps}`);
 
     // Every connection drops (the relay closes them, like a network change).
     const dropped = Date.now();
@@ -785,7 +812,7 @@ try {
     const again = `Still here ${Date.now()}`;
     await alice.sendText(desktop, again);
     await waitForTimelineText(again, 'the message received after reconnecting');
-    return `"${text}"; reconnected ${reconnectSeconds.toFixed(1)} s after the drop and received "${again}"`;
+    return `inbox ${inboxSeconds.toFixed(1)} s and authenticated socket ${socketSeconds.toFixed(1)} s after reload; "${text}"; reconnected ${reconnectSeconds.toFixed(1)} s after the drop and received "${again}"`;
   });
 
   // Link-and-sync: the QR code advertises `backup5`, so a phone offers to
@@ -909,6 +936,179 @@ try {
     await page.click('[data-testid="NavTabsItem--Chats"]');
     await openConversation(alice);
     return `permission ${permissionBefore} -> granted via the banner; notification "${shown.title}" for "${text}"; click opened Alice's conversation from the group's${raced ? ' (scroll request for the group seen)' : ''}; debug log from Settings > General: ${settingsLog}`;
+  });
+
+  // The tab in the background for minutes, as WhatsApp Web is left open
+  // behind other tabs: the browser throttles the page's timers (Chromium:
+  // to once a second, and after a while chained timers to once a minute).
+  // Messages must still arrive and notify within seconds, and the
+  // connection must not be dropped and rebuilt for nothing.
+  await scenario('ae', 'background tab: messages arrive and notify while hidden for minutes, no reconnects', async () => {
+    await browser.defaultBrowserContext().overridePermissions(LOCAL_ORIGIN, ['notifications']);
+    if ((await page.evaluate(() => Notification.permission)) !== 'granted') throw new Error('notification permission not granted');
+    await page.evaluate(() => {
+      if (window.__notifications) return;
+      const Original = window.Notification;
+      window.__notifications = [];
+      window.Notification = class extends Original {
+        constructor(title, options) {
+          super(title, options);
+          window.__notifications.push({ title, body: options?.body ?? '', notification: this });
+        }
+      };
+    });
+    // How late the page's chained timers run meanwhile (proof of throttling).
+    await page.evaluate(() => {
+      window.__timerGaps = [];
+      let last = performance.now();
+      const loop = () =>
+        setTimeout(() => {
+          if (!window.__timerGaps) return;
+          const now = performance.now();
+          window.__timerGaps.push(now - last);
+          last = now;
+          loop();
+        }, 1000);
+      loop();
+    });
+    const socket = server.webSockets.get(desktop);
+    const upgrades = [];
+    const onUpgrade = event => {
+      if (event.type === 'upgrade') upgrades.push(event.authenticated ? 'authenticated' : 'unauthenticated');
+    };
+    mockListeners.add(onUpgrade);
+    const front = await browser.newPage();
+    const latencies = [];
+    let lastHidden;
+    let stallSeconds;
+    let afterOutage;
+    let outageText;
+    let reconnectedSocket;
+    let upgradesAfterStall = 0;
+    try {
+      await front.goto('about:blank');
+      await front.bringToFront();
+      // Polled from here: the page's own timers and animation frames are
+      // what is being throttled.
+      const poll = async (fn, arg, timeoutMs) => {
+        const deadline = Date.now() + timeoutMs;
+        for (;;) {
+          // eslint-disable-next-line no-await-in-loop
+          if (await page.evaluate(fn, arg)) return true;
+          if (Date.now() > deadline) return false;
+          // eslint-disable-next-line no-await-in-loop
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
+      };
+      if (!(await poll(() => document.visibilityState === 'hidden', undefined, 10_000))) throw new Error('the app tab did not become hidden');
+      const hidden = Date.now();
+      const sends = Math.max(1, Math.round(BACKGROUND_MINUTES - 0.25));
+      for (let i = 0; i < sends; i++) {
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise(resolve => setTimeout(resolve, Math.max(0, hidden + 75_000 + i * 60_000 - Date.now())));
+        const text = `In the background ${i + 1} ${Date.now()}`;
+        lastHidden = text;
+        const sent = Date.now();
+        // eslint-disable-next-line no-await-in-loop
+        await alice.sendText(desktop, text);
+        // eslint-disable-next-line no-await-in-loop
+        if (!(await poll(t => window.__notifications.some(n => n.body.includes(t)), text, BACKGROUND_NOTIFY_MS))) {
+          throw new Error(`no notification within ${BACKGROUND_NOTIFY_MS / 1000} s for a message ${((sent - hidden) / 60_000).toFixed(1)} min into the background`);
+        }
+        latencies.push((Date.now() - sent) / 1000);
+        console.log(`  message ${i + 1} at ${((sent - hidden) / 1000).toFixed(0)} s hidden: notified after ${latencies.at(-1).toFixed(1)} s`);
+      }
+      await new Promise(resolve => setTimeout(resolve, Math.max(0, hidden + BACKGROUND_MINUTES * 60_000 - Date.now())));
+      if (server.webSockets.get(desktop) !== socket || upgrades.includes('authenticated')) {
+        throw new Error(`the authenticated connection was replaced in the background (${upgrades.join(', ')})`);
+      }
+      // Every connection silently stops delivering while the tab is hidden:
+      // noticed and replaced in time all the same (the liveness checks run
+      // on the transport's timer worker, not on the throttled page timers).
+      // The message sent meanwhile arrives with the backlog after the
+      // reconnect, which Desktop does not notify; the next one notifies.
+      const stalled = Date.now();
+      relay.stallAll();
+      outageText = `Through the outage in the background ${Date.now()}`;
+      await alice.sendText(desktop, outageText);
+      while (server.webSockets.get(desktop) === socket) {
+        if (Date.now() - stalled > LIVENESS_BOUND_MS) {
+          throw new Error(`no new authenticated connection within ${LIVENESS_BOUND_MS / 1000} s of a black hole in the background`);
+        }
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+      stallSeconds = (Date.now() - stalled) / 1000;
+      reconnectedSocket = server.webSockets.get(desktop);
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      const text = `After the outage in the background ${Date.now()}`;
+      lastHidden = text;
+      const sent = Date.now();
+      await alice.sendText(desktop, text);
+      if (!(await poll(t => window.__notifications.some(n => n.body.includes(t)), text, BACKGROUND_NOTIFY_MS))) {
+        throw new Error(`no notification within ${BACKGROUND_NOTIFY_MS / 1000} s for a message after the reconnect in the background`);
+      }
+      afterOutage = (Date.now() - sent) / 1000;
+      console.log(`  black hole in the background: reconnected after ${stallSeconds.toFixed(1)} s; next message notified after ${afterOutage.toFixed(1)} s`);
+      upgradesAfterStall = upgrades.length;
+      // Back in the foreground: connections are checked at once (shell/background.ts)
+      // and a working one is kept.
+      const linesBefore = logLines.length;
+      await page.bringToFront();
+      await front.close();
+      const deadline = Date.now() + 10_000;
+      while (!logLines.slice(linesBefore).some(l => /back after \d+ s in the background/.test(l))) {
+        if (Date.now() > deadline) throw new Error('no connection check when the tab came back');
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+      await new Promise(resolve => setTimeout(resolve, 5000));
+    } finally {
+      mockListeners.delete(onUpgrade);
+      await page.bringToFront().catch(() => undefined);
+      await front.close().catch(() => undefined);
+    }
+    const maxGap = await page.evaluate(() => {
+      const gaps = window.__timerGaps;
+      window.__timerGaps = undefined;
+      return Math.max(...gaps);
+    });
+    console.log(`  page timers while hidden: longest gap ${(maxGap / 1000).toFixed(1)} s; connections opened: ${upgrades.join(', ') || 'none'}`);
+    if (!FIREFOX && maxGap < 10_000) throw new Error(`the hidden page was not throttled as expected (longest timer gap ${(maxGap / 1000).toFixed(1)} s)`);
+    if (reconnectedSocket === socket) throw new Error('no new authenticated connection after the black hole');
+    if (server.webSockets.get(desktop) !== reconnectedSocket || upgrades.length > upgradesAfterStall) {
+      throw new Error(`the connection was replaced when the tab came back (${upgrades.slice(upgradesAfterStall).join(', ')})`);
+    }
+    // For comparison, now that it is visible again: a message while the tab
+    // is visible but not focused (notifications are shown only then, as in
+    // (g)). After the background part: its notification sound must not keep
+    // the page from being throttled there.
+    const notifiedAfter = async text => {
+      const sent = Date.now();
+      await alice.sendText(desktop, text);
+      const deadline = sent + BACKGROUND_NOTIFY_MS;
+      while (!(await page.evaluate(t => window.__notifications.some(n => n.body.includes(t)), text))) {
+        if (Date.now() > deadline) return undefined;
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+      return (Date.now() - sent) / 1000;
+    };
+    await page.evaluate(() => {
+      document.hasFocus = () => false;
+      window.dispatchEvent(new Event('blur'));
+    });
+    const visible = await notifiedAfter(`In the foreground ${Date.now()}`);
+    await page.evaluate(() => {
+      delete document.hasFocus;
+    });
+    if (visible === undefined) throw new Error(`no notification within ${BACKGROUND_NOTIFY_MS / 1000} s for a message while visible`);
+    console.log(`  visible, not focused: notified after ${visible.toFixed(1)} s`);
+    // The messages are in the conversation.
+    await openConversation(alice);
+    await waitForTimelineText(outageText, 'the message sent during the outage in the background');
+    await waitForTimelineText(lastHidden, 'the last background message in the conversation');
+    return `notified after ${visible.toFixed(1)} s while visible; ${latencies.length} messages over ${BACKGROUND_MINUTES} min hidden notified after ${latencies.map(l => `${l.toFixed(1)} s`).join(', ')}, no reconnects; black hole while hidden: reconnected after ${stallSeconds.toFixed(1)} s (bound ${LIVENESS_BOUND_MS / 1000} s), the next message notified after ${afterOutage.toFixed(1)} s; page timers ran up to ${(maxGap / 1000).toFixed(0)} s apart; connections checked on return and kept`;
   });
 
   // Every connection silently stops delivering (no close, no error), as a

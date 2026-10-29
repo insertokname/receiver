@@ -8,8 +8,11 @@
 // empty, the provisioning address and envelope) that the listener acks.
 // Keepalive and dead-connection detection follow libsignal-net: a ping after
 // 31 s without outgoing or incoming frames, disconnect after 45 s without
-// anything from the server. Every failure ends in onConnectionInterrupted
-// with the error libsignal would report, so Desktop's reconnect logic runs:
+// anything from the server. They are checked on the transport's timer
+// worker, so that they keep time in a hidden tab (whose own timers the
+// browser runs once a second, later once a minute). Every failure ends in
+// onConnectionInterrupted with the error libsignal would report, so
+// Desktop's reconnect logic runs:
 // in-flight requests fail at once (ChatServiceInactive), requests on a
 // closed connection fail at once, and the transport is aborted (a hung
 // Tor circuit never completes a closing handshake, and the server only
@@ -42,6 +45,7 @@ import {
 } from './errors.ts';
 import type { Carrier } from './tor.ts';
 import { UpgradeRefusedError } from './tor.ts';
+import { clearUnthrottled, setUnthrottledInterval } from '../transport/dist/index.js';
 import type { HeaderPairs, SignalConnection } from '../transport/dist/index.js';
 
 const log = createLogger('chat');
@@ -127,7 +131,7 @@ export class ChatSocket {
   #lastSent = Date.now();
   #lastReceived = Date.now();
   #lastPing = 0;
-  #timer: ReturnType<typeof setInterval> | undefined;
+  #timer: number | undefined;
   #closed = false;
   #unsubscribeLost: () => void = () => undefined;
 
@@ -166,7 +170,7 @@ export class ChatSocket {
         this.#finish(ioError('websocket error: transport lost (Tor client replaced)', this.#logTag), true);
       }
     });
-    this.#timer = setInterval(() => this.#check(), CHECK_INTERVAL_MS);
+    this.#timer = setUnthrottledInterval(() => this.#check(), CHECK_INTERVAL_MS);
     void this.#readLoop();
   }
 
@@ -422,7 +426,7 @@ export class ChatSocket {
   #finish(cause: LibSignalErrorBase | null, closeSocket: boolean): void {
     if (this.#closed) return;
     this.#closed = true;
-    clearInterval(this.#timer);
+    clearUnthrottled(this.#timer);
     this.#unsubscribeLost();
     // In-flight requests fail with ChatServiceInactive, unless the server
     // said why it closed the connection.

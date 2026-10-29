@@ -8,7 +8,9 @@
 // non-localhost Origin like the deployment. github.io itself can't be used:
 // it is HSTS-preloaded.
 
+import { createHash } from 'node:crypto';
 import http from 'node:http';
+import { gzipSync } from 'node:zlib';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -45,9 +47,57 @@ const TYPES = {
  * Static server for `siteDir` (default SITE_DIR; a function is asked on
  * every request) under BASE_PATH; anything else is 404. `extra` maps paths
  * to [content type, body] served in addition (test pages that are not part
- * of the site). `onRequest` sees every request's path.
+ * of the site). `onRequest` sees every request's path. For measurements
+ * of loading over a network: `gzip` compresses every response for clients
+ * that accept it and answers revalidations (ETag), as GitHub Pages does;
+ * `link: { mbps, rttMs }` sends every
+ * response after `rttMs` and all of them together at `mbps` (one shared
+ * link: the page's and its service worker's requests alike). `headers` are
+ * added to every response.
  */
-export function serveSite({ extra = {}, siteDir = SITE_DIR, onRequest } = {}) {
+export function serveSite({ extra = {}, siteDir = SITE_DIR, onRequest, gzip = false, link, headers = {} } = {}) {
+  const compressed = new Map();
+  // The emulated link: a queue of pieces, sent one after another at `mbps`.
+  let linkFree = 0;
+  const PIECE = 16 * 1024;
+  const writeOverLink = async (res, bytes) => {
+    await new Promise(resolve => setTimeout(resolve, link.rttMs));
+    for (let at = 0; at < bytes.length; at += PIECE) {
+      const piece = bytes.subarray(at, at + PIECE);
+      const now = performance.now();
+      linkFree = Math.max(linkFree, now) + (piece.length * 8) / (link.mbps * 1000);
+      // eslint-disable-next-line no-await-in-loop
+      if (linkFree - now > 1) await new Promise(resolve => setTimeout(resolve, linkFree - now));
+      if (!res.write(piece)) {
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise(resolve => res.once('drain', resolve));
+      }
+    }
+    res.end();
+  };
+  const etags = new Map();
+  const send = (req, res, path, type, body) => {
+    let bytes = typeof body === 'string' ? Buffer.from(body) : body;
+    const responseHeaders = { ...headers, 'content-type': type };
+    if (gzip) {
+      if (!etags.has(path)) etags.set(path, `W/"${createHash('sha256').update(bytes).digest('hex').slice(0, 16)}"`);
+      responseHeaders.etag = etags.get(path);
+      if (req.headers['if-none-match'] === responseHeaders.etag) {
+        res.writeHead(304, responseHeaders);
+        res.end();
+        return undefined;
+      }
+    }
+    if (gzip && /\bgzip\b/.test(req.headers['accept-encoding'] ?? '')) {
+      if (!compressed.has(path)) compressed.set(path, gzipSync(bytes, { level: 6 }));
+      bytes = compressed.get(path);
+      Object.assign(responseHeaders, { 'content-encoding': 'gzip', vary: 'Accept-Encoding' });
+    }
+    res.writeHead(200, { ...responseHeaders, 'content-length': bytes.length });
+    if (link) return writeOverLink(res, bytes);
+    res.end(bytes);
+    return undefined;
+  };
   const server = http.createServer(async (req, res) => {
     try {
       const { pathname } = new URL(req.url, 'http://x');
@@ -55,8 +105,7 @@ export function serveSite({ extra = {}, siteDir = SITE_DIR, onRequest } = {}) {
       const root = typeof siteDir === 'function' ? siteDir() : siteDir;
       if (Object.hasOwn(extra, pathname)) {
         const [type, body] = extra[pathname];
-        res.writeHead(200, { 'content-type': type });
-        res.end(body);
+        await send(req, res, `extra:${pathname}`, type, body);
         return;
       }
       if (!pathname.startsWith(BASE_PATH)) throw new Error('outside base path');
@@ -64,9 +113,12 @@ export function serveSite({ extra = {}, siteDir = SITE_DIR, onRequest } = {}) {
       if (!path.startsWith(root)) throw new Error('path traversal');
       if (path.endsWith('/')) path = join(path, 'index.html');
       const body = await readFile(path);
-      res.writeHead(200, { 'content-type': TYPES[extname(path)] ?? 'application/octet-stream' });
-      res.end(body);
+      await send(req, res, path, TYPES[extname(path)] ?? 'application/octet-stream', body);
     } catch {
+      if (res.headersSent) {
+        res.destroy();
+        return;
+      }
       res.writeHead(404);
       res.end();
     }

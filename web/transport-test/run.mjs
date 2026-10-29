@@ -10,11 +10,16 @@
 //                                    the bridge is reached through a local
 //                                    proxy that black-holes it when the page asks
 //   BROWSER=firefox FIREFOX=<firefox> node ...      in Firefox
+//   SITE=<dir> node ...                             another build of the site
+//   HIDDEN=1 LIVENESS=1 node transport-test/run.mjs 'only=liveness&hidden&idleSecs=60'
+//                                    the same with the page hidden behind another
+//                                    tab and throttled as for a user (Chromium:
+//                                    intensive throttling after 10 s, not 5 min)
 //
 // Needs: web/scripts/build-site.sh output, CHROMIUM=<browser executable>.
 
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { brotliDecompressSync } from 'node:zlib';
 
 import { BASE_PATH, LOCAL_ORIGIN, SITE_DIR, launchBrowser, pipePageOutput, serveSite, watchPage } from '../scripts/harness.mjs';
@@ -39,14 +44,30 @@ if (new URLSearchParams(query).get('only')?.split(',').includes('directory')) {
   extra[`${plain}other-network-certs.txt`] = ['text/plain; charset=utf-8', Buffer.concat(otherCerts)];
 }
 
-const server = await serveSite({ extra });
+const server = await serveSite({ extra, ...(process.env.SITE ? { siteDir: `${resolve(process.env.SITE)}/` } : {}) });
 const proxy = process.env.LIVENESS ? await startTunnelProxy() : undefined;
-const browser = await launchBrowser({ blackholeHosts, proxyPort: proxy?.port });
+const HIDDEN = Boolean(process.env.HIDDEN);
+const browser = await launchBrowser({
+  blackholeHosts,
+  proxyPort: proxy?.port,
+  ...(HIDDEN
+    ? {
+        ignoreDefaultArgs: ['--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows'],
+        args: ['--enable-features=IntensiveWakeUpThrottling:grace_period_seconds/10'],
+      }
+    : {}),
+});
 let failed = true;
 try {
   const page = await browser.newPage();
   pipePageOutput(page);
   const watcher = await watchPage(page);
+  page.on('console', async message => {
+    if (message.text() !== 'ACTION background') return;
+    const other = await browser.newPage();
+    await other.goto('about:blank');
+    await other.bringToFront();
+  });
   page.on('console', message => {
     if (message.text() !== 'ACTION blackhole') return;
     if (!proxy) return;

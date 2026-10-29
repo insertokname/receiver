@@ -7,6 +7,7 @@
 //                         for its scripts, stylesheets and modules (import map)
 //   app.js, chunks/       the renderer bundle (entry.ts -> preload graph)
 //   transport/webtor_wasm_bg.wasm   the Tor transport (web/transport), for web/net
+//   transport/timer-worker.js       its timer worker (kept on time in a hidden page)
 //                         (the Tor directory snapshot is the site's transport/tor/)
 //   libsignal_node.wasm   next to libsignal's loader (in app.js)
 //   stylesheets/          Desktop's compiled SCSS + Tailwind (asset:/// -> ../)
@@ -40,7 +41,7 @@ import { build } from 'rolldown';
 
 import { addIntegrity } from '../scripts/sri.mjs';
 import { buildServiceWorker } from '../sw/build.mjs';
-import { netAssetsPlugin, transportWasm } from './net-assets.mjs';
+import { netAssetsPlugin, transportTimerWorker, transportWasm } from './net-assets.mjs';
 import { webResolvePlugin, LIBSIGNAL_PACKAGE } from './resolve.mjs';
 
 const HERE = fileURLToPath(new URL('.', import.meta.url));
@@ -310,6 +311,7 @@ await cp(join(LIBSIGNAL_PACKAGE, 'wasm/libsignal_node.wasm'), wasmTarget);
 
 await mkdir(join(OUT, 'transport'));
 await cp(transportWasm(TRANSPORT_DIR), join(OUT, netAssets.assets.transport.wasmUrl));
+await cp(transportTimerWorker(TRANSPORT_DIR), join(OUT, netAssets.assets.transport.timerWorker.url));
 
 // The voice note recorder's MP3 encoder: an AudioWorklet module that
 // ts/services/audioRecorder.dom.ts loads from bundles/workers/mp3Encoder.js

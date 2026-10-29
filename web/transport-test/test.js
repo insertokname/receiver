@@ -21,7 +21,9 @@
 //                           bridge connection is black-holed (no close, no
 //                           error) by run.mjs's proxy (LIVENESS=1): it must be
 //                           noticed within LIVENESS_BOUND_SECS and a new client
-//                           must work
+//                           must work; with `hidden` the page is hidden behind
+//                           another tab first (run.mjs HIDDEN=1: the browser
+//                           throttles its timers as for a user)
 //   idleSecs=<n>            liveness: how long the connection stays idle (40)
 //   rounds=<n>              bootstrap rounds over the transports (default 2:
 //                           like the app, one retry after a failed attempt)
@@ -56,6 +58,7 @@ const ROUNDS = Number(params.get('rounds') ?? 2);
 // webtor closes the channel after 25 s without anything from the bridge,
 // checked every 5 s.
 const LIVENESS_BOUND_SECS = 35;
+const HIDDEN = params.has('hidden');
 const want = name => ONLY.includes(name);
 
 const out = document.getElementById('out');
@@ -152,7 +155,21 @@ async function blackholeBridge() {
   return performance.now();
 }
 
+// The runner opens another tab in front when asked (HIDDEN=1).
+async function hide() {
+  console.log('ACTION background');
+  const asked = performance.now();
+  while (document.visibilityState !== 'hidden') {
+    if (performance.now() - asked > 10_000) throw new Error('the page was not hidden: run with HIDDEN=1 (transport-test/run.mjs)');
+    await sleep(50);
+  }
+}
+
 async function livenessCheck(label, client, transports) {
+  if (HIDDEN) {
+    await hide();
+    log('page hidden');
+  }
   const socket = await openSignalSocket(client, CHAT_URL);
   await keepalive(socket);
   let closed;
@@ -176,7 +193,14 @@ async function livenessCheck(label, client, transports) {
   const start = await blackholeBridge();
   log('bridge connection black-holed');
   try {
-    const { at, reason } = await withDeadline(channelClosed, LIVENESS_BOUND_SECS * 1000, `not noticed within ${LIVENESS_BOUND_SECS}s`);
+    // Hidden, the page's own timers run late (this deadline's too): wait
+    // longer, so that how late it was noticed is measured.
+    const waitSecs = HIDDEN ? 4 * LIVENESS_BOUND_SECS : LIVENESS_BOUND_SECS;
+    const { at, reason } = await withDeadline(channelClosed, waitSecs * 1000, `not noticed within ${waitSecs}s`);
+    if ((at - start) / 1000 > LIVENESS_BOUND_SECS) {
+      record(`${label}: black-holed bridge noticed`, false, `channel closed only after ${((at - start) / 1000).toFixed(1)}s (bound ${LIVENESS_BOUND_SECS}s)`, (at - start) / 1000);
+      return;
+    }
     const socketAt = await withDeadline(socketEnded, 5000, 'the open socket did not end with the channel');
     record(
       `${label}: black-holed bridge noticed`,

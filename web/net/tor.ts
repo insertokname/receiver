@@ -27,8 +27,10 @@ import {
   fetchRanged,
   onTransportLog,
   openSignalSocket,
+  retryNow,
   SIGNAL_CA_PEM,
   SignalHttps,
+  transportMemoryBytes,
   withDeadline,
 } from '../transport/dist/index.js';
 import type {
@@ -346,7 +348,11 @@ class TorCarrier implements Carrier {
         this.#bootstrapping = false;
         this.#failures = 0;
         this.#watchChannel(session);
-        log.info(`Tor ready after ${((performance.now() - started) / 1000).toFixed(1)}s`);
+        const memory = transportMemoryBytes();
+        log.info(
+          `Tor ready after ${((performance.now() - started) / 1000).toFixed(1)}s` +
+            (memory ? ` (transport memory ${(memory / 1024 / 1024).toFixed(1)} MB)` : '')
+        );
         this.#setStatus({ state: 'ready', transport: transport.label });
         const waiting = this.#waiting;
         this.#waiting = [];
@@ -466,7 +472,12 @@ class TorCarrier implements Carrier {
   onNetworkChange(): void {
     // Nothing to probe without traffic: the chat connections' own liveness
     // checks (WebNet.onNetworkChange) report stalls, which count here.
-    if (!this.#session) this.start();
+    if (!this.#session) {
+      this.start();
+      // Bootstrapping: the next attempt now instead of after its backoff
+      // (the network is back, or the tab after a while in the background).
+      retryNow();
+    }
   }
 
   /**

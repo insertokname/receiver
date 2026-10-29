@@ -231,6 +231,77 @@ async function setUp() {
       };
     },
 
+    /**
+     * The page in the background (the runner hides it): one chat connection
+     * kept the way Desktop keeps it (a keepalive request 30 s after each
+     * answer, its WebSocketResources KeepAlive), reconnected when it is
+     * interrupted. Reports the keepalives (round trips, the longest time
+     * between two answers), interruptions and Tor clients replaced.
+     */
+    async backgroundHold(minutes: number) {
+      const end = now() + minutes * 60_000;
+      const rtts: Array<number> = [];
+      const failures: Array<{ atMs: number; error: unknown }> = [];
+      const interruptions: Array<Interruption> = [];
+      let torLost = 0;
+      let reconnects = 0;
+      let longestGapMs = 0;
+      const unsubscribe = getTorCarrier().onLost(() => {
+        torLost += 1;
+      });
+      type Connection = { fetch: (r: unknown) => Promise<{ status: number }>; disconnect(): Promise<void> };
+      let connection: Connection | undefined;
+      let broken = false;
+      const connect = async () => {
+        const watch = interruptionListener();
+        const interrupted = watch.next();
+        void interrupted.then(entry => {
+          interruptions.push(entry);
+          broken = true;
+        });
+        connection = (await net.connectUnauthenticatedChat(watch.listener as never)) as never;
+        broken = false;
+      };
+      await connect();
+      let lastAnswer = now();
+      while (now() < end) {
+        await new Promise(resolve => setTimeout(resolve, 30_000));
+        if (now() >= end) break;
+        try {
+          if (broken || !connection) {
+            reconnects += 1;
+            await connect();
+          }
+          const result = await keepalive(connection as Connection);
+          if (result.status !== 200) throw new Error(`keepalive status ${result.status}`);
+          rtts.push(result.ms);
+          longestGapMs = Math.max(longestGapMs, now() - lastAnswer);
+          // eslint-disable-next-line no-console
+          console.log(`background: keepalive answered in ${result.ms} ms, ${now() - lastAnswer} ms after the previous answer`);
+          lastAnswer = now();
+        } catch (error) {
+          failures.push({ atMs: now(), error: describe(error) });
+          // eslint-disable-next-line no-console
+          console.log(`background: keepalive failed: ${describe(error).message}`);
+          broken = true;
+        }
+      }
+      unsubscribe();
+      const interrupted = [...interruptions];
+      await connection?.disconnect().catch(() => undefined);
+      rtts.sort((a, b) => a - b);
+      return {
+        minutes,
+        keepalives: rtts.length,
+        rttMs: rtts.length ? { median: rtts[rtts.length >> 1], max: rtts[rtts.length - 1] } : null,
+        longestGapMs,
+        failures,
+        interruptions: interrupted,
+        reconnects,
+        torLost,
+      };
+    },
+
     async networkChangeProbe() {
       const { listener, interruptions } = interruptionListener();
       const connection = await net.connectUnauthenticatedChat(listener as never);

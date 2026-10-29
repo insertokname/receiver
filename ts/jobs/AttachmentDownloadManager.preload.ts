@@ -84,6 +84,7 @@ import { cleanupAttachmentFiles } from '../util/cleanup.preload.ts';
 import { getExistingAttachmentDataForReuse } from '../util/attachments/deduplicateAttachment.preload.ts';
 import { MAX_BODY_ATTACHMENT_BYTE_LENGTH } from '../util/longAttachment.std.ts';
 import { markAttachmentAsErrored } from '../util/attachments/markAttachmentAsErrored.std.ts';
+import { adaptRetryConfig } from './attachmentDownloadRetry.std.ts'; // WEB-FORK
 
 const { noop, omit, throttle } = lodash;
 
@@ -103,7 +104,8 @@ export type NewAttachmentDownloadJobType = {
 
 const MAX_CONCURRENT_JOBS = 6;
 
-const DEFAULT_RETRY_CONFIG = {
+// WEB-FORK: adaptRetryConfig (attachmentDownloadRetry.web.ts: quick retries first)
+const DEFAULT_RETRY_CONFIG = adaptRetryConfig({
   maxAttempts: 5,
   backoffConfig: {
     // 30 seconds, 5 minutes, 50 minutes, (max) 6 hrs
@@ -111,8 +113,8 @@ const DEFAULT_RETRY_CONFIG = {
     firstBackoffs: [30 * durations.SECOND],
     maxBackoffTime: 6 * durations.HOUR,
   },
-};
-const BACKUP_RETRY_CONFIG = {
+});
+const BACKUP_RETRY_CONFIG = adaptRetryConfig({
   // Always retry if we think the item may end up being backed up
   maxAttempts: Infinity,
   backoffConfig: {
@@ -121,7 +123,7 @@ const BACKUP_RETRY_CONFIG = {
     firstBackoffs: [30 * durations.SECOND],
     maxBackoffTime: 3 * durations.DAY,
   },
-};
+});
 
 type RunDownloadAttachmentJobOptions = {
   abortSignal: AbortSignal;

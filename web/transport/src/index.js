@@ -11,6 +11,7 @@
 import initWasm, {
   init as initWebtorLogging,
   setLogCallback,
+  setTimerFunctions,
   SignalHttps,
   SignalHttpsBody,
   SignalSocket,
@@ -19,10 +20,12 @@ import initWasm, {
   verifyTorDirectory,
 } from './pkg/webtor_wasm.js';
 import SIGNAL_CA_PEM from './signal-ca.js';
-import WASM_INTEGRITY from './wasm-integrity.js';
+import { clearUnthrottled, setUnthrottledTimeout, startTimerWorker } from './timers.js';
+import WASM_INTEGRITY, { TIMER_WORKER_INTEGRITY } from './wasm-integrity.js';
 
 export { SIGNAL_CA_PEM, SignalHttps, SignalHttpsBody, SignalSocket, verifyTorDirectory };
 export { CHUNK, FIRST_CHUNK, contentRange, fetchRanged, requestedRange } from './ranged.js';
+export { clearUnthrottled, setUnthrottledInterval, setUnthrottledTimeout } from './timers.js';
 
 /** Sent when the caller does not set one: honest, never the official client's. */
 export const DEFAULT_USER_AGENT = 'unofficial-web-client/0.1';
@@ -68,28 +71,43 @@ export function onTransportLog(listener) {
 }
 
 let loading;
+let wasmExports;
 /**
  * Loads the WebAssembly module (once), checked against an SRI digest:
  * `wasmUrl` + `integrity` from an explicit location, by default from next to
- * this file against the digest recorded when it was built.
+ * this file against the digest recorded when it was built. Also starts the
+ * timer worker (timers.js; `timerWorker: { url, integrity }`, by default
+ * timer-worker.js next to this file) that keeps the bridge connection's
+ * keepalives on time while the page is hidden.
  */
 export function loadTransport({
   wasmUrl = new URL('./pkg/webtor_wasm_bg.wasm', import.meta.url).href,
   integrity = WASM_INTEGRITY,
+  timerWorker = { url: new URL('./timer-worker.js', import.meta.url).href, integrity: TIMER_WORKER_INTEGRITY },
 } = {}) {
   loading ??= (async () => {
+    void startTimerWorker(timerWorker);
     const response = await fetch(wasmUrl, { integrity, credentials: 'same-origin' });
     if (!response.ok) throw new Error(`transport WebAssembly: HTTP ${response.status}`);
-    await initWasm({ module_or_path: response });
+    wasmExports = await initWasm({ module_or_path: response });
     initWebtorLogging();
     setLogCallback((level, target, message) => {
       for (const listener of logListeners) listener(String(level), String(target), String(message));
     });
+    setTimerFunctions(setUnthrottledTimeout, clearUnthrottled);
   })();
   loading.catch(() => {
     loading = undefined;
   });
   return loading;
+}
+
+/**
+ * Size of the transport's WebAssembly memory in bytes (undefined before it
+ * is loaded). It only grows: this is the most it has needed so far.
+ */
+export function transportMemoryBytes() {
+  return wasmExports?.memory?.buffer.byteLength;
 }
 
 export function errorReason(error) {
@@ -118,6 +136,30 @@ export function sleep(ms, signal) {
       reject(signal.reason);
     };
     signal?.addEventListener('abort', onAbort, { once: true });
+  });
+}
+
+const backoffWaits = new Set();
+
+/**
+ * Ends connectTor's waits between rounds now (the page is visible again,
+ * the network came back): the next round starts at once.
+ */
+export function retryNow() {
+  for (const wake of backoffWaits) wake();
+}
+
+function backoffWait(ms, signal) {
+  return new Promise((resolve, reject) => {
+    const wake = () => {
+      backoffWaits.delete(wake);
+      resolve();
+    };
+    backoffWaits.add(wake);
+    sleep(ms, signal).then(wake, error => {
+      backoffWaits.delete(wake);
+      reject(error);
+    });
   });
 }
 
@@ -201,7 +243,7 @@ export async function connectTor({
     if (round < rounds) {
       const delayMs = backoffDelay(round);
       onEvent({ type: 'backoff', round, delayMs });
-      await sleep(delayMs, signal);
+      await backoffWait(delayMs, signal);
     }
   }
   throw new Error(`could not reach Tor: ${failures.join('; ')}`);

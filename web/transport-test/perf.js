@@ -21,6 +21,10 @@
 //
 //   circuits       circuit build times and the circuits in use (builds that
 //                  report them)
+//   memory         the transport's WebAssembly memory (MB) after loading,
+//                  after bootstrap and at the end; with cross-origin
+//                  isolation (perf.mjs MEMORY=1) also the page's total
+//                  (performance.measureUserAgentSpecificMemory)
 //
 // Query parameters: sizeMB=16, modes=single,parallel, hidden, rtts=10, lanes=4,
 // cc=0 (fixed window instead of congestion control)
@@ -218,11 +222,28 @@ async function hide() {
   await sleep(2000);
 }
 
+const MB = bytes => (bytes === undefined ? undefined : Math.round((bytes / 1024 / 1024) * 10) / 10);
+
+/** The transport's WebAssembly memory, and the page's total when the browser can measure it. */
+async function memory() {
+  const result = { transportMB: MB(transport.transportMemoryBytes?.()) };
+  if (globalThis.crossOriginIsolated && performance.measureUserAgentSpecificMemory) {
+    try {
+      const measured = await performance.measureUserAgentSpecificMemory();
+      result.pageMB = MB(measured.bytes);
+    } catch (error) {
+      perf.errors.push(`measureUserAgentSpecificMemory: ${errorReason(error)}`);
+    }
+  }
+  return result;
+}
+
 async function run() {
   log('measuring:', MODES.join(','), `${SIZE / 1024 / 1024} MB`, HIDDEN ? '(and hidden)' : '');
   const loadStarted = performance.now();
   await transport.loadTransport();
   perf.wasmLoad = secs(loadStarted);
+  perf.memory = { afterLoad: await memory() };
   const bootStarted = performance.now();
   const { client } = await connectTor({
     transports: [TRANSPORTS.find(t => t.name === 'snowflake-websocket')],
@@ -237,6 +258,8 @@ async function run() {
   });
   perf.bootstrap = { seconds: secs(bootStarted), stages };
   log('Tor ready', JSON.stringify(perf.bootstrap));
+  perf.memory.afterBootstrap = await memory();
+  log('memory', JSON.stringify(perf.memory));
 
   const https = new SignalHttps(client);
   try {
@@ -296,6 +319,8 @@ async function run() {
     }
     await socket.close().catch(() => undefined);
     if (typeof client.circuitStats === 'function') perf.circuits = await client.circuitStats();
+    perf.memory.atEnd = await memory();
+    log('memory', JSON.stringify(perf.memory));
   } finally {
     https.clear();
     await client.close().catch(() => undefined);

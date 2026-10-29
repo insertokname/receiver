@@ -2,8 +2,9 @@
 //
 // Build inputs of the network layer (web/net) for the bundles that include
 // it: `virtual:web-net-assets` (where the page finds the transport's
-// WebAssembly, its SHA-384 digest, checked when it is fetched, and the Tor
-// directory snapshot), and Signal's WebSocket message code, generated with
+// WebAssembly and its timer worker, their SHA-384 digests, checked when they
+// are fetched, and the Tor directory snapshot), and Signal's WebSocket
+// message code, generated with
 // protopiler like Desktop's own protobuf code (web/net/generated/).
 
 import { createHash } from 'node:crypto';
@@ -15,16 +16,19 @@ import { fileURLToPath } from 'node:url';
 
 const WEB = fileURLToPath(new URL('..', import.meta.url));
 export const transportWasm = (transportDir = join(WEB, 'transport/dist')) => join(transportDir, 'pkg/webtor_wasm_bg.wasm');
+export const transportTimerWorker = (transportDir = join(WEB, 'transport/dist')) => join(transportDir, 'timer-worker.js');
 
 const ID = '\0web-net-assets';
 
 /**
- * `wasmUrl` and `torDirectory` are relative to the page (the app, at the
- * site's root). The app copies the WebAssembly to transport/; build-site.sh
- * puts the snapshot at the site's transport/tor/.
+ * `wasmUrl`, `timerWorkerUrl` and `torDirectory` are relative to the page
+ * (the app, at the site's root). The app copies the WebAssembly and the
+ * timer worker to transport/; build-site.sh puts the snapshot at the site's
+ * transport/tor/.
  */
 export async function netAssetsPlugin({
   wasmUrl = 'transport/webtor_wasm_bg.wasm',
+  timerWorkerUrl = 'transport/timer-worker.js',
   torDirectory = 'transport/tor',
   transportDir,
 } = {}) {
@@ -44,8 +48,15 @@ export async function netAssetsPlugin({
     ],
     { stdio: 'inherit' }
   );
-  const integrity = `sha384-${createHash('sha384').update(await readFile(wasm)).digest('base64')}`;
-  const assets = { transport: { wasmUrl, integrity }, torDirectory };
+  const sri = async path => `sha384-${createHash('sha384').update(await readFile(path)).digest('base64')}`;
+  const assets = {
+    transport: {
+      wasmUrl,
+      integrity: await sri(wasm),
+      timerWorker: { url: timerWorkerUrl, integrity: await sri(transportTimerWorker(transportDir)) },
+    },
+    torDirectory,
+  };
   return {
     assets,
     plugin: {

@@ -18,7 +18,9 @@ export type Transport = Readonly<{
 }>;
 export declare const TRANSPORTS: ReadonlyArray<Transport>;
 
-export type WasmSource = Readonly<{ wasmUrl: string; integrity?: string }>;
+/** A script or module and its SRI digest. */
+export type VerifiedUrl = Readonly<{ url: string; integrity?: string }>;
+export type WasmSource = Readonly<{ wasmUrl: string; integrity?: string; timerWorker?: VerifiedUrl }>;
 
 export type TorEvent =
   | { type: 'attempt'; transport: Transport; round: number }
@@ -30,10 +32,19 @@ export declare function onTransportLog(
   listener: (level: string, target: string, message: string) => void
 ): () => boolean;
 export declare function loadTransport(wasm?: WasmSource): Promise<void>;
+/** Size of the transport's WebAssembly memory in bytes (undefined before it is loaded). */
+export declare function transportMemoryBytes(): number | undefined;
 export declare function errorReason(error: unknown): string;
 export declare function withDeadline<T>(promise: Promise<T>, ms: number, message?: string): Promise<T>;
 export declare function sleep(ms: number, signal?: AbortSignal): Promise<void>;
 export declare function backoffDelay(round: number): number;
+/** Ends connectTor's waits between rounds now. */
+export declare function retryNow(): void;
+
+/** Timers kept on time while the page is hidden (a dedicated worker's; timers.js). */
+export declare function setUnthrottledTimeout(callback: () => void, ms: number): number;
+export declare function setUnthrottledInterval(callback: () => void, ms: number): number;
+export declare function clearUnthrottled(id: number | undefined): void;
 export declare function connectTor(options?: {
   transports?: ReadonlyArray<Transport>;
   directoryUrl?: string;
@@ -96,5 +107,7 @@ export declare function fetchRanged(
     chunkBytes?: number;
     firstChunkBytes?: number;
     aheadBytes?: number;
+    /** Gives a lane a new circuit (a lane far slower than the others). */
+    renewLane?: (lane: number) => Promise<void>;
   }
 ): Promise<RangedResponse & { split: boolean }>;

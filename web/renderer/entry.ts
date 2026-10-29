@@ -24,7 +24,8 @@
 import { initLibsignal } from '@signalapp/libsignal-client/wasm/index.js';
 import { config as configureZod } from 'zod';
 
-import { startCarrier } from '../net/carrier.ts';
+import { getCarrier, startCarrier } from '../net/carrier.ts';
+import { installBackgroundReturn } from '../shell/background.ts';
 import { installDebugLogLink } from '../shell/debug-log.ts';
 import { showDatabaseError, showQuotaError, showRuntimeDatabaseError } from '../shell/errors.ts';
 import { installKeyboardShortcuts } from '../shell/keyboard.ts';
@@ -49,6 +50,13 @@ declare global {
 
 const bootStarted = performance.now();
 window.__webBoot = { steps: [] };
+
+// On a first visit the service worker is registered once the app is up.
+const START_TIMEOUT_MS = 30_000;
+let onAppStarted: () => void = () => undefined;
+const appStarted = new Promise<void>(resolve => {
+  onAppStarted = resolve;
+});
 
 function step(name: string): void {
   window.__webBoot.steps.push({ step: name, ms: Math.round(performance.now() - bootStarted) });
@@ -103,21 +111,39 @@ async function boot(): Promise<void> {
     return;
   }
 
-  // The app shell: its service worker (updates only with the user's
-  // consent), connection status and banners. They show only when relevant.
-  window.addEventListener('load', () => setTimeout(installServiceWorker, 1000), { once: true });
+  // The app shell: connection status and banners. They show only when
+  // relevant. Its service worker (updates only with the user's consent) is
+  // registered below.
   installConnectionStatus();
   installNotificationBanner();
   installDebugLogLink();
   installStorageGuards();
   // The browser's shortcuts stay the browser's (WhatsApp Web).
   installKeyboardShortcuts();
+  installBackgroundReturn();
 
   // Media is served by the service worker: a page loaded without it (hard
   // reload) is taken over first (may reload once). After the listeners
   // above: the page's load event may pass while this waits.
   window.__webBoot.control = await ensureControlled();
   step('sw');
+  // A first visit has no service worker yet. Installing one downloads all of
+  // the app's code (core files, about 8 MB compressed) again, or for the
+  // first time if the page has not asked for it yet; on a first visit that
+  // competes with the app's own start, so it waits until the app is up
+  // (its first screen shown and Tor ready, at most START_TIMEOUT_MS).
+  const firstVisit = window.__webBoot.control === 'none';
+  const registerWorker = () => setTimeout(installServiceWorker, 1000);
+  if (firstVisit) {
+    void Promise.race([
+      Promise.all([appStarted, getCarrier().ready()]),
+      new Promise(resolve => setTimeout(resolve, START_TIMEOUT_MS)),
+    ]).then(registerWorker);
+  } else if (document.readyState === 'complete') {
+    registerWorker();
+  } else {
+    window.addEventListener('load', registerWorker, { once: true });
+  }
 
   // One window at a time: nothing starts while another window uses the app.
   await claimTab();
@@ -191,8 +217,9 @@ async function boot(): Promise<void> {
   // startApp() resolves only when the app has fully started; boot progress
   // after this point is Desktop's own (logged by its logger).
   step('startApp');
-  Promise.resolve(window.startApp() as unknown).catch((error: unknown) =>
-    fail('startApp', error)
+  Promise.resolve(window.startApp() as unknown).then(
+    () => onAppStarted(),
+    (error: unknown) => fail('startApp', error)
   );
 }
 

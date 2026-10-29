@@ -31,8 +31,11 @@ declare module 'virtual:web-static-config' {
 
 declare module 'virtual:web-net-assets' {
   const assets: {
-    /** The transport's WebAssembly (relative to the page) and its SRI digest. */
-    transport: { wasmUrl: string; integrity: string };
+    /**
+     * The transport's WebAssembly and its timer worker (relative to the
+     * page) with their SRI digests.
+     */
+    transport: { wasmUrl: string; integrity: string; timerWorker: { url: string; integrity: string } };
     /** Base URL of the Tor directory snapshot, relative to the page. */
     torDirectory: string;
   };

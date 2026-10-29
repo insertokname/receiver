@@ -380,6 +380,14 @@ export abstract class JobManager<CoreJobType> {
         ),
       lastAttemptTimestamp: now,
     });
+    // WEB-FORK: a retry due before the next tick (a minute) starts when due
+    const due = exponentialBackoffSleepTime(
+      job.attempts + 1,
+      this.params.getRetryConfig(job).backoffConfig
+    );
+    if (due < this.tickInterval) {
+      setTimeout(() => drop(this.maybeStartJobs()), due + 50);
+    }
   }
 
   #getActiveJobCount(): number {
