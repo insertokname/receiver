@@ -53,8 +53,8 @@ SRC="$WORK/src"
 mkdir -p "$LIVE"
 
 echo "== deployed site: $URL"
-curl -sSf -o "$LIVE/SOURCE" "${URL}SOURCE"
-curl -sSf -o "$LIVE/SHA256SUMS" "${URL}SHA256SUMS"
+curl -sSf --retry 3 -o "$LIVE/SOURCE" "${URL}SOURCE"
+curl -sSf --retry 3 -o "$LIVE/SHA256SUMS" "${URL}SHA256SUMS"
 cat "$LIVE/SOURCE"
 if [ -z "$COMMIT" ]; then
   COMMIT="$(sed -n 's/^receiver \([0-9a-f]\{40\}\)$/\1/p' "$LIVE/SOURCE")"
@@ -66,7 +66,11 @@ mkdir -p "$LIVE/files"
 cut -c67- "$LIVE/SHA256SUMS" | while IFS= read -r path; do
   printf '%s\n' "url = \"${URL}${path}\"" "output = \"$LIVE/files/$path\"" "create-dirs"
 done > "$LIVE/curl.cfg"
-curl -sSf --parallel --parallel-max 8 --config "$LIVE/curl.cfg"
+# GitHub Pages now and then answers one request with a 503 that a retry
+# fixes. A file that still fails is logged with the headers that say which
+# server answered.
+curl -sSf --retry 3 --parallel --parallel-max 8 --config "$LIVE/curl.cfg" \
+  --write-out '%{onerror}%{stderr}%{http_code} %{url} x-github-request-id: %header{x-github-request-id}, x-served-by: %header{x-served-by}, x-cache: %header{x-cache}\n'
 (cd "$LIVE/files" && sha256sum --quiet -c "$LIVE/SHA256SUMS") || {
   echo "the deployed files do not match the deployed SHA256SUMS" >&2
   exit 1
@@ -89,7 +93,7 @@ git -C "$SRC" submodule update --quiet --init --depth 1 web/transport/webtor-rs 
 echo "== the Tor directory snapshot (data, not compared) from $URL"
 mkdir -p "$WORK/tor"
 for name in consensus certs microdescriptors; do
-  curl -sSf -o "$WORK/tor/$name.txt.br" "${URL}transport/tor/$name.txt.br"
+  curl -sSf --retry 3 -o "$WORK/tor/$name.txt.br" "${URL}transport/tor/$name.txt.br"
 done
 
 echo "== building (as .github/workflows/web-pages.yml)"
