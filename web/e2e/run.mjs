@@ -44,6 +44,8 @@
 //   (ac)         keyboard: browser shortcuts stay the browser's, the app's
 //                take Ctrl+Alt (Cmd+Ctrl on macOS)
 //   (ad)         unread badge: the count in the tab title and on its icon
+//   (ag)         keyboard: Escape closes the conversation (the welcome
+//                screen) once nothing else in it has a use for it
 //   (ae)         background tab: the app's tab hidden behind another one,
 //                with the browser's throttling of hidden pages (Chromium's
 //                intensive throttling after 10 s instead of 5 minutes):
@@ -740,6 +742,71 @@ try {
     if (!keys.includes('Ctrl+b')) throw new Error(`the composer did not get Ctrl+B (${keys.join(', ')})`);
     if (!opened.includes(alice.profileName)) await openConversation(alice);
     return `Ctrl+Alt+1 opened "${opened}" (first in the list: "${first}"); the app saw: ${keys.join(', ')}`;
+  });
+
+  await scenario('ag', 'keyboard: Escape closes the conversation, as in WhatsApp, once nothing else has a use for it', async () => {
+    const isOpen = () => page.evaluate(() => Boolean(document.querySelector('.Inbox__conversation')));
+    const expectOpen = async what => {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      if (!(await isOpen())) throw new Error(`Escape closed the conversation ${what}`);
+    };
+    const expectClosed = async what => {
+      await page
+        .waitForFunction(() => !document.querySelector('.Inbox__conversation') && document.querySelector('.Inbox__welcome'), { timeout: 10_000 })
+        .catch(() => {
+          throw new Error(`Escape did not close the conversation ${what}`);
+        });
+    };
+    const composer = async () => {
+      const editor = await waitForSelector('.Inbox__conversation [data-testid=CompositionInput][data-enabled=true] .ql-editor', 'an enabled composer');
+      await editor.click();
+      return editor;
+    };
+
+    // The composer in focus, nothing else open: the welcome screen.
+    await openConversation(alice);
+    await composer();
+    await page.keyboard.press('Escape');
+    await expectClosed('from the composer');
+    const welcome = await page.$eval('.Inbox__welcome', el => el.textContent);
+    if (!welcome.includes('receiver')) throw new Error(`the welcome screen says "${welcome}"`);
+
+    // Emoji suggestions take the first Escape; the draft stays with the conversation.
+    await openConversation(alice);
+    await composer();
+    await page.keyboard.type('draft kept :smi');
+    await waitForSelector('.module-composition-input__suggestions', 'emoji suggestions');
+    await page.keyboard.press('Escape');
+    await expectOpen('with emoji suggestions showing');
+    if (await page.$('.module-composition-input__suggestions')) throw new Error('Escape did not close the emoji suggestions');
+    await page.keyboard.press('Escape');
+    await expectClosed('once the suggestions were closed');
+    await openConversation(alice);
+    const editor = await composer();
+    const draft = await editor.evaluate(el => el.textContent);
+    if (!draft.includes('draft kept')) throw new Error(`the draft is "${draft}" after closing and opening the conversation`);
+    await page.keyboard.down('Control');
+    await page.keyboard.press('KeyA');
+    await page.keyboard.up('Control');
+    await page.keyboard.press('Backspace');
+
+    // A panel (the conversation's details) takes the first Escape.
+    await page.click('.module-ConversationHeader__header--clickable');
+    await waitForSelector('.ConversationPanel__header__back-button', 'the conversation details');
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => !document.querySelector('.ConversationPanel__header__back-button'), { timeout: 10_000 }).catch(() => {
+      throw new Error('Escape did not close the conversation details');
+    });
+    await expectOpen('with its details open');
+    await page.keyboard.press('Escape');
+    await expectClosed('once its details were closed');
+
+    // The search field in focus: Escape is the search's.
+    await openConversation(alice);
+    await page.click('.LeftPaneSearchInput__input');
+    await page.keyboard.press('Escape');
+    await expectOpen('with the search field in focus');
+    return `closed to "${welcome}"; suggestions, the details panel and the search field kept it open; the draft stayed`;
   });
 
   await scenario('ad', 'unread badge: the count in the tab title and on its icon, cleared once read', async () => {

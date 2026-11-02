@@ -21,6 +21,7 @@ type KeyType =
   | 'shift'
   | 'enter'
   | 'tab'
+  | 'esc' // WEB-FORK
   | 'ctrl'
   | 'F6'
   | 'F10'
@@ -194,7 +195,8 @@ function getNavigationShortcuts(i18n: LocalizerType): Array<ShortcutType> {
     {
       id: 'Keyboard--close-curent-conversation',
       description: i18n('icu:Keyboard--close-curent-conversation'),
-      keys: [['commandOrCtrl', 'shift', 'C']],
+      // WEB-FORK: Escape too, as in WhatsApp (addGlobalKeyboardShortcuts)
+      keys: [['commandOrCtrl', 'shift', 'C'], ['esc']],
     },
   ];
 }
@@ -511,6 +513,11 @@ function renderShortcut(
               }
               if (key === 'tab') {
                 label = i18n('icu:Keyboard--Key--tab');
+                isSquare = false;
+              }
+              // WEB-FORK: the key's own label, the same in every language
+              if (key === 'esc') {
+                label = 'Esc';
                 isSquare = false;
               }
               if (key === '1 to 9') {

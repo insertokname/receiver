@@ -6,13 +6,18 @@ import { PanelType } from '../types/Panels.std.ts';
 import { clearConversationDraftAttachments } from '../util/clearConversationDraftAttachments.preload.ts';
 import { drop } from '../util/drop.std.ts';
 import { matchOrQueryFocusable } from '../util/focusableSelectors.std.ts';
-import { getQuotedMessageSelector } from '../state/selectors/composer.preload.ts';
+import {
+  getComposerStateForConversationIdSelector, // WEB-FORK
+  getQuotedMessageSelector,
+} from '../state/selectors/composer.preload.ts';
 import { removeLinkPreview } from './LinkPreview.preload.ts';
 import { ForwardMessagesModalType } from '../components/ForwardMessagesModal.dom.tsx';
 import { getSelectedConversationId as getSelectedConversationIdSelector } from '../state/selectors/nav.std.ts';
 import { strictAssert } from '../util/assert.std.ts';
 import type { ConversationModel } from '../models/conversations.preload.ts';
 import { isShowingAnyModal } from '../state/selectors/globalModals.std.ts';
+import { getActivePanel } from '../state/selectors/nav.std.ts'; // WEB-FORK
+import { RecordingState } from '../types/AudioRecorder.std.ts'; // WEB-FORK
 
 const log = createLogger('addGlobalKeyboardShortcuts');
 
@@ -80,7 +85,109 @@ function getSelectedOrTargetedMessageIds(): ReadonlyArray<string> | null {
   return null;
 }
 
+// WEB-FORK: Escape closes the open conversation, as in WhatsApp, when
+// nothing else has a use for it: no modal, panel, menu or picker, no
+// suggestions, quote, link preview, edit, recording or selection in the
+// conversation, no view in the left pane that Escape goes back from, and no
+// text field outside the conversation in focus. That is decided as the key
+// goes down, before any handler runs: some close their menu or popup on
+// Escape without preventing the default, and once they have it is gone.
+const ESCAPE_HAS_A_USE = [
+  '[role="dialog"]',
+  '[role="alertdialog"]',
+  '[role="menu"]',
+  '[role="listbox"]',
+  '.react-contextmenu--visible',
+  '.module-composition-input__suggestions',
+  '.module-left-pane__header__contents__back-button',
+  '.module-confirmation-dialog__overlay',
+  '.module-emoji-picker',
+  '.Lightbox',
+  '.module-sticker-picker',
+  '.module-sticker-manager__preview-modal__overlay',
+  '.module-reaction-viewer',
+  '.module-ReactionPicker',
+  '.module-contact-modal',
+  '.module-modal-host__overlay',
+].join(', ');
+
+const escapesThatClose = new WeakSet<KeyboardEvent>();
+
+function canEscapeCloseConversation(): boolean {
+  const state = window.reduxStore?.getState();
+  const conversationId = state && getSelectedConversationIdSelector(state);
+  if (state == null || conversationId == null) {
+    return false;
+  }
+  const composer =
+    getComposerStateForConversationIdSelector(state)(conversationId);
+  if (
+    isShowingAnyModal(state) ||
+    getActivePanel(state) != null ||
+    state.conversations.selectedMessageIds != null ||
+    state.conversations.conversationLookup[conversationId]?.draftEditMessage ||
+    composer.quotedMessage ||
+    composer.linkPreviewResult ||
+    state.audioRecorder.recordingState !== RecordingState.Idle ||
+    state.calling.activeCallState != null ||
+    document.querySelector(ESCAPE_HAS_A_USE)
+  ) {
+    return false;
+  }
+  const focused = document.activeElement;
+  const isTextField =
+    focused instanceof HTMLElement &&
+    (focused.isContentEditable ||
+      focused instanceof HTMLInputElement ||
+      focused instanceof HTMLTextAreaElement);
+  return !isTextField || focused.closest('.Inbox__conversation') != null;
+}
+
+function closeSelectedConversation(reason: string): void {
+  const selectedConversationId = getSelectedConversationId();
+  if (selectedConversationId == null) {
+    return;
+  }
+
+  window.reduxActions.conversations.onConversationClosed(
+    selectedConversationId,
+    reason
+  );
+  window.reduxActions.conversations.showConversation({
+    conversationId: undefined,
+    messageId: undefined,
+  });
+}
+
 export function addGlobalKeyboardShortcuts(): void {
+  // WEB-FORK: see canEscapeCloseConversation.
+  window.addEventListener(
+    'keydown',
+    event => {
+      if (
+        event.key === 'Escape' &&
+        !event.isComposing &&
+        !event.altKey &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        !event.shiftKey &&
+        canEscapeCloseConversation()
+      ) {
+        escapesThatClose.add(event);
+      }
+    },
+    { capture: true }
+  );
+  // On the document, after the handlers of the page's elements (the
+  // composer's suggestions, menus) and before Desktop's own below.
+  document.addEventListener('keydown', event => {
+    if (escapesThatClose.has(event) && !event.defaultPrevented) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      closeSelectedConversation('escape');
+    }
+  });
+
   tinykeys(document, {
     // We need escape on the `document` because some event handlers
     // are preventing it from bubbling up to `window`
@@ -376,22 +483,14 @@ function onUnarchiveConversation(event: KeyboardEvent): void {
 }
 
 function onCloseConversation(event: KeyboardEvent): void {
-  const selectedConversationId = getSelectedConversationId();
-  if (selectedConversationId == null) {
+  if (!hasSelectedConversation()) {
     return;
   }
 
   event.preventDefault();
   event.stopPropagation();
 
-  window.reduxActions.conversations.onConversationClosed(
-    selectedConversationId,
-    'keyboard shortcut close'
-  );
-  window.reduxActions.conversations.showConversation({
-    conversationId: undefined,
-    messageId: undefined,
-  });
+  closeSelectedConversation('keyboard shortcut close');
 }
 
 function onOpenMessageDetails(event: KeyboardEvent): void {
