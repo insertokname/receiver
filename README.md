@@ -192,9 +192,12 @@ git commit -m "libsignal v<new>"
 `git describe` in the submodule names the tag it is on
 (`v0.103.0-3-g...`: three commits on top of v0.103.0).
 
-**webtor-rs**, whenever upstream has something new (nothing checks this on
-a schedule; `git rev-list --count HEAD..upstream/main` in the submodule after
-a fetch says how far behind it is). On a branch of receiver:
+**webtor-rs**, whenever upstream has something new: *Web upstream* also
+fails, once a week, when upstream `main` has commits the pinned revision
+does not contain (commits that only refresh upstream's cached Tor directory,
+`webtor/src/cached/`, which receiver does not use, are counted but do not
+fail it). `git rev-list --count HEAD..upstream/main` in the submodule after
+a fetch says how far behind it is. On a branch of receiver:
 
 ```bash
 cd web/transport/webtor-rs
@@ -202,7 +205,7 @@ git switch signal-web-transport
 git fetch upstream main
 git merge upstream/main
 git push origin signal-web-transport
-cd ../..
+cd ../../..
 git add web/transport/webtor-rs
 git commit -m "webtor-rs: merge upstream"
 ```

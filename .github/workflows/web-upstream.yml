@@ -6,8 +6,14 @@
 # failed-run email. Merging it is done locally with
 # web/scripts/merge-upstream.sh (README, Merging upstream): a token of a
 # workflow cannot push Signal's history, which changes Signal's workflows.
+#
+# Also watches ethereum/webtor-rs, the upstream of the transport's fork:
+# fails when its main has commits that the revision receiver pins does not
+# contain. Upstream refreshes its cached Tor directory every day, which
+# receiver does not use (the site fetches and verifies its own), so commits
+# that only change webtor/src/cached/ are reported but do not fail it.
 
-name: Web upstream (Signal Desktop releases)
+name: Web upstream (Signal Desktop releases, webtor-rs)
 
 on:
   schedule:
@@ -38,5 +44,45 @@ jobs:
           fi
           message="Signal Desktop $tag is out (receiver is based on $current): merge it with bash web/scripts/merge-upstream.sh $tag"
           echo "$message" >> "$GITHUB_STEP_SUMMARY"
+          echo "::error::$message"
+          exit 1
+
+  webtor-rs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: ethereum/webtor-rs commits that receiver's webtor-rs does not contain
+        run: |
+          pinned=$(git rev-parse HEAD:web/transport/webtor-rs)
+          fork=$(git config -f .gitmodules submodule.web/transport/webtor-rs.url)
+          upstream=https://github.com/ethereum/webtor-rs.git
+          # Commits and trees only: enough to count commits and the paths they change.
+          git init --quiet "$RUNNER_TEMP/webtor-rs"
+          cd "$RUNNER_TEMP/webtor-rs"
+          git remote add fork "$fork"
+          git remote add upstream "$upstream"
+          git fetch --quiet --no-tags --filter=blob:none fork "$pinned"
+          git fetch --quiet --no-tags --filter=blob:none upstream +refs/heads/main:refs/remotes/upstream/main
+          behind=$(git rev-list --count "$pinned..upstream/main")
+          code=$(git rev-list --count "$pinned..upstream/main" -- . ':(exclude)webtor/src/cached')
+          if [ "$behind" -eq 0 ]; then
+            echo "receiver's webtor-rs ($pinned) contains ethereum/webtor-rs main"
+            exit 0
+          fi
+          if [ "$code" -eq 0 ]; then
+            echo "ethereum/webtor-rs main is $behind commits ahead of receiver's webtor-rs ($pinned), all in its cached Tor directory, which receiver does not use"
+            exit 0
+          fi
+          message="ethereum/webtor-rs main has $behind commits ($code outside its cached Tor directory) that receiver's webtor-rs ($pinned) does not contain: merge them into the fork with git -C web/transport/webtor-rs merge upstream/main (README, Merging upstream)"
+          echo "$message" >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo '```'
+            git log --oneline --no-decorate "$pinned..upstream/main" -- . ':(exclude)webtor/src/cached'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
           echo "::error::$message"
           exit 1
