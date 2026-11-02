@@ -11,16 +11,15 @@ export type PropsType = Readonly<{
   color: string;
 }>;
 
-// receiver's chat-bubble logo (web/renderer/brand/logo.svg) on the same 36x36
-// grid as upstream's logo: an outlined bubble and three dots. An outline keeps
-// the centre as light as upstream's logo, which scanners need.
-const BUBBLE_PATH =
-  'M12 5H24A9 9 0 0 1 33 14V18A9 9 0 0 1 24 27H14L6 32L5.64 24.36A9 9 0 0 1 ' +
-  '3 18V14A9 9 0 0 1 12 5Z';
-const BUBBLE_STROKE_WIDTH = 2.6;
-const DOT_CENTERS_X = [11, 18, 25];
-const DOT_CENTER_Y = 16;
-const DOT_RADIUS = 2;
+// receiver's logo (web/renderer/brand/logo.svg) on the same 36x36 grid as
+// upstream's logo: a dot with two waves on each side. Strokes keep the centre
+// as light as upstream's logo, which scanners need.
+const WAVES_PATH =
+  'M23.3 12.7A7.5 7.5 0 0 1 23.3 23.3M12.7 23.3A7.5 7.5 0 0 1 12.7 12.7' +
+  'M27.9 8.1A14 14 0 0 1 27.9 27.9M8.1 27.9A14 14 0 0 1 8.1 8.1';
+const WAVES_STROKE_WIDTH = 3.4;
+const DOT_CENTER = 18;
+const DOT_RADIUS = 3.6;
 
 const AUTODETECT_TYPE_NUMBER = 0;
 const ERROR_CORRECTION_LEVEL = 'H';
@@ -125,21 +124,13 @@ export function BrandedQRCode({ size, link, color }: PropsType): JSX.Element {
         transform={`translate(${LOGO_X} ${LOGO_Y}) scale(${LOGO_SCALE} ${LOGO_SCALE})`}
       >
         <path
-          d={BUBBLE_PATH}
+          d={WAVES_PATH}
           fill="none"
           stroke={color}
-          strokeWidth={BUBBLE_STROKE_WIDTH}
-          strokeLinejoin="round"
+          strokeWidth={WAVES_STROKE_WIDTH}
+          strokeLinecap="round"
         />
-        {DOT_CENTERS_X.map(cx => (
-          <circle
-            key={cx}
-            cx={cx}
-            cy={DOT_CENTER_Y}
-            r={DOT_RADIUS}
-            fill={color}
-          />
-        ))}
+        <circle cx={DOT_CENTER} cy={DOT_CENTER} r={DOT_RADIUS} fill={color} />
       </g>
     </>
   );
