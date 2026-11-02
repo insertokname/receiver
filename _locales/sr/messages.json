@@ -2,6 +2,9 @@
   "icu:AxoAlertDialog.Cancel": {
     "messageformat": "Откажи"
   },
+  "icu:AxoAlertDialog.Ok": {
+    "messageformat": "У реду"
+  },
   "icu:AxoButton.Pending": {
     "messageformat": "На чекању"
   },
@@ -73,9 +76,6 @@
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--2": {
     "messageformat": "Повезаним уређајима управљате с примарног уређаја, а можете их имати највише 5."
-  },
-  "icu:LinkedDevicesOnboardingDialog__bullet--3": {
-    "messageformat": "Неким подешавањима налога можете управљати само с примарног уређаја, укључујући подешавања налога и резервних копија."
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--3--1": {
     "messageformat": "Управљање подешавањима налога и резервним копијама могуће је само с примарног уређаја."
@@ -673,6 +673,9 @@
   },
   "icu:KeyTransparencyOnboardingDialog__Description": {
     "messageformat": "За контакте с којима сте повезани преко броја телефона, Signal може аутоматски да потврди да ли је веза сигурна помоћу процеса који се зове транспарентност кључева. Ради додатне безбедности, везе и даље можете потврђивати ручно, помоћу QR кода или броја телефона."
+  },
+  "icu:KeyTransparencyOnboardingDialog__Description-v2": {
+    "messageformat": "<paragraph>За контакте с којима сте повезани преко броја телефона, Signal може аутоматски да потврди да ли је веза сигурна помоћу процеса који се зове транспарентност кључева.</paragraph><paragraph>Ради додатне безбедности, везе и даље можете потврђивати ручно, помоћу QR кода или броја телефона.</paragraph>"
   },
   "icu:KeyTransparencyOnboardingDialog__Continue": {
     "messageformat": "Настави"
@@ -1481,6 +1484,9 @@
   "icu:ConversationMerge--learn-more": {
     "messageformat": "Сазнајте више"
   },
+  "icu:ConversationMerge--explainer-dialog--label": {
+    "messageformat": "Историја порука је спојена"
+  },
   "icu:ConversationMerge--explainer-dialog--line-1": {
     "messageformat": "Након ћаскања {obsoleteConversationTitle}, сазнали сте да овај број припада ћаскању {conversationTitle}. Број телефона овог корисника је приватан."
   },
@@ -1741,6 +1747,9 @@
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__Search__Placeholder": {
     "messageformat": "Претрага"
+  },
+  "icu:Preferences__EditChatFolderPage__SelectChatsDialog__NoChats": {
+    "messageformat": "Нема ћаскања"
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__ChatTypesSection__Title": {
     "messageformat": "Типови ћаскања"
@@ -3512,6 +3521,9 @@
   "icu:MessageRequests--unblock-group-confirm-body": {
     "messageformat": "Чланови групе ће моћи да вас поново додају у ову групу."
   },
+  "icu:MessageRequests--unblock-signal-confirm-body": {
+    "messageformat": "Примаћете новости и обавештења од Signal-а."
+  },
   "icu:MessageRequests--block-and-report-spam-success-toast": {
     "messageformat": "Пријављен је спам и корисник је блокиран."
   },
@@ -3526,6 +3538,9 @@
   },
   "icu:MessageRequests--block-group-confirm-body": {
     "messageformat": "Више нећете примати поруке и новости из ове групе и чланови више неће моћи да вас поново додају у ову групу."
+  },
+  "icu:MessageRequests--block-signal-confirm-body": {
+    "messageformat": "Више нећете примати новости и обавештења од Signal-а."
   },
   "icu:MessageRequests--reportAndMaybeBlock": {
     "messageformat": "Пријави…"
@@ -6169,9 +6184,6 @@
   "icu:Preferences__SignalAccountKeys__Description": {
     "messageformat": "Чувајте на безбедном месту. Ваши подаци за пријаву биће вам неопходни за враћање налога и података. Никада их ни са ким не делите."
   },
-  "icu:Preferences__SignalAccountKeys__AccountKey": {
-    "messageformat": "Кључ налога"
-  },
   "icu:Preferences__SignalAccountKeys__AccountID": {
     "messageformat": "Идентификациони кôд налога"
   },
@@ -6673,6 +6685,9 @@
   "icu:Preferences--blocked-users--description": {
     "messageformat": "Блокирани корисници неће моћи да вас позову нити да вам шаљу поруке."
   },
+  "icu:Preferences--add-blocked": {
+    "messageformat": "Додај блокираног корисника или групу"
+  },
   "icu:Preferences--blocked-users": {
     "messageformat": "Блокирани корисници"
   },
@@ -6681,6 +6696,12 @@
   },
   "icu:Preferences--blocked--blocked-on": {
     "messageformat": "Време блокирања корисника: {blockedAt}"
+  },
+  "icu:Preferences--BlockChooser--Done": {
+    "messageformat": "Готово"
+  },
+  "icu:Preferences--BlockChooser--Search--Placeholder": {
+    "messageformat": "Претрага"
   },
   "icu:Preferences--signal-backups": {
     "messageformat": "Безбедне резервне копије Signal-а"
@@ -7097,7 +7118,7 @@
     "messageformat": "Пробајте поново за {duration}"
   },
   "icu:StandaloneRegistration--PhoneNumber--RegionCodeSelector--Label": {
-    "messageformat": "Select region code"
+    "messageformat": "Изаберите позивни број државе"
   },
   "icu:StandaloneRegistration--PhoneNumber--placeholder": {
     "messageformat": "Број телефона"
@@ -8561,12 +8582,6 @@
   "icu:CallLinkPendingParticipantModal__DenyButtonLabel": {
     "messageformat": "Не одобравам улазак"
   },
-  "icu:CallLinkRestrictionsSelect__Option--Off": {
-    "messageformat": "Искључено"
-  },
-  "icu:CallLinkRestrictionsSelect__Option--On": {
-    "messageformat": "Укључено"
-  },
   "icu:CallLinkAddNameModal__Title": {
     "messageformat": "Унесите назив позива"
   },
@@ -8614,6 +8629,39 @@
   },
   "icu:SaveMultiDialog__title": {
     "messageformat": "Сачувајте прилоге"
+  },
+  "icu:EmbeddedContact__message": {
+    "messageformat": "Пошаљи поруку"
+  },
+  "icu:ContactDetail__message": {
+    "messageformat": "Пошаљи поруку"
+  },
+  "icu:ContactDetail__add-to-group": {
+    "messageformat": "Додај у групу"
+  },
+  "icu:ContactDetail__nickname": {
+    "messageformat": "Надимак"
+  },
+  "icu:ContactDetail__note": {
+    "messageformat": "Белешке"
+  },
+  "icu:email-v2": {
+    "messageformat": "Имејл"
+  },
+  "icu:home-v2": {
+    "messageformat": "Кућна адреса"
+  },
+  "icu:mobile-v2": {
+    "messageformat": "Мобилни"
+  },
+  "icu:work-v2": {
+    "messageformat": "Пословни"
+  },
+  "icu:phone-v2": {
+    "messageformat": "Телефон"
+  },
+  "icu:address-v2": {
+    "messageformat": "Адреса"
   },
   "icu:WhatsNew__modal-title": {
     "messageformat": "Шта је ново"
@@ -8781,7 +8829,7 @@
     "messageformat": "Хвала вам што подржавате Signal. Ваш допринос омогућава подстицање мисије заштите слободног изражавања и пружања безбедне глобалне комуникације милионима широм света кроз технологију отвореног кода за заштиту приватности. Ако сте резидент Сједињених Америчких Држава, сачувајте ову признаницу за своју пореску евиденцију. Signal Technology Foundation је непрофитна организација изузета од опорезивања у Сједињеним Америчким Државама према одељку 501c3 Закона о интерним приходима. Наш савезни порески број је 82-4506840. Signal није доставио никакву робу нити услуге у замену за ову донацију."
   },
   "icu:MessageCta__Donate": {
-    "messageformat": "Donate Now"
+    "messageformat": "Донирајте сада"
   },
   "icu:Donations__OfflineTooltip": {
     "messageformat": "Офлајн сте. Повежите се на интернет да бисте довршили донацију."
@@ -8981,6 +9029,9 @@
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__AccessibilityLabel": {
     "messageformat": "Опис проблема"
   },
+  "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__Placeholder": {
+    "messageformat": "Опишите проблем"
+  },
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__HelpText": {
     "messageformat": "Наведите све детаље релевантне за проблем. Све што овде напишете остаје приватно и користиће се само за побољшање позива у Signal-у."
   },
@@ -9095,5 +9146,14 @@
   },
   "icu:WhatsNew__8.30--1": {
     "messageformat": "Такође смо додали згодну пречицу за отварање подешавања система на Windows-у када покушавате да се прикључите видео-позиву, а Signal нема дозволу за приступ камери."
+  },
+  "icu:WhatsNew__8.32--0": {
+    "messageformat": "Филтер за непрочитане поруке је сада подржан и у оквиру фолдера с порукама, као и на интерфејсу за претрагу."
+  },
+  "icu:WhatsNew__8.32--1": {
+    "messageformat": "Побољшана поузданост отпремања при лошим условима мреже. Хвала, <GH3mmmbulus></GH3mmmbulus>!"
+  },
+  "icu:WhatsNew__8.32--2": {
+    "messageformat": "Пречица „(N)” сада исправно упућује на емоџи с палцем надоле. Свака част и хвала на поправци, <lnicola></lnicola>."
   }
 }

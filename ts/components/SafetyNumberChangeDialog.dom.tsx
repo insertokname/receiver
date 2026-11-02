@@ -1,10 +1,9 @@
 // Copyright 2020 Signal Messenger, LLC
 // SPDX-License-Identifier: AGPL-3.0-only
 
-import { useState, createRef, useEffect, type JSX } from 'react';
+import { useState, useEffect, type JSX, useCallback } from 'react';
 import { Avatar, AvatarSize } from './Avatar.dom.tsx';
 import { InContactsIcon } from './InContactsIcon.dom.tsx';
-import { Modal } from './Modal.dom.tsx';
 import type { ConversationType } from '../state/ducks/conversations.preload.ts';
 import type { PreferredBadgeSelectorType } from '../state/selectors/badges.preload.ts';
 import type { LocalizerType } from '../types/Util.std.ts';
@@ -19,7 +18,10 @@ import type { ServiceIdString } from '../types/ServiceId.std.ts';
 import type { StoryDistributionIdString } from '../types/StoryDistributionId.std.ts';
 import { UserText } from './UserText.dom.tsx';
 import { AxoConfirmDialog } from '../axo/AxoConfirmDialog.dom.tsx';
-import { AxoAlertDialog } from '../axo/AxoAlertDialog.dom.tsx';
+import { AxoDialog } from '../axo/AxoDialog.dom.tsx';
+import { SAFETY_NUMBER_VIEWER_DIALOG_BODY_MAX_HEIGHT } from './SafetyNumberViewer.dom.tsx';
+import { tw } from '../axo/tw.dom.tsx';
+import { AxoSymbol } from '../axo/AxoSymbol.dom.tsx';
 
 enum DialogState {
   StartingInReview = 'StartingInReview',
@@ -97,20 +99,8 @@ export function SafetyNumberChangeDialog({
   const [dialogState, setDialogState] = useState<DialogState>(
     getStartingDialogState(totalCount)
   );
-  const [selectedContact, setSelectedContact] = useState<
-    ConversationType | undefined
-  >(undefined);
-  const cancelButtonRef = createRef<HTMLButtonElement>();
-
-  useEffect(() => {
-    if (cancelButtonRef && cancelButtonRef.current) {
-      cancelButtonRef.current.focus();
-    }
-  }, [
-    cancelButtonRef,
-    // oxlint-disable-next-line react/exhaustive-effect-dependencies
-    contacts,
-  ]);
+  const [selectedContact, setSelectedContact] =
+    useState<ConversationType | null>(null);
 
   useEffect(() => {
     if (
@@ -122,22 +112,30 @@ export function SafetyNumberChangeDialog({
     }
   }, [allVerified, dialogState, setDialogState, totalCount]);
 
-  const onClose = selectedContact
-    ? () => {
-        setSelectedContact(undefined);
-      }
-    : onCancel;
+  const onClearSelectedContact = useCallback(() => {
+    setSelectedContact(null);
+  }, []);
 
   if (selectedContact) {
     return (
-      <Modal
-        modalName="SafetyNumberChangeDialog"
-        hasXButton
-        i18n={i18n}
-        onClose={onClose}
-      >
-        {renderSafetyNumber({ contactID: selectedContact.id, onClose })}
-      </Modal>
+      <AxoDialog.Root open onOpenChange={onClearSelectedContact}>
+        <AxoDialog.Content size="md" escape="cancel-is-destructive">
+          <AxoDialog.Header>
+            <AxoDialog.Back onClick={onClearSelectedContact} />
+            <AxoDialog.Title>
+              {i18n('icu:SafetyNumberModal__title')}
+            </AxoDialog.Title>
+          </AxoDialog.Header>
+          <AxoDialog.Body
+            maxHeight={SAFETY_NUMBER_VIEWER_DIALOG_BODY_MAX_HEIGHT}
+          >
+            {renderSafetyNumber({
+              contactID: selectedContact.id,
+              onClose: onClearSelectedContact,
+            })}
+          </AxoDialog.Body>
+        </AxoDialog.Content>
+      </AxoDialog.Root>
     );
   }
 
@@ -155,16 +153,24 @@ export function SafetyNumberChangeDialog({
     }
 
     return (
-      <AxoAlertDialog.Root open onOpenChange={onClose}>
-        <AxoAlertDialog.Content escape="cancel-is-destructive">
-          <AxoAlertDialog.Body>
-            <div className="module-SafetyNumberChangeDialog__shield-icon" />
-            <AxoAlertDialog.Title>
-              {i18n('icu:safetyNumberChanges')}
-            </AxoAlertDialog.Title>
-            <AxoAlertDialog.Description>
-              {i18n('icu:safetyNumberChangeDialog__message')}
-            </AxoAlertDialog.Description>
+      <AxoDialog.Root open onOpenChange={onCancel}>
+        <AxoDialog.Content size="md" escape="cancel-is-destructive">
+          <AxoDialog.Body>
+            <div className={tw('mb-2.5 flex justify-center')}>
+              <ShieldIcon />
+            </div>
+            <div className={tw('text-center')}>
+              <AxoDialog.Title>
+                <span className={tw('type-title-medium')}>
+                  {i18n('icu:safetyNumberChanges')}
+                </span>
+              </AxoDialog.Title>
+              <AxoDialog.Description>
+                <p className={tw('mb-2.5')}>
+                  {i18n('icu:safetyNumberChangeDialog__message')}
+                </p>
+              </AxoDialog.Description>
+            </div>
             {contacts.map((section: StoryContacts) => (
               <ContactSection
                 key={section.story?.name || 'default'}
@@ -176,24 +182,32 @@ export function SafetyNumberChangeDialog({
                 theme={theme}
               />
             ))}
-          </AxoAlertDialog.Body>
-          <AxoAlertDialog.Footer>
-            <AxoAlertDialog.Cancel />
-            <AxoAlertDialog.Action
-              variant="strong-primary"
-              onClick={() => {
-                if (dialogState === DialogState.ExplicitReviewStep) {
-                  setDialogState(DialogState.ExplicitReviewComplete);
-                } else {
-                  onConfirm();
-                }
-              }}
-            >
-              {text}
-            </AxoAlertDialog.Action>
-          </AxoAlertDialog.Footer>
-        </AxoAlertDialog.Content>
-      </AxoAlertDialog.Root>
+          </AxoDialog.Body>
+          <AxoDialog.Footer>
+            <AxoDialog.Actions>
+              <AxoDialog.Action
+                variant="subtle-secondary"
+                onClick={onCancel}
+                autoFocus
+              >
+                {i18n('icu:cancel')}
+              </AxoDialog.Action>
+              <AxoDialog.Action
+                variant="strong-primary"
+                onClick={() => {
+                  if (dialogState === DialogState.ExplicitReviewStep) {
+                    setDialogState(DialogState.ExplicitReviewComplete);
+                  } else {
+                    onConfirm();
+                  }
+                }}
+              >
+                {text}
+              </AxoDialog.Action>
+            </AxoDialog.Actions>
+          </AxoDialog.Footer>
+        </AxoDialog.Content>
+      </AxoDialog.Root>
     );
   }
 
@@ -207,45 +221,55 @@ export function SafetyNumberChangeDialog({
   }
 
   return (
-    <AxoAlertDialog.Root open onOpenChange={onClose}>
-      <AxoAlertDialog.Content
-        escape={
-          dialogState === DialogState.ExplicitReviewNeeded
-            ? 'cancel-is-destructive'
-            : 'cancel-is-noop'
-        }
-      >
-        <AxoAlertDialog.Body>
-          <div className="module-SafetyNumberChangeDialog__shield-icon" />
-          <AxoAlertDialog.Title>
-            {i18n('icu:safetyNumberChanges')}
-          </AxoAlertDialog.Title>
-          <AxoAlertDialog.Description>
-            {dialogState === DialogState.ExplicitReviewNeeded
-              ? i18n('icu:safetyNumberChangeDialog__many-contacts', {
-                  count: totalCount,
-                })
-              : i18n('icu:safetyNumberChangeDialog__post-review')}
-          </AxoAlertDialog.Description>
-        </AxoAlertDialog.Body>
-        <AxoAlertDialog.Footer>
-          {dialogState !== DialogState.ExplicitReviewNeeded && (
-            <AxoAlertDialog.Cancel />
-          )}
-          {dialogState === DialogState.ExplicitReviewNeeded && (
-            <AxoAlertDialog.Action
-              variant="strong-primary"
-              onClick={() => setDialogState(DialogState.ExplicitReviewStep)}
-            >
-              {i18n('icu:safetyNumberChangeDialog__review')}
-            </AxoAlertDialog.Action>
-          )}
-          <AxoAlertDialog.Action variant="strong-primary" onClick={onConfirm}>
-            {text}
-          </AxoAlertDialog.Action>
-        </AxoAlertDialog.Footer>
-      </AxoAlertDialog.Content>
-    </AxoAlertDialog.Root>
+    <AxoDialog.Root open onOpenChange={onCancel}>
+      <AxoDialog.Content size="md" escape="cancel-is-destructive">
+        <AxoDialog.Body>
+          <div className={tw('mb-2.5 flex justify-center')}>
+            <ShieldIcon />
+          </div>
+          <div className={tw('text-center')}>
+            <AxoDialog.Title>
+              <span className={tw('type-title-medium')}>
+                {i18n('icu:safetyNumberChanges')}
+              </span>
+            </AxoDialog.Title>
+            <AxoDialog.Description>
+              <p>
+                {dialogState === DialogState.ExplicitReviewNeeded
+                  ? i18n('icu:safetyNumberChangeDialog__many-contacts', {
+                      count: totalCount,
+                    })
+                  : i18n('icu:safetyNumberChangeDialog__post-review')}
+              </p>
+            </AxoDialog.Description>
+          </div>
+        </AxoDialog.Body>
+        <AxoDialog.Footer>
+          <AxoDialog.Actions>
+            {dialogState !== DialogState.ExplicitReviewNeeded && (
+              <AxoDialog.Action
+                variant="subtle-secondary"
+                onClick={onCancel}
+                autoFocus
+              >
+                {i18n('icu:cancel')}
+              </AxoDialog.Action>
+            )}
+            {dialogState === DialogState.ExplicitReviewNeeded && (
+              <AxoDialog.Action
+                variant="strong-primary"
+                onClick={() => setDialogState(DialogState.ExplicitReviewStep)}
+              >
+                {i18n('icu:safetyNumberChangeDialog__review')}
+              </AxoDialog.Action>
+            )}
+            <AxoDialog.Action variant="strong-primary" onClick={onConfirm}>
+              {text}
+            </AxoDialog.Action>
+          </AxoDialog.Actions>
+        </AxoDialog.Footer>
+      </AxoDialog.Content>
+    </AxoDialog.Root>
   );
 }
 
@@ -304,7 +328,7 @@ function ContactSection({
       : section.story.name;
 
   return (
-    <div className="module-SafetyNumberChangeDialog__section">
+    <div>
       <div className="module-SafetyNumberChangeDialog__row">
         <div className="module-SafetyNumberChangeDialog__row__story-name">
           {sectionName}
@@ -371,12 +395,13 @@ function SectionButtonWithMenu({
         i18n={i18n}
         menuOptions={[
           {
-            icon: 'module-SafetyNumberChangeDialog__menu-icon--delete',
+            iconClassName: 'module-SafetyNumberChangeDialog__menu-icon--delete',
             label: i18n('icu:safetyNumberChangeDialog__remove-all'),
             onClick: () => setIsConfirming(true),
           },
         ]}
-        moduleClassName="module-SafetyNumberChangeDialog__row__chevron"
+        className="module-SafetyNumberChangeDialog__row__chevron"
+        popperClassName="module-SafetyNumberChangeDialog__row__chevron__popper"
         theme={theme === ThemeType.dark ? Theme.Dark : Theme.Light}
       />
       <AxoConfirmDialog.Root
@@ -519,18 +544,29 @@ function RowButtonWithMenu({
       i18n={i18n}
       menuOptions={[
         {
-          icon: 'module-SafetyNumberChangeDialog__menu-icon--verify',
+          iconClassName: 'module-SafetyNumberChangeDialog__menu-icon--verify',
           label: i18n('icu:safetyNumberChangeDialog__verify-number'),
           onClick: verifyContact,
         },
         {
-          icon: 'module-SafetyNumberChangeDialog__menu-icon--delete',
+          iconClassName: 'module-SafetyNumberChangeDialog__menu-icon--delete',
           label: i18n('icu:safetyNumberChangeDialog__remove'),
           onClick: removeFromStory,
         },
       ]}
-      moduleClassName="module-SafetyNumberChangeDialog__row__chevron"
+      className="module-SafetyNumberChangeDialog__row__chevron"
+      popperClassName="module-SafetyNumberChangeDialog__row__chevron__popper"
       theme={theme === ThemeType.dark ? Theme.Dark : Theme.Light}
     />
+  );
+}
+
+function ShieldIcon() {
+  return (
+    <div
+      className={tw('size-fit rounded-full p-3', 'bg-accent-tint text-accent')}
+    >
+      <AxoSymbol.Icon label={null} size={24} symbol="shield-check" />
+    </div>
   );
 }

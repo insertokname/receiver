@@ -2,6 +2,9 @@
   "icu:AxoAlertDialog.Cancel": {
     "messageformat": "ரத்துசெய்"
   },
+  "icu:AxoAlertDialog.Ok": {
+    "messageformat": "சரி"
+  },
   "icu:AxoButton.Pending": {
     "messageformat": "நிலுவையில் உள்ளது"
   },
@@ -73,9 +76,6 @@
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--2": {
     "messageformat": "இணைக்கப்பட்டுள்ள சாதனங்களை உங்களின் பிரதான சாதனமே நிர்வகிக்கும், அதிகபட்சமாக 5 சாதனங்கள் வரை நீங்கள் இணைக்கலாம்."
-  },
-  "icu:LinkedDevicesOnboardingDialog__bullet--3": {
-    "messageformat": "கணக்கு அமைப்புகள் மற்றும் காப்புப்பிரதிகள் உட்பட, கணக்கு அமைப்புகள் உங்கள் பிரதான சாதனத்தில் மட்டுமே நிர்வகிக்கப்படும்."
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--3--1": {
     "messageformat": "கணக்கு அமைப்புகள் மற்றும் காப்புப்பிரதிகளை உங்கள் முதன்மைச் சாதனத்தில் மட்டுமே நிர்வகிக்க முடியும்."
@@ -673,6 +673,9 @@
   },
   "icu:KeyTransparencyOnboardingDialog__Description": {
     "messageformat": "தொலைபேசி எண் மூலம் இணைக்கப்பட்டுள்ள தொடர்புகளுக்கு, 'குறியீடு வெளிப்படைத்தன்மை' எனும் செயல்முறையைப் பயன்படுத்தி இணைப்பு பாதுகாப்பாக உள்ளதா என்பதை சிக்னலால் தானாகவே உறுதிசெய்ய முடியும். கூடுதல் பாதுகாப்பிற்கு, QR குறியீடு மூலமாகவோ அல்லது பாதுகாப்பு எண்களை ஒப்பிட்டோ நீங்கள் இணைப்புகளைக் கைமுறையாகச் சரிபார்க்கலாம்."
+  },
+  "icu:KeyTransparencyOnboardingDialog__Description-v2": {
+    "messageformat": "<paragraph>தொலைபேசி எண் மூலம் இணைக்கப்பட்டுள்ள தொடர்புகளுக்கு, 'குறியீடு வெளிப்படைத்தன்மை' எனும் செயல்முறையைப் பயன்படுத்தி இணைப்பு பாதுகாப்பாக உள்ளதா என்பதை Signal-ஆல் தானாகவே உறுதிசெய்ய முடியும்.</paragraph><paragraph>கூடுதல் பாதுகாப்பிற்கு, QR குறியீடு மூலமாகவோ அல்லது பாதுகாப்பு எண்களை ஒப்பிட்டோ நீங்கள் இணைப்புகளைக் கைமுறையாகச் சரிபார்க்கலாம்.</paragraph>"
   },
   "icu:KeyTransparencyOnboardingDialog__Continue": {
     "messageformat": "தொடர்க"
@@ -1481,6 +1484,9 @@
   "icu:ConversationMerge--learn-more": {
     "messageformat": "மேலும் அறிக"
   },
+  "icu:ConversationMerge--explainer-dialog--label": {
+    "messageformat": "செய்தி வரலாறு ஒன்றிணைக்கப்பட்டது"
+  },
   "icu:ConversationMerge--explainer-dialog--line-1": {
     "messageformat": "{obsoleteConversationTitle}க்கு மெசேஜ் அனுப்பிய பிறகு, இந்த எண் {conversationTitle} க்கு சொந்தமானது என்பதை அறிந்து கொண்டீர்கள். அவர்களின் தொலைபேசி எண் பிரைவேட்டானது."
   },
@@ -1741,6 +1747,9 @@
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__Search__Placeholder": {
     "messageformat": "தேடு"
+  },
+  "icu:Preferences__EditChatFolderPage__SelectChatsDialog__NoChats": {
+    "messageformat": "சாட்ஸ் ஏதும் இல்லை"
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__ChatTypesSection__Title": {
     "messageformat": "சாட் வகைகள்"
@@ -3512,6 +3521,9 @@
   "icu:MessageRequests--unblock-group-confirm-body": {
     "messageformat": "குழு உறுப்பினர்கள் சேர்க்க முடியும் நீங்கள் இந்த குழுவிற்கு மீண்டும்."
   },
+  "icu:MessageRequests--unblock-signal-confirm-body": {
+    "messageformat": "நீங்கள் Signal புதுப்பிப்புகளையும் செய்திகளையும் பெறுவீர்கள்."
+  },
   "icu:MessageRequests--block-and-report-spam-success-toast": {
     "messageformat": "ஸ்பேம் எனப் புகாரளிக்கப்பட்டு தடுக்கப்பட்டது."
   },
@@ -3526,6 +3538,9 @@
   },
   "icu:MessageRequests--block-group-confirm-body": {
     "messageformat": "இந்த குழுவிலிருந்து நீங்கள் இனி செய்திகளையோ புதுப்பிப்புகளையோ பெறமாட்டீர்கள், உறுப்பினர்கள் உங்களை மீண்டும் இந்தக் குழுவில் சேர்க்க முடியாது."
+  },
+  "icu:MessageRequests--block-signal-confirm-body": {
+    "messageformat": "இனி நீங்கள் Signal புதுப்பிப்புகளையும் செய்திகளையும் பெறமாட்டீர்கள்."
   },
   "icu:MessageRequests--reportAndMaybeBlock": {
     "messageformat": "புகாரளி..."
@@ -6169,9 +6184,6 @@
   "icu:Preferences__SignalAccountKeys__Description": {
     "messageformat": "இதனைப் பாதுகாப்பான இடத்தில் சேமித்து வைக்கவும், உங்கள் கணக்கையும் தரவையும் மீட்டெடுக்க உங்கள் உள்நுழைவுத் தகவல் தேவை. இதை ஒருபோதும் யாருடனும் பகிர வேண்டாம்."
   },
-  "icu:Preferences__SignalAccountKeys__AccountKey": {
-    "messageformat": "கணக்குக் குறியீடு"
-  },
   "icu:Preferences__SignalAccountKeys__AccountID": {
     "messageformat": "கணக்கு ID"
   },
@@ -6673,6 +6685,9 @@
   "icu:Preferences--blocked-users--description": {
     "messageformat": "தடுக்கப்பட்ட பயனர்கள் உங்களை அழைக்கவோ அல்லது உங்களுக்கு மெசேஜ்களை அனுப்பவோ முடியாது"
   },
+  "icu:Preferences--add-blocked": {
+    "messageformat": "தடுக்கப்பட்ட பயனர் அல்லது குழுவைச் சேர்"
+  },
   "icu:Preferences--blocked-users": {
     "messageformat": "தடைசெய்யப்பட்ட பயனர்கள்"
   },
@@ -6681,6 +6696,12 @@
   },
   "icu:Preferences--blocked--blocked-on": {
     "messageformat": "{blockedAt}-இல் தடைசெய்யப்பட்டது"
+  },
+  "icu:Preferences--BlockChooser--Done": {
+    "messageformat": "முடிந்தது"
+  },
+  "icu:Preferences--BlockChooser--Search--Placeholder": {
+    "messageformat": "தேடு"
   },
   "icu:Preferences--signal-backups": {
     "messageformat": "சிக்னலின் பாதுகாப்பான காப்புப் பிரதிகள்"
@@ -7097,7 +7118,7 @@
     "messageformat": "{duration} நேரத்தில் மீண்டும் முயலுங்கள்"
   },
   "icu:StandaloneRegistration--PhoneNumber--RegionCodeSelector--Label": {
-    "messageformat": "Select region code"
+    "messageformat": "நாட்டின் குறியீட்டைத் தேர்ந்தெடுக்கவும்"
   },
   "icu:StandaloneRegistration--PhoneNumber--placeholder": {
     "messageformat": "தொலைபேசி எண்"
@@ -8561,12 +8582,6 @@
   "icu:CallLinkPendingParticipantModal__DenyButtonLabel": {
     "messageformat": "நுழைவை மறு"
   },
-  "icu:CallLinkRestrictionsSelect__Option--Off": {
-    "messageformat": "அணை"
-  },
-  "icu:CallLinkRestrictionsSelect__Option--On": {
-    "messageformat": "இயக்கு"
-  },
   "icu:CallLinkAddNameModal__Title": {
     "messageformat": "அழைப்பின் பெயரைச் சேர்க்கவும்"
   },
@@ -8614,6 +8629,39 @@
   },
   "icu:SaveMultiDialog__title": {
     "messageformat": "இணைப்புகளை சேமித்தல்"
+  },
+  "icu:EmbeddedContact__message": {
+    "messageformat": "மெசேஜ்"
+  },
+  "icu:ContactDetail__message": {
+    "messageformat": "மெசேஜ்"
+  },
+  "icu:ContactDetail__add-to-group": {
+    "messageformat": "ஒரு குழுவில் சேர்க்கவும்"
+  },
+  "icu:ContactDetail__nickname": {
+    "messageformat": "புனைப்பெயர்"
+  },
+  "icu:ContactDetail__note": {
+    "messageformat": "குறிப்புகள்"
+  },
+  "icu:email-v2": {
+    "messageformat": "மின்னஞ்சல்"
+  },
+  "icu:home-v2": {
+    "messageformat": "வீடு"
+  },
+  "icu:mobile-v2": {
+    "messageformat": "கைபேசி"
+  },
+  "icu:work-v2": {
+    "messageformat": "அலுவலகம்"
+  },
+  "icu:phone-v2": {
+    "messageformat": "தொலைபேசி"
+  },
+  "icu:address-v2": {
+    "messageformat": "முகவரி"
   },
   "icu:WhatsNew__modal-title": {
     "messageformat": "புதிதாக என்ன உள்ளது"
@@ -8781,7 +8829,7 @@
     "messageformat": "சிக்னலை ஆதரித்ததற்கு நன்றி. திறந்த மூல தனியுரிமை தொழில்நுட்பத்தின் மூலம், சுதந்திரமான வெளிப்பாட்டைப் பாதுகாப்பதற்கும் உலகெங்கிலும் உள்ள மில்லியன் கணக்கானவர்களுக்குப் பாதுகாப்பான உலகளாவிய தகவல்தொடர்புக்கு உதவுவதற்கும் உங்கள் பங்களிப்பு உதவுகிறது. நீங்கள் அமெரிக்காவில் வசிப்பவராக இருந்தால், உங்கள் வரிப் பதிவுகளுக்காக இந்த ரசீதைத் தக்கவைத்துக் கொள்ளுங்கள். Signal Technology Foundation என்பது Internal Revenue Code 501c3 பிரிவின் கீழ் அமெரிக்காவில் உள்ள வரிவிலக்கு பெற்ற லாப நோக்கமற்ற அமைப்பாகும். எங்களின் Federal Tax ID 82-4506840 ஆகும். இந்தப் பங்களிப்பைக் கருத்தில் கொண்டு சிக்னல் எந்தப் பொருட்களையும் சேவைகளையும் வழங்கவில்லை."
   },
   "icu:MessageCta__Donate": {
-    "messageformat": "Donate Now"
+    "messageformat": "நன்கொடை அளிக்கவும்"
   },
   "icu:Donations__OfflineTooltip": {
     "messageformat": "நீங்கள் ஆஃப்லைனில் உள்ளீர்கள். நன்கொடையை நிறைவு செய்ய தயவுசெய்து இணையத்துடன் இணைக்கவும்."
@@ -8981,6 +9029,9 @@
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__AccessibilityLabel": {
     "messageformat": "சிக்கல்கள் குறித்த விளக்கம்"
   },
+  "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__Placeholder": {
+    "messageformat": "உங்களின் சிக்கல் குறித்து விவரித்திடுங்கள்"
+  },
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__HelpText": {
     "messageformat": "சிக்கலுடன் தொடர்புடைய எந்த விவரங்களையும் சேர்த்திடுங்கள். நீங்கள் இங்கு பகிரும் அனைத்தும் தனிப்பட்டதாக வைக்கப்படும் மற்றும் சிக்னலில் அழைப்புகளை மேம்படுத்தும் நோக்கத்திற்கு மட்டுமே பயன்படுத்தப்படும்."
   },
@@ -9095,5 +9146,14 @@
   },
   "icu:WhatsNew__8.30--1": {
     "messageformat": "நீங்கள் வீடியோ அழைப்பில் இணைய முயலும்போது, கேமராவை அணுக Signal-க்கு அனுமதி இல்லை எனில், Windows-இல் உங்கள் சிஸ்டம் அமைப்புகளைத் திறப்பதற்கு ஏற்ற எளியவழி ஒன்றையும் சேர்த்துள்ளோம்."
+  },
+  "icu:WhatsNew__8.32--0": {
+    "messageformat": "'படிக்கப்படாதவை' வடிகட்டி இப்போது செய்தி கோப்புறைகளிலும் தேடல் இடைமுகத்திலும் ஆதரிக்கப்படுகிறது."
+  },
+  "icu:WhatsNew__8.32--1": {
+    "messageformat": "மோசமான நெட்வொர்க் நிலைகளிலும் பதிவேற்றத்தின் நம்பகத்தன்மை மேம்படுத்தப்பட்டுள்ளது. நன்றி, <GH3mmmbulus></GH3mmmbulus>!"
+  },
+  "icu:WhatsNew__8.32--2": {
+    "messageformat": "&quot;(N)&quot; குறுக்குவழி இப்போது தம்ப்ஸ் டவுன் எமோஜியைச் சரியாகக் காட்டுகிறது. பிழையைச் சரிசெய்ததற்காக <lnicola></lnicola>-க்கு தம்ப்ஸ் அப் வழங்குங்கள்."
   }
 }

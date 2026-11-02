@@ -5,22 +5,17 @@
 
 import type { ReactNode } from 'react';
 import type { LocalizerType } from '../../types/Util.std.ts';
-import { AxoItem } from '../../axo/items/AxoItem.dom.tsx';
-import { AxoList } from '../../axo/items/AxoList.dom.tsx';
 import { AxoClickableItem } from '../../axo/items/AxoClickableItem.dom.tsx';
+import { PreferencesList } from './PreferencesList.dom.tsx';
 
 export function DebugLogItem({ i18n }: { i18n: LocalizerType }): ReactNode {
   return (
-    <AxoList.Root>
-      <AxoList.Body>
-        <AxoItem.Group>
-          <AxoClickableItem.Root
-            label={i18n('icu:submitDebugLog')}
-            arrow="next"
-            onClick={() => window.IPC.showDebugLog()}
-          />
-        </AxoItem.Group>
-      </AxoList.Body>
-    </AxoList.Root>
+    <PreferencesList>
+      <AxoClickableItem.Root
+        label={i18n('icu:submitDebugLog')}
+        arrow="next"
+        onClick={() => window.IPC.showDebugLog()}
+      />
+    </PreferencesList>
   );
 }

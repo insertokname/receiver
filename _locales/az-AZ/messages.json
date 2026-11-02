@@ -2,6 +2,9 @@
   "icu:AxoAlertDialog.Cancel": {
     "messageformat": "Ləğv et"
   },
+  "icu:AxoAlertDialog.Ok": {
+    "messageformat": "Oldu"
+  },
   "icu:AxoButton.Pending": {
     "messageformat": "Gözləyir"
   },
@@ -73,9 +76,6 @@
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--2": {
     "messageformat": "Əsas cihazınız əlaqələndirilən cihazları idarə edir, 5 ədədə qədər cihazı əlaqələndirə bilərsiniz."
-  },
-  "icu:LinkedDevicesOnboardingDialog__bullet--3": {
-    "messageformat": "Hesab parametrləri və ehtiyat nüsxələr daxil parametrlər yalnız əsas cihazınızdan idarə oluna bilər."
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--3--1": {
     "messageformat": "Hesab parametrləri və ehtiyat nüsxələr yalnız əsas cihazınızdan idarə oluna bilər."
@@ -673,6 +673,9 @@
   },
   "icu:KeyTransparencyOnboardingDialog__Description": {
     "messageformat": "Telefon nömrəsi ilə əlaqə saxladığınız kontaktlar üçün Signal “açar şəffaflığı” adlanan proses vasitəsilə bağlantının təhlükəsiz olduğunu avtomatik təsdiqləyə bilər. Əlavə təhlükəsizlik üçün QR kodundan istifadə etməklə və ya təhlükəsizlik nömrələri ilə müqayisə edərək bağlantıları əlinizlə də yoxlaya bilərsiniz."
+  },
+  "icu:KeyTransparencyOnboardingDialog__Description-v2": {
+    "messageformat": "<paragraph>Telefon nömrəsi ilə əlaqə saxladığınız kontaktlar üçün Signal &quot;açar şəffaflığı&quot; adlanan proses vasitəsilə bağlantının təhlükəsiz olduğunu avtomatik təsdiqləyə bilər.</paragraph><paragraph>Əlavə təhlükəsizlik üçün QR kodundan istifadə etməklə və ya təhlükəsizlik nömrələri ilə müqayisə etməklə bağlantıları əlinizlə də yoxlaya bilərsiniz.</paragraph>"
   },
   "icu:KeyTransparencyOnboardingDialog__Continue": {
     "messageformat": "Davam et"
@@ -1481,6 +1484,9 @@
   "icu:ConversationMerge--learn-more": {
     "messageformat": "Daha ətraflı"
   },
+  "icu:ConversationMerge--explainer-dialog--label": {
+    "messageformat": "Mesaj tarixçəsi birləşdirildi"
+  },
   "icu:ConversationMerge--explainer-dialog--line-1": {
     "messageformat": "{obsoleteConversationTitle} ilə mesajlaşdıqdan sonra siz bu nömrənin {conversationTitle} adlı istifadəçiyə aid olduğunu öyrəndiniz. Onun telefon nömrəsi məxfidir."
   },
@@ -1741,6 +1747,9 @@
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__Search__Placeholder": {
     "messageformat": "Axtar"
+  },
+  "icu:Preferences__EditChatFolderPage__SelectChatsDialog__NoChats": {
+    "messageformat": "Çat yoxdur"
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__ChatTypesSection__Title": {
     "messageformat": "Çat növləri"
@@ -3512,6 +3521,9 @@
   "icu:MessageRequests--unblock-group-confirm-body": {
     "messageformat": "Qrup üzvləri, sizi bu qrupa yenidən əlavə edə bilər."
   },
+  "icu:MessageRequests--unblock-signal-confirm-body": {
+    "messageformat": "Signal ilə bağlı yeniləmə və xəbərlər alacaqsınız."
+  },
   "icu:MessageRequests--block-and-report-spam-success-toast": {
     "messageformat": "Spam olaraq bildirildi və bloklandı."
   },
@@ -3526,6 +3538,9 @@
   },
   "icu:MessageRequests--block-group-confirm-body": {
     "messageformat": "Artıq bu qrupdan mesaj və ya yeniləmələr almayacaqsınız və üzvlər sizi bu qrupa yenidən əlavə edə bilməyəcək."
+  },
+  "icu:MessageRequests--block-signal-confirm-body": {
+    "messageformat": "Artıq Signal ilə bağlı yeniləmə və xəbərlər almayacaqsınız."
   },
   "icu:MessageRequests--reportAndMaybeBlock": {
     "messageformat": "Bildir..."
@@ -6169,9 +6184,6 @@
   "icu:Preferences__SignalAccountKeys__Description": {
     "messageformat": "Onu təhlükəsiz yerdə saxlayın, hesabınızı və verilənlərinizi bərpa etmək üçün login məlumatlarınız tələb olunur. Onu əsla başqası ilə paylaşmayın."
   },
-  "icu:Preferences__SignalAccountKeys__AccountKey": {
-    "messageformat": "Hesab şifrəsi"
-  },
   "icu:Preferences__SignalAccountKeys__AccountID": {
     "messageformat": "Hesab ID-si"
   },
@@ -6673,6 +6685,9 @@
   "icu:Preferences--blocked-users--description": {
     "messageformat": "Bloklanmış istifadəçilər sizə zəng edə və ya mesajlar göndərə bilməz"
   },
+  "icu:Preferences--add-blocked": {
+    "messageformat": "Bloklanmış İstifadəçi və ya Qrupu əlavə edin"
+  },
   "icu:Preferences--blocked-users": {
     "messageformat": "Bloklanmış istifadəçilər"
   },
@@ -6681,6 +6696,12 @@
   },
   "icu:Preferences--blocked--blocked-on": {
     "messageformat": "Bloklanma vaxtı: {blockedAt}"
+  },
+  "icu:Preferences--BlockChooser--Done": {
+    "messageformat": "Hazırdır"
+  },
+  "icu:Preferences--BlockChooser--Search--Placeholder": {
+    "messageformat": "Axtar"
   },
   "icu:Preferences--signal-backups": {
     "messageformat": "Signal-ın Təhlükəsiz Ehtiyat Nüsxələri"
@@ -7097,7 +7118,7 @@
     "messageformat": "{duration} ərzində yenidən cəhd edin"
   },
   "icu:StandaloneRegistration--PhoneNumber--RegionCodeSelector--Label": {
-    "messageformat": "Select region code"
+    "messageformat": "Ölkə kodunu seçin"
   },
   "icu:StandaloneRegistration--PhoneNumber--placeholder": {
     "messageformat": "Telefon nömrəsi"
@@ -8561,12 +8582,6 @@
   "icu:CallLinkPendingParticipantModal__DenyButtonLabel": {
     "messageformat": "Girişdən imtina et"
   },
-  "icu:CallLinkRestrictionsSelect__Option--Off": {
-    "messageformat": "Bağlı"
-  },
-  "icu:CallLinkRestrictionsSelect__Option--On": {
-    "messageformat": "Açıq"
-  },
   "icu:CallLinkAddNameModal__Title": {
     "messageformat": "Zəng adı əlavə et"
   },
@@ -8614,6 +8629,39 @@
   },
   "icu:SaveMultiDialog__title": {
     "messageformat": "Qoşmaları yaddaşda saxla"
+  },
+  "icu:EmbeddedContact__message": {
+    "messageformat": "Mesaj"
+  },
+  "icu:ContactDetail__message": {
+    "messageformat": "Mesaj"
+  },
+  "icu:ContactDetail__add-to-group": {
+    "messageformat": "Bir qrupa əlavə et"
+  },
+  "icu:ContactDetail__nickname": {
+    "messageformat": "Ləqəb"
+  },
+  "icu:ContactDetail__note": {
+    "messageformat": "Qeydlər"
+  },
+  "icu:email-v2": {
+    "messageformat": "E-poçt"
+  },
+  "icu:home-v2": {
+    "messageformat": "Ev"
+  },
+  "icu:mobile-v2": {
+    "messageformat": "Mobil"
+  },
+  "icu:work-v2": {
+    "messageformat": "İşdə"
+  },
+  "icu:phone-v2": {
+    "messageformat": "telefon"
+  },
+  "icu:address-v2": {
+    "messageformat": "Ünvan"
   },
   "icu:WhatsNew__modal-title": {
     "messageformat": "Yeni nə var"
@@ -8781,7 +8829,7 @@
     "messageformat": "Signal-ı dəstəklədiyiniz üçün təşəkkürlər. Töhfəniz, açıq mənbəli məxfilik texnologiyası vasitəsilə dünyadakı milyonlarla insan üçün azad ifadəni qoruyan və təhlükəsiz qlobal ünsiyyəti təmin edən inkişaf missiyasını dəstəkləməyə kömək edir. Əgər Amerika Birləşmiş Ştatlarında yaşayırsınızsa, bu qəbzi vergi qeydləriniz üçün saxlayın. \"Signal Technology Foundation\", Daxili Gəlir Məcəlləsinin 501c3 maddəsinə əsasən Amerika Birləşmiş Ştatlarında vergidən azad edilmiş qeyri-kommersiya təşkilatıdır. Federal VÖEN: 82-4506840. Signal bu töhfə qarşılığında heç bir mal və ya xidmət təmin etməyib."
   },
   "icu:MessageCta__Donate": {
-    "messageformat": "Donate Now"
+    "messageformat": "İndi ianə ver"
   },
   "icu:Donations__OfflineTooltip": {
     "messageformat": "Oflayn rejimdəsiniz. İanəni tamamlamaq üçün internetə qoşulun."
@@ -8981,6 +9029,9 @@
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__AccessibilityLabel": {
     "messageformat": "Problemlərin təsviri"
   },
+  "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__Placeholder": {
+    "messageformat": "Probleminizi təsvir edin"
+  },
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__HelpText": {
     "messageformat": "Problemə uyğun istənilən təfərrüatı seçin. Burada paylaşdığınız hər şey məxfi saxlanılır və yalnız Signal zənglərinin yaxşılaşdırılmasına kömək etmək üçün istifadə olunur."
   },
@@ -9095,5 +9146,14 @@
   },
   "icu:WhatsNew__8.30--1": {
     "messageformat": "Videozəngə qoşulmağa çalışdığınız zaman Signal-ın kameraya giriş icazəsi olmadıqda, Windows-da sistem parametrlərini açmaq üçün rahat qısayol da əlavə etdik. Artıq insanların sizi görə bilməsi üçün nə etməli olduğunuzu bilmək daha asandır."
+  },
+  "icu:WhatsNew__8.32--0": {
+    "messageformat": "Oxunmamış mesajlar filtri artıq mesaj qovluqlarında və axtarış interfeysində də dəstəklənir. Beləliklə, gözdən qaçırdığınız mesajları asanlıqla görə bilərsiniz."
+  },
+  "icu:WhatsNew__8.32--1": {
+    "messageformat": "Zəif şəbəkə şəraitində yükləmənin etibarlılığı artırılıb. Təşəkkürlər, <GH3mmmbulus></GH3mmmbulus>!"
+  },
+  "icu:WhatsNew__8.32--2": {
+    "messageformat": "&quot;(N)&quot; qısayolu dəqiqliklə &quot;baş barmaq aşağı&quot; emojisini göstərir. Xətanın düzəldilməsi üçün <lnicola></lnicola> qədər baş barmaq emojisi."
   }
 }

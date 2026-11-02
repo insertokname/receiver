@@ -75,7 +75,7 @@ message StorageRecord {
     GroupV2Record groupV2 = 3;
     AccountRecord account = 4;
     StoryDistributionListRecord storyDistributionList = 5;
-    StickerPackRecord stickerPack = 6;
+    InstalledStickerPackRecord installedStickerPack = 6;
     CallLinkRecord callLink = 7;
     ChatFolderRecord chatFolder = 8;
     NotificationProfile notificationProfile = 9;
@@ -147,7 +147,8 @@ message ContactRecord {
   uint64 blockedAtTimestamp = 27; // if `blocked` is true, 0 means unknown block time
   OptionalBool notifyForCallsIfMuted = 28; // If unset, use the default settings
   OptionalBool showUnreadReminders = 29; // If unset, use the default settings
-  // Next ID: 30
+  Name sharedName = 30; // Name shared from a third party
+  // Next ID: 31
 }
 
 message GroupV1Record {
@@ -191,6 +192,7 @@ message Payments {
 }
 
 message AccountRecord {
+
   enum UnreadBadgeType {
     UNKNOWN_BADGE_TYPE = 0; // Interpret as "Unread messages"
     UNREAD_MESSAGES = 1;
@@ -340,7 +342,7 @@ message StoryDistributionListRecord {
   repeated bytes recipientServiceIdsBinary = 7; // service ID binary (i.e. 16 byte UUID for ACI, 1 byte prefix + 16 byte UUID for PNI)
 }
 
-message StickerPackRecord {
+message InstalledStickerPackRecord {
   bytes packId = 1; // 16 bytes
   bytes packKey = 2; // 32 bytes, used to derive the AES-256 key
                      // aesKey = HKDF(

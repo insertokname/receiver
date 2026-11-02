@@ -23,6 +23,7 @@ import type {
 } from '../textsecure/WebAPI.preload.ts';
 import { toLogFormat } from '../types/errors.std.ts';
 import { fromBase64 } from '../Bytes.std.ts';
+import { sleep } from '../util/sleep.std.ts';
 
 export type AppLoadedInfoType = Readonly<{
   loadTime: number;
@@ -60,6 +61,7 @@ const debug = createDebug('playwright.node.ts');
 
 const WAIT_FOR_EVENT_TIMEOUT = 30 * SECOND;
 const GRACEFUL_CLOSE_TIMEOUT = 5 * SECOND;
+const DEFAULT_MESSAGE_WAIT_TIMEOUT = 5 * SECOND;
 
 export class App extends EventEmitter {
   readonly #options: AppOptionsType;
@@ -236,6 +238,26 @@ export class App extends EventEmitter {
     }
   }
 
+  public async waitForSetProfileKey(): Promise<{
+    profileKey: Buffer<ArrayBuffer>;
+    reason: string;
+  }> {
+    const result = (await this.#waitForEvent('setProfileKey')) as {
+      profileKeyBase64: string;
+      reason: string;
+    };
+    if (!result) {
+      throw new Error('waitForSetProfileKey: Found no data!');
+    }
+
+    const profileKey = Buffer.from(fromBase64(result.profileKeyBase64));
+    return { profileKey, reason: result.reason };
+  }
+
+  public async waitForUpdateGroupsWithNewProfileKey(): Promise<void> {
+    await this.#waitForEvent('updateGroupsWithNewProfileKey');
+  }
+
   public async waitForQueuedStickerPacks(): Promise<void> {
     return this.#waitForEvent('queuedStickerPacksDownloaded');
   }
@@ -317,6 +339,32 @@ export class App extends EventEmitter {
     return window.evaluate(`window.SignalCI.getMessagesBySentAt(${timestamp})`);
   }
 
+  public async waitForMessage({
+    timestamp,
+    predicate,
+    timeout = DEFAULT_MESSAGE_WAIT_TIMEOUT,
+  }: {
+    timestamp: number;
+    predicate: (message: MessageAttributesType) => boolean;
+    timeout?: number;
+  }): Promise<MessageAttributesType> {
+    const deadline = Date.now() + timeout;
+
+    while (Date.now() < deadline) {
+      // oxlint-disable-next-line no-await-in-loop
+      const [message] = await this.getMessagesBySentAt(timestamp);
+      if (message && predicate(message)) {
+        return message;
+      }
+
+      // oxlint-disable-next-line no-await-in-loop
+      await sleep(100);
+    }
+    throw new Error(
+      `waitForMessage: Timed out waiting for message ${timestamp}`
+    );
+  }
+
   public async exportLocalBackup(backupsBaseDir: string): Promise<string> {
     const window = await this.getWindow();
     return window.evaluate(
@@ -362,6 +410,16 @@ export class App extends EventEmitter {
   public async fetchManifestForPrimary(): Promise<void> {
     const window = await this.getWindow();
     return window.evaluate('window.SignalCI.fetchManifestForPrimary()');
+  }
+
+  public async pauseStorageService(): Promise<void> {
+    const window = await this.getWindow();
+    await window.evaluate('window.SignalCI.pauseStorageService()');
+  }
+
+  public async resumeStorageService(): Promise<void> {
+    const window = await this.getWindow();
+    await window.evaluate('window.SignalCI.resumeStorageService()');
   }
 
   // EventEmitter types

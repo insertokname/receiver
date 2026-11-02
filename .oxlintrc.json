@@ -40,8 +40,12 @@
     "signal-desktop/enforce-array-buffer": "error",
     // [local]
     "signal-desktop/enforce-file-suffix": "error",
+    // [local]
+    "signal-desktop/enforce-class-name-has-styles": "error",
     // [local] (🛠️ autofix)
     "signal-desktop/enforce-license-comments": "error",
+    // [local]
+    "signal-desktop/enforce-static-class-names": "error",
     // [local]
     "signal-desktop/enforce-tw": "error",
     // [local]

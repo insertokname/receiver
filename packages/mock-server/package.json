@@ -50,7 +50,7 @@
   "dependencies": {
     "@indutny/parallel-prettier": "^3.0.0",
     "@indutny/protopiler": "4.0.0",
-    "@signalapp/libsignal-client": "0.100.0",
+    "@signalapp/libsignal-client": "0.105.4",
     "@tus/file-store": "^1.5.1",
     "@tus/server": "^1.10.2",
     "debug": "^4.4.3",
@@ -60,7 +60,7 @@
     "prettier": "^3.8.3",
     "type-fest": "^4.26.1",
     "url-pattern": "^1.0.3",
-    "uuid": "^8.3.2",
+    "uuid": "^11.1.1",
     "ws": "^8.21.0",
     "zod": "^3.25.76"
   },

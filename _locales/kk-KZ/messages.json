@@ -2,6 +2,9 @@
   "icu:AxoAlertDialog.Cancel": {
     "messageformat": "Бас тарту"
   },
+  "icu:AxoAlertDialog.Ok": {
+    "messageformat": "OK"
+  },
   "icu:AxoButton.Pending": {
     "messageformat": "Күтілуде"
   },
@@ -73,9 +76,6 @@
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--2": {
     "messageformat": "Негізгі құрылғыңыз арқылы байланыстырылған құрылғыларды басқара аласыз. Ең көбі 5 құрылғы байланыстыруға болады."
-  },
-  "icu:LinkedDevicesOnboardingDialog__bullet--3": {
-    "messageformat": "Аккаунт параметрлерін тек негізгі құрылғыдан, соның ішінде аккаунт параметрлері мен сақтық көшірмелер бөлімінен басқаруға болады."
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--3--1": {
     "messageformat": "Аккаунт параметрлері мен сақтық көшірмелерді тек негізгі құрылғыда басқаруға болады."
@@ -673,6 +673,9 @@
   },
   "icu:KeyTransparencyOnboardingDialog__Description": {
     "messageformat": "Телефон нөмірі арқылы байланыс орнатқан контактілер үшін Signal байланыстың қаншалықты қауіпсіз екенін \"кілт ашықтығы\" деп аталатын процестің көмегімен автоматты түрде растай алады. Қауіпсіздікті нығайту үшін QR коды немесе қауіпсіздік нөмірлері арқылы контактілерді бұрынғыдай қолмен растай аласыз."
+  },
+  "icu:KeyTransparencyOnboardingDialog__Description-v2": {
+    "messageformat": "<paragraph>Телефон нөмірі арқылы байланыс орнатқан контактілер үшін Signal байланыстың қаншалықты қауіпсіз екенін &quot;кілт ашықтығы&quot; деп аталатын процестің көмегімен автоматты түрде растай алады.</paragraph><paragraph>Қауіпсіздікті нығайту үшін QR кодын пайдалану немесе қауіпсіздік нөмірлерін салыстыру арқылы контактілерді бұрынғыдай қолмен растай аласыз.</paragraph>"
   },
   "icu:KeyTransparencyOnboardingDialog__Continue": {
     "messageformat": "Жалғастыру"
@@ -1481,6 +1484,9 @@
   "icu:ConversationMerge--learn-more": {
     "messageformat": "Толығырақ мәлімет"
   },
+  "icu:ConversationMerge--explainer-dialog--label": {
+    "messageformat": "Хабарлар тарихы біріктірілді"
+  },
   "icu:ConversationMerge--explainer-dialog--line-1": {
     "messageformat": "{obsoleteConversationTitle} деген кісімен хат алмасқан соң, бұл нөмірдің {conversationTitle} деген кісіге тиесілі екенін білдіңіз. Оның телефон нөмірі құпия."
   },
@@ -1741,6 +1747,9 @@
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__Search__Placeholder": {
     "messageformat": "Іздеу"
+  },
+  "icu:Preferences__EditChatFolderPage__SelectChatsDialog__NoChats": {
+    "messageformat": "Чаттар жоқ"
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__ChatTypesSection__Title": {
     "messageformat": "Чат түрлері"
@@ -3512,6 +3521,9 @@
   "icu:MessageRequests--unblock-group-confirm-body": {
     "messageformat": "Топ мүшелері сізді бұл топқа қайта қоса алады."
   },
+  "icu:MessageRequests--unblock-signal-confirm-body": {
+    "messageformat": "Signal туралы жаңалықтар алып отырасыз."
+  },
   "icu:MessageRequests--block-and-report-spam-success-toast": {
     "messageformat": "Спам деп хабарланып, блокталды."
   },
@@ -3526,6 +3538,9 @@
   },
   "icu:MessageRequests--block-group-confirm-body": {
     "messageformat": "Енді бұл топтан ешқандай хаттарды немесе жаңартуларды алмайсыз және оның мүшелері сізді осы топқа қайта қоса алмайды."
+  },
+  "icu:MessageRequests--block-signal-confirm-body": {
+    "messageformat": "Енді Signal туралы жаңалықтар алмайтын боласыз."
   },
   "icu:MessageRequests--reportAndMaybeBlock": {
     "messageformat": "Шағымдану..."
@@ -6169,9 +6184,6 @@
   "icu:Preferences__SignalAccountKeys__Description": {
     "messageformat": "Мұны қауіпсіз жерге сақтап қойыңыз, кіруге қажетті ақпарат аккаунтыңызды және деректеріңізді қалпына келтіруге керек болады. Оны ешкімге айтпаңыз."
   },
-  "icu:Preferences__SignalAccountKeys__AccountKey": {
-    "messageformat": "Аккаунт кілті"
-  },
   "icu:Preferences__SignalAccountKeys__AccountID": {
     "messageformat": "Аккуант идентификаторы"
   },
@@ -6673,6 +6685,9 @@
   "icu:Preferences--blocked-users--description": {
     "messageformat": "Блокталған пайдаланушылар сізге қоңырау шала алмайды немесе хабар жібере алмайды"
   },
+  "icu:Preferences--add-blocked": {
+    "messageformat": "Блокталған пайдаланушыны немесе топты қосу"
+  },
   "icu:Preferences--blocked-users": {
     "messageformat": "Блокталған пайдаланушылар"
   },
@@ -6681,6 +6696,12 @@
   },
   "icu:Preferences--blocked--blocked-on": {
     "messageformat": "Блокталған уақыты: {blockedAt}"
+  },
+  "icu:Preferences--BlockChooser--Done": {
+    "messageformat": "Дайын"
+  },
+  "icu:Preferences--BlockChooser--Search--Placeholder": {
+    "messageformat": "Іздеу"
   },
   "icu:Preferences--signal-backups": {
     "messageformat": "Signal қауіпсіз сақтық көшірмелері"
@@ -7097,7 +7118,7 @@
     "messageformat": "{duration} өткен соң қайталап көріңіз"
   },
   "icu:StandaloneRegistration--PhoneNumber--RegionCodeSelector--Label": {
-    "messageformat": "Select region code"
+    "messageformat": "Ел кодын таңдау"
   },
   "icu:StandaloneRegistration--PhoneNumber--placeholder": {
     "messageformat": "Телефон нөмірі"
@@ -8561,12 +8582,6 @@
   "icu:CallLinkPendingParticipantModal__DenyButtonLabel": {
     "messageformat": "Қоңырауға қоспау"
   },
-  "icu:CallLinkRestrictionsSelect__Option--Off": {
-    "messageformat": "Өшіру"
-  },
-  "icu:CallLinkRestrictionsSelect__Option--On": {
-    "messageformat": "Қосу"
-  },
   "icu:CallLinkAddNameModal__Title": {
     "messageformat": "Қоңырау атын қосу"
   },
@@ -8614,6 +8629,39 @@
   },
   "icu:SaveMultiDialog__title": {
     "messageformat": "Тіркемелерді сақтау"
+  },
+  "icu:EmbeddedContact__message": {
+    "messageformat": "Хат"
+  },
+  "icu:ContactDetail__message": {
+    "messageformat": "Хат"
+  },
+  "icu:ContactDetail__add-to-group": {
+    "messageformat": "Топқа қосу"
+  },
+  "icu:ContactDetail__nickname": {
+    "messageformat": "Лақап ат"
+  },
+  "icu:ContactDetail__note": {
+    "messageformat": "Ескертпелер"
+  },
+  "icu:email-v2": {
+    "messageformat": "Электрондық пошта"
+  },
+  "icu:home-v2": {
+    "messageformat": "Үй мекенжайы"
+  },
+  "icu:mobile-v2": {
+    "messageformat": "Ұялы"
+  },
+  "icu:work-v2": {
+    "messageformat": "Жұмыс"
+  },
+  "icu:phone-v2": {
+    "messageformat": "телефон"
+  },
+  "icu:address-v2": {
+    "messageformat": "Мекенжай"
   },
   "icu:WhatsNew__modal-title": {
     "messageformat": "Жаңалықтар"
@@ -8781,7 +8829,7 @@
     "messageformat": "Signal-ға қолдау көрсеткеніңіз үшін рақмет. Сіздің қосқан үлесіңіз ашық кодты құпиялық технологиясы арқылы әлемдегі миллиондаған адам үшін сөз еркіндігін қорғау және жаһандық байланыс орнату қауіпсіздігін қамтамасыз ету миссиясын жүзеге асыруға ықпал етеді. Егер Америка Құрама Штаттарының резиденті болсаңыз, осы түбіртекті салық жазбалары үшін сақтап қойыңыз. Signal Technology Foundation – Салық кодексінің 501c3 бөліміне сәйкес Америка Құрама Штаттарындағы салықтан босатылған коммерциялық емес ұйым. Біздің федералдық салық идентификаторымыз: 82-4506840. Signal осы жарнаның орнына ешқандай тауар немесе қызмет ұсынған жоқ."
   },
   "icu:MessageCta__Donate": {
-    "messageformat": "Donate Now"
+    "messageformat": "Қазір демеу"
   },
   "icu:Donations__OfflineTooltip": {
     "messageformat": "Желіге қосылмағансыз. Демеушілік процесін аяқтау үшін интернетке қосылыңыз."
@@ -8981,6 +9029,9 @@
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__AccessibilityLabel": {
     "messageformat": "Ақаулардың сипаттамасы"
   },
+  "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__Placeholder": {
+    "messageformat": "Мәселені сипаттаңыз"
+  },
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__HelpText": {
     "messageformat": "Осы ақауға қатысты деректердің барлығын енгізіңіз. Осы жерде бөліскен ақпаратыңыздың барлығы құпия сақталады және Signal-дағы қоңыраулар сапасын жақсарту үшін ғана қолданылады."
   },
@@ -9095,5 +9146,14 @@
   },
   "icu:WhatsNew__8.30--1": {
     "messageformat": "Бейнеқоңырауға қосылғыңыз келсе және Signal-дың камераңызды пайдалануға рұқсаты болмаса, жүйелік параметрлеріңізді ашу үшін ыңғайлы пернелер тіркесімін қостық. Енді адамдарға көріну үшін не істеу керек екенін түсіну оңайырақ."
+  },
+  "icu:WhatsNew__8.32--0": {
+    "messageformat": "Енді хабар қалталары мен іздеу интерфейсінде оқылмаған хабарлар сүзгісіне қолдау көрсетіледі, осылайша оқылмай қалған хабарларды оңай көре аласыз."
+  },
+  "icu:WhatsNew__8.32--1": {
+    "messageformat": "Желі байланысы нашар болғанда жүктеп салу процесі жақсартылды. Рақмет, <GH3mmmbulus></GH3mmmbulus>!"
+  },
+  "icu:WhatsNew__8.32--2": {
+    "messageformat": "&quot;(N)&quot; пернелер тіркесімі дизлайк эмоджиін дұрыс көрсетеді. Ақауды түзеткендеріңіз үшін лайк <lnicola></lnicola>."
   }
 }

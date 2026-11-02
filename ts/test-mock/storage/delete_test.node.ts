@@ -3,6 +3,7 @@
 
 import { assert } from 'chai';
 import { Proto } from '@signalapp/mock-server';
+import { CallLinkRootKey } from '@signalapp/ringrtc';
 
 import * as durations from '../../util/durations/index.std.ts';
 import { initStorage } from './fixtures.node.ts';
@@ -65,7 +66,7 @@ describe('storage service/delete', function (this: Mocha.Suite) {
       type: IdentifierType.STICKER_PACK,
       key: Buffer.from(getRandomBytes(16)),
       record: {
-        stickerPack: {
+        installedStickerPack: {
           packId: getRandomBytes(16),
           packKey: getRandomBytes(32),
           position: 1,
@@ -80,7 +81,7 @@ describe('storage service/delete', function (this: Mocha.Suite) {
       record: {
         // if deletedAtTimestampMs is set, adminPassKey should not be
         callLink: {
-          rootKey: getRandomBytes(16),
+          rootKey: CallLinkRootKey.generate().bytes,
           adminPasskey: null,
           deletedAtTimestampMs: deletedAtTimestamp,
         },
@@ -190,8 +191,8 @@ describe('storage service/delete', function (this: Mocha.Suite) {
       newState.hasRecord(
         item =>
           constantTimeEqual(item.key, stickerPack.key) &&
-          item.record.stickerPack?.deletedAtTimestamp ===
-            stickerPack.record.stickerPack?.deletedAtTimestamp
+          item.record.installedStickerPack?.deletedAtTimestamp ===
+            stickerPack.record.installedStickerPack?.deletedAtTimestamp
       ),
       'looking for deleted stickerPack list'
     );
@@ -255,7 +256,7 @@ describe('storage service/delete', function (this: Mocha.Suite) {
       type: IdentifierType.STICKER_PACK,
       key: Buffer.from(getRandomBytes(16)),
       record: {
-        stickerPack: {
+        installedStickerPack: {
           packId: getRandomBytes(16),
           packKey: getRandomBytes(32),
           position: 1,
@@ -270,7 +271,7 @@ describe('storage service/delete', function (this: Mocha.Suite) {
       record: {
         // if deletedAtTimestampMs is set, adminPassKey should not be
         callLink: {
-          rootKey: getRandomBytes(16),
+          rootKey: CallLinkRootKey.generate().bytes,
           adminPasskey: null,
           deletedAtTimestampMs: deletedAtTimestamp,
         },
@@ -373,8 +374,8 @@ describe('storage service/delete', function (this: Mocha.Suite) {
     updateState = updateState.removeRecord(
       item =>
         constantTimeEqual(item.key, stickerPack.key) &&
-        item.record.stickerPack?.deletedAtTimestamp ===
-          stickerPack.record.stickerPack?.deletedAtTimestamp
+        item.record.installedStickerPack?.deletedAtTimestamp ===
+          stickerPack.record.installedStickerPack?.deletedAtTimestamp
     );
     updateState = updateState.removeRecord(
       item =>
@@ -451,8 +452,8 @@ describe('storage service/delete', function (this: Mocha.Suite) {
     );
     assert.isFalse(
       thirdPhoneState.hasRecord(item => {
-        const itemId = item.record.stickerPack?.packId;
-        const expectedId = stickerPack.record.stickerPack?.packId;
+        const itemId = item.record.installedStickerPack?.packId;
+        const expectedId = stickerPack.record.installedStickerPack?.packId;
 
         if (!itemId || !expectedId) {
           return false;

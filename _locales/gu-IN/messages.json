@@ -2,6 +2,9 @@
   "icu:AxoAlertDialog.Cancel": {
     "messageformat": "રદ કરો"
   },
+  "icu:AxoAlertDialog.Ok": {
+    "messageformat": "ઓકે"
+  },
   "icu:AxoButton.Pending": {
     "messageformat": "બાકી"
   },
@@ -74,9 +77,6 @@
   "icu:LinkedDevicesOnboardingDialog__bullet--2": {
     "messageformat": "તમારું પ્રાથમિક ડિવાઇસ શું લિંક થયેલ છે તેને મેનેજ કરે છે, તમે વધુમાં વધુ 5 ડિવાઇસ લિંક કરી શકો છો."
   },
-  "icu:LinkedDevicesOnboardingDialog__bullet--3": {
-    "messageformat": "એકાઉન્ટ સેટિંગ્સ અને બેકઅપ સહિત, એકાઉન્ટ સેટિંગ્સ ફક્ત તમારા પ્રાથમિક ડિવાઇસ પર જ મેનેજ કરવામાં આવે છે."
-  },
   "icu:LinkedDevicesOnboardingDialog__bullet--3--1": {
     "messageformat": "એકાઉન્ટ સેટિંગ્સ અને બેકઅપ ફક્ત તમારા પ્રાથમિક ડિવાઇસ પર જ મેનેજ કરી શકાય છે."
   },
@@ -93,7 +93,7 @@
     "messageformat": "સૉફ્ટવેર સ્વીકૃતિઓ"
   },
   "icu:privacyPolicy": {
-    "messageformat": "શરતો અને ગોપનીયતા નીતિ"
+    "messageformat": "શરતો અને પ્રાઇવસી પોલિસી"
   },
   "icu:About__AppEnvironment": {
     "messageformat": "{appEnv}"
@@ -141,7 +141,7 @@
     "messageformat": "તમારા ડેટાબેઝનું વર્ઝન Signalના આ વર્ઝન સાથે મેચ થતું નથી. ખાતરી કરો કે તમે તમારા કમ્પ્યૂટર પર Signalનું લેટેસ્ટ વર્ઝન ખોલી રહ્યાં છો."
   },
   "icu:databaseError__safeStorageBackendChange": {
-    "messageformat": "ડેટાબેઝ એન્ક્રિપ્શન કી ઍક્સેસ કરવામાં અસમર્થ કારણ કે OS એન્ક્રિપ્શન કીરીંગ બેકએન્ડ {previousBackend}માંથી {currentBackend} માં બદલાઈ ગયું છે. આ તો થઈ શકે છે જો ડેસ્કટોપ એન્વાયર્નમેન્ટ બદલાય, ઉદાહરણ તરીકે GNOME અને KDE વચ્ચે.\n\nકૃપા કરીને પહેલાંના ડેસ્કટોપ એન્વાયર્નમેન્ટ પર સ્વિચ કરો."
+    "messageformat": "ડેટાબેઝ એન્ક્રિપ્શન કી ઍક્સેસ કરવામાં અસમર્થ કારણ કે OS એન્ક્રિપ્શન કીરીંગ બેકએન્ડ {previousBackend}માંથી {currentBackend}માં બદલાઈ ગયું છે. આ તો થઈ શકે છે જો ડેસ્કટોપ એન્વાયર્નમેન્ટ બદલાય, ઉદાહરણ તરીકે GNOME અને KDE વચ્ચે.\n\nકૃપા કરીને પહેલાંના ડેસ્કટોપ એન્વાયર્નમેન્ટ પર સ્વિચ કરો."
   },
   "icu:databaseError__safeStorageBackendChangeWithPreviousFlag": {
     "messageformat": "ડેટાબેઝ એન્ક્રિપ્શન કી ઍક્સેસ કરવામાં અસમર્થ કારણ કે OS એન્ક્રિપ્શન કીરીંગ બેકએન્ડ {previousBackend}માંથી {currentBackend}માં બદલાઈ ગયું છે. આ તો થઈ શકે છે જો ડેસ્કટોપ એન્વાયર્નમેન્ટ બદલાય, ઉદાહરણ તરીકે GNOME અને KDE વચ્ચે.\n\nકૃપા કરીને પહેલાંના ડેસ્કટોપ એન્વાયર્નમેન્ટ પર સ્વિચ કરો અથવા કમાન્ડ લાઇન ફ્લેગ --password-store=\"{previousBackendFlag}\" સાથે Signalને રન કરવાનો પ્રયાસ કરો"
@@ -189,10 +189,10 @@
     "messageformat": "બધું બતાવો"
   },
   "icu:appMenuQuit": {
-    "messageformat": "સિગ્નલ છોડો"
+    "messageformat": "Signalમાંથી બહાર નીકળો"
   },
   "icu:editMenuUndo": {
-    "messageformat": "પૂર્વવત્ કરો"
+    "messageformat": "ફેરફાર રદ કરો"
   },
   "icu:editMenuRedo": {
     "messageformat": "પહેલાં હતું તેમ કરો"
@@ -673,6 +673,9 @@
   },
   "icu:KeyTransparencyOnboardingDialog__Description": {
     "messageformat": "ફોન નંબર દ્વારા તમે જે સંપર્કો સાથે જોડાયેલા છો, તેમના માટે Signal કી ટ્રાન્સપરન્સી નામની પ્રક્રિયાનો ઉપયોગ કરીને કનેક્શન સુરક્ષિત છે કે નહીં તેની ખાતરી આપમેળે કરી શકે છે. વધુ સુરક્ષા માટે, તમે હજી પણ QR કોડનો ઉપયોગ કરીને અથવા સેફ્ટી નંબરની તુલના કરીને કનેક્શનને વેરિફાય કરી શકો છો."
+  },
+  "icu:KeyTransparencyOnboardingDialog__Description-v2": {
+    "messageformat": "<paragraph>ફોન નંબર દ્વારા તમે જે સંપર્કો સાથે જોડાયેલા છો, તેમના માટે Signal કી ટ્રાન્સપરન્સી નામની પ્રક્રિયાનો ઉપયોગ કરીને કનેક્શન સુરક્ષિત છે કે નહીં તેની ખાતરી આપમેળે કરી શકે છે.</paragraph><paragraph>વધુ સુરક્ષા માટે, તમે હજી પણ QR કોડનો ઉપયોગ કરીને અથવા સેફ્ટી નંબરની તુલના કરીને કનેક્શનને વેરિફાય કરી શકો છો.</paragraph>"
   },
   "icu:KeyTransparencyOnboardingDialog__Continue": {
     "messageformat": "ચાલુ રાખો"
@@ -1481,6 +1484,9 @@
   "icu:ConversationMerge--learn-more": {
     "messageformat": "વધુ શીખો"
   },
+  "icu:ConversationMerge--explainer-dialog--label": {
+    "messageformat": "મેસેજ હિસ્ટ્રી મર્જ કરવામાં આવી"
+  },
   "icu:ConversationMerge--explainer-dialog--line-1": {
     "messageformat": "{obsoleteConversationTitle} સાથે મેસેજમાં વાતચીત કર્યા પછી તમે જાણ્યું કે આ નંબર {conversationTitle} નો છે. તેમનો ફોન નંબર ખાનગી છે."
   },
@@ -1741,6 +1747,9 @@
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__Search__Placeholder": {
     "messageformat": "શોધો"
+  },
+  "icu:Preferences__EditChatFolderPage__SelectChatsDialog__NoChats": {
+    "messageformat": "કોઈ ચેટ નથી"
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__ChatTypesSection__Title": {
     "messageformat": "ચેટના પ્રકારો"
@@ -3512,6 +3521,9 @@
   "icu:MessageRequests--unblock-group-confirm-body": {
     "messageformat": "ગ્રુપના સભ્યો તમને આ ગ્રુપમાં ફરીથી ઉમેરવામાં સમર્થ હશે."
   },
+  "icu:MessageRequests--unblock-signal-confirm-body": {
+    "messageformat": "તમને Signal અપડેટ અને સમાચારો પ્રાપ્ત થશે."
+  },
   "icu:MessageRequests--block-and-report-spam-success-toast": {
     "messageformat": "સ્પામ તરીકે જાણ કરી અને બ્લૉક કર્યા."
   },
@@ -3526,6 +3538,9 @@
   },
   "icu:MessageRequests--block-group-confirm-body": {
     "messageformat": "તમને હવે આ ગ્રુપ તરફથી મેસેજ ઓ અથવા અપડેટ્સ પ્રાપ્ત થશે નહીં અને મેમ્બર્સ તમને ફરીથી આ ગ્રુપમાં ઉમેરી શકશે નહીં."
+  },
+  "icu:MessageRequests--block-signal-confirm-body": {
+    "messageformat": "તમને હવેથી Signal અપડેટ અને સમાચારો પ્રાપ્ત થશે નહીં."
   },
   "icu:MessageRequests--reportAndMaybeBlock": {
     "messageformat": "રિપોર્ટ કરો..."
@@ -6169,9 +6184,6 @@
   "icu:Preferences__SignalAccountKeys__Description": {
     "messageformat": "આને સુરક્ષિત જગ્યાએ સ્ટોર કરો, તમારા એકાઉન્ટ અને ડેટાને રિકવર કરવા માટે તમારી લૉગ ઇન માહિતી જરૂરી છે. તેને કોઈની પણ સાથે શેર કરશો નહીં."
   },
-  "icu:Preferences__SignalAccountKeys__AccountKey": {
-    "messageformat": "એકાઉન્ટ કી"
-  },
   "icu:Preferences__SignalAccountKeys__AccountID": {
     "messageformat": "એકાઉન્ટ ID"
   },
@@ -6673,6 +6685,9 @@
   "icu:Preferences--blocked-users--description": {
     "messageformat": "બ્લૉક કરેલા ઉપયોગકર્તાઓ તમને કૉલ કે મેસેજ કરી શકશે નહીં"
   },
+  "icu:Preferences--add-blocked": {
+    "messageformat": "બ્લૉક કરેલો ઉપયોગકર્તા અથવા ગ્રૂપ ઉમેરો"
+  },
   "icu:Preferences--blocked-users": {
     "messageformat": "બ્લૉક કરેલા ઉપયોગકર્તાઓ"
   },
@@ -6681,6 +6696,12 @@
   },
   "icu:Preferences--blocked--blocked-on": {
     "messageformat": "{blockedAt}ના રોજ બ્લૉક કર્યા"
+  },
+  "icu:Preferences--BlockChooser--Done": {
+    "messageformat": "થઈ ગયું"
+  },
+  "icu:Preferences--BlockChooser--Search--Placeholder": {
+    "messageformat": "શોધો"
   },
   "icu:Preferences--signal-backups": {
     "messageformat": "Signal સુરક્ષિત બેકઅપ"
@@ -7097,7 +7118,7 @@
     "messageformat": "કૃપા કરીને {duration}માં ફરી પ્રયાસ કરો"
   },
   "icu:StandaloneRegistration--PhoneNumber--RegionCodeSelector--Label": {
-    "messageformat": "Select region code"
+    "messageformat": "દેશ કોડ પસંદ કરો"
   },
   "icu:StandaloneRegistration--PhoneNumber--placeholder": {
     "messageformat": "ફોન નંબર"
@@ -8561,12 +8582,6 @@
   "icu:CallLinkPendingParticipantModal__DenyButtonLabel": {
     "messageformat": "પ્રવેશ નકારો"
   },
-  "icu:CallLinkRestrictionsSelect__Option--Off": {
-    "messageformat": "બંધ"
-  },
-  "icu:CallLinkRestrictionsSelect__Option--On": {
-    "messageformat": "ચાલુ"
-  },
   "icu:CallLinkAddNameModal__Title": {
     "messageformat": "કૉલ નામ ઉમેરો"
   },
@@ -8614,6 +8629,39 @@
   },
   "icu:SaveMultiDialog__title": {
     "messageformat": "એટેચમેન્ટ સેવ કરો"
+  },
+  "icu:EmbeddedContact__message": {
+    "messageformat": "મેસેજ"
+  },
+  "icu:ContactDetail__message": {
+    "messageformat": "મેસેજ"
+  },
+  "icu:ContactDetail__add-to-group": {
+    "messageformat": "ગ્રૂપમાં ઉમેરો"
+  },
+  "icu:ContactDetail__nickname": {
+    "messageformat": "ઉપનામ"
+  },
+  "icu:ContactDetail__note": {
+    "messageformat": "નોંધ"
+  },
+  "icu:email-v2": {
+    "messageformat": "ઇમેઇલ"
+  },
+  "icu:home-v2": {
+    "messageformat": "હોમ"
+  },
+  "icu:mobile-v2": {
+    "messageformat": "મોબાઇલ"
+  },
+  "icu:work-v2": {
+    "messageformat": "કામ"
+  },
+  "icu:phone-v2": {
+    "messageformat": "ફોન"
+  },
+  "icu:address-v2": {
+    "messageformat": "સરનામું"
   },
   "icu:WhatsNew__modal-title": {
     "messageformat": "નવું શું છે"
@@ -8781,7 +8829,7 @@
     "messageformat": "Signalને સપોર્ટ કરવા બદલ આપનો આભાર. તમારું યોગદાન ઓપન સોર્સ પ્રાઇવસી ટેક્નોલોજી વિકસિત કરવાના મિશનને વેગ આપવામાં મદદ કરે છે જે મુક્ત અભિવ્યક્તિનું રક્ષણ કરે છે અને વિશ્વના લાખો લોકો માટે સુરક્ષિત વૈશ્વિક સંચારને સક્રિય કરે છે. જો તમે યુનાઇટેડ સ્ટેટ્સના રહેવાસી હો, તો કૃપા કરીને તમારા ટેક્સ રેકોર્ડ માટે આ રસીદને સાચવી રાખો. Signal Technology Foundation એ યુનાઇટેડ સ્ટેટ્સમાં Internal Revenue Code (આંતરિક મહેસૂલ સંહિતા)ની કલમ 501c3 હેઠળ એક કરવેરા-મુક્ત બિનલાભકારી સંસ્થા છે. અમારો ફેડરલ ટેક્સ ID 82-4506840 છે. Signalએ આ યોગદાનના બદલામાં કોઈ માલ કે સેવાઓ પૂરી પાડી નથી."
   },
   "icu:MessageCta__Donate": {
-    "messageformat": "Donate Now"
+    "messageformat": "હમણાં દાન કરો"
   },
   "icu:Donations__OfflineTooltip": {
     "messageformat": "તમે ઓફલાઇન છો. દાન પૂર્ણ કરવા માટે કૃપા કરીને ઇન્ટરનેટથી કનેક્ટ થાઓ."
@@ -8981,6 +9029,9 @@
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__AccessibilityLabel": {
     "messageformat": "સમસ્યાઓનું વર્ણન"
   },
+  "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__Placeholder": {
+    "messageformat": "તમારી સમસ્યાનું વર્ણન કરો"
+  },
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__HelpText": {
     "messageformat": "કૃપા કરીને સમસ્યાને લગતી કોઈ પણ વિગતો શામેલ કરો. તમે અહીં જે કંઈ પણ શેર કરશો તે ખાનગી રાખવામાં આવશે અને તેનો ઉપયોગ ફક્ત Signalમાં કૉલને બહેતર બનાવવામાં મદદ માટે કરવામાં આવશે."
   },
@@ -9095,5 +9146,14 @@
   },
   "icu:WhatsNew__8.30--1": {
     "messageformat": "જો તમે વીડિયો કૉલમાં જોડાવાનો પ્રયાસ કરો અને Signal પાસે કૅમેરાનો ઉપયોગ કરવાની પરવાનગી ન હોય, તો Windows પર તમારી સિસ્ટમ સેટિંગ્સ ખોલવા માટે અમે એક અનુકૂળ શોર્ટકટ પણ ઉમેર્યો છે."
+  },
+  "icu:WhatsNew__8.32--0": {
+    "messageformat": "હવે મેસેજ ફોલ્ડર અને સર્ચ ઇન્ટરફેસમાં પણ ન વાંચેલા ફિલ્ટરને સપોર્ટ મળે છે."
+  },
+  "icu:WhatsNew__8.32--1": {
+    "messageformat": "નબળા નેટવર્કની સ્થિતિમાં અપલોડની વિશ્વસનીયતા સુધારી. આભાર, <GH3mmmbulus></GH3mmmbulus>!"
+  },
+  "icu:WhatsNew__8.32--2": {
+    "messageformat": "&quot;(N)&quot; શોર્ટકટ યોગ્ય રીતે થમ્બ્સ ડાઉન ઇમોજી તરફ નિર્દેશ કરે છે. બગ સુધારા માટે માટે <lnicola></lnicola>ને થંબ્સ અપ."
   }
 }

@@ -11,8 +11,7 @@ import { missingCaseError } from '../util/missingCaseError.std.ts';
 import { assertDev } from '../util/assert.std.ts';
 import type { ParsedE164Type } from '../util/libphonenumberInstance.std.ts';
 import type { LocalizerType, ThemeType } from '../types/Util.std.ts';
-import { ScrollBehavior } from '../types/Util.std.ts';
-import { getNavSidebarWidthBreakpoint } from './_util.std.ts';
+import { getNavSidebarWidthBreakpoint, WidthBreakpoint } from './_util.std.ts';
 import type { PreferredBadgeSelectorType } from '../state/selectors/badges.preload.ts';
 import type { LookupConversationWithoutServiceIdActionsType } from '../util/lookupConversationWithoutServiceId.preload.ts';
 import type { ShowConversationType } from '../state/ducks/conversations.preload.ts';
@@ -216,7 +215,6 @@ export type PropsType = {
   //   this should only happen if there is a bug somewhere. For example, an inaccurate
   //   `rowCount`.
   getRow: (index: number) => undefined | Row;
-  scrollBehavior?: ScrollBehavior;
   scrollToRowIndex?: number;
   shouldRecomputeRowHeights: boolean;
   resetShouldRecomputeRowHeights: () => void;
@@ -272,7 +270,6 @@ export function ConversationList({
   renderConversationListItemContextMenu,
   resetShouldRecomputeRowHeights,
   rowCount,
-  scrollBehavior = ScrollBehavior.Default,
   scrollToRowIndex,
   scrollable = true,
   hasDialogPadding = false,
@@ -456,12 +453,22 @@ export function ConversationList({
           );
           key = `username-checkbox:${row.username}`;
           break;
-        case RowType.GenericCheckbox:
+        case RowType.GenericCheckbox: {
+          const icons: Record<GenericCheckboxRowIcon, string> = {
+            [GenericCheckboxRowIcon.Contact]:
+              'module-conversation-list__generic-checkbox-icon--contact',
+            [GenericCheckboxRowIcon.Group]:
+              'module-conversation-list__generic-checkbox-icon--group',
+          };
+
           result = (
             <ListTile.checkbox
               leading={
                 <i
-                  className={`module-conversation-list__generic-checkbox-icon module-conversation-list__generic-checkbox-icon--${row.icon}`}
+                  className={classNames(
+                    'module-conversation-list__generic-checkbox-icon',
+                    icons[row.icon]
+                  )}
                 />
               }
               title={row.label}
@@ -472,6 +479,7 @@ export function ConversationList({
           );
           key = `generic-checkbox:${providedKey}`;
           break;
+        }
         case RowType.Conversation: {
           const itemProps = pick(row.conversation, [
             'avatarPlaceholderGradient',
@@ -682,7 +690,8 @@ export function ConversationList({
     <ListView
       className={classNames(
         'module-conversation-list',
-        `module-conversation-list--width-${widthBreakpoint}`,
+        widthBreakpoint === WidthBreakpoint.Narrow &&
+          'module-conversation-list--width-narrow',
         hasDialogPadding && 'module-conversation-list--has-dialog-padding'
       )}
       width={dimensions.width}
@@ -694,7 +703,6 @@ export function ConversationList({
       shouldRecomputeRowHeights={shouldRecomputeRowHeights}
       resetShouldRecomputeRowHeights={resetShouldRecomputeRowHeights}
       scrollable={scrollable}
-      scrollBehavior={scrollBehavior}
     />
   );
 }

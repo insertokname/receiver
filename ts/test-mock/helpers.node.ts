@@ -94,9 +94,17 @@ const VERIFICATION_CODE_LENGTH = 6;
 async function getVerificationCodeInputs(window: Page): Promise<Locator> {
   const locators = window
     .getByRole('group', { name: 'Verification code' })
-    .getByRole('textbox', { name: /^Character \d+ of \d+$/ });
+    .getByRole('textbox', {
+      name: new RegExp(`^Character \\d+ of ${VERIFICATION_CODE_LENGTH}`),
+    });
   // Wait for the items to be fully rendered
   await expect(locators).toHaveCount(VERIFICATION_CODE_LENGTH);
+  for (const input of await locators.all()) {
+    // oxlint-disable-next-line no-await-in-loop
+    await expect(input).toBeVisible();
+    // oxlint-disable-next-line no-await-in-loop
+    await expect(input).toBeEnabled();
+  }
   return locators;
 }
 
@@ -183,7 +191,9 @@ export async function expectSystemMessages(
   expected: ReadonlyArray<string | RegExp>
 ): Promise<void> {
   await expectItemsWithText(
-    context.locator('.SystemMessage__contents'),
+    context
+      .locator('.SystemMessage__contents')
+      .or(context.getByTestId('axo-chat-event')),
     expected
   );
 }
@@ -449,9 +459,9 @@ export async function composerAttachFiles(
 ): Promise<void> {
   const AttachmentInput = page.getByTestId('attachfile-input');
 
-  const AttachmentsList = page.locator('.module-attachments');
+  const AttachmentsList = page.locator('.module-attachments__rail');
   const AttachmentsListImageLoaded = AttachmentsList.locator(
-    '.module-image--loaded'
+    '.module-image[data-loaded]'
   );
 
   debug('setting input files');
@@ -541,9 +551,7 @@ export async function sendMessageWithAttachments(
 }
 
 export async function waitForEnabledComposer(page: Page): Promise<Locator> {
-  const composeArea = page.locator(
-    '.composition-area-wrapper, .Inbox__conversation .ConversationView'
-  );
+  const composeArea = page.locator('.ConversationView__composition-area');
   const composeContainer = composeArea.locator(
     '[data-testid=CompositionInput][data-enabled=true]'
   );
@@ -599,11 +607,9 @@ export async function createCallLink(
   const doneBtn = editModal.getByText('Done');
   await doneBtn.click();
 
-  const callLinkTitle = page.locator('.CallsList__ItemTile').getByText(name);
-
-  const callLinkItem = page.locator('.CallsList__Item', {
-    has: callLinkTitle,
-  });
+  const callLinkItem = page
+    .locator('.CallsList__ItemTile', { hasText: name })
+    .locator('xpath=..');
   const testId = await callLinkItem.getAttribute('data-testid');
   return testId || undefined;
 }

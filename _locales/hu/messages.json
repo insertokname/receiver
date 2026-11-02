@@ -2,6 +2,9 @@
   "icu:AxoAlertDialog.Cancel": {
     "messageformat": "Mégse"
   },
+  "icu:AxoAlertDialog.Ok": {
+    "messageformat": "OK"
+  },
   "icu:AxoButton.Pending": {
     "messageformat": "Folyamatban"
   },
@@ -73,9 +76,6 @@
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--2": {
     "messageformat": "A csatolt eszközöket az elsődleges eszközöd kezeli, így akár 5 eszközt is összekapcsolhatsz."
-  },
-  "icu:LinkedDevicesOnboardingDialog__bullet--3": {
-    "messageformat": "Egyes beállítások csak az elsődleges eszközön kezelhetők, beleértve a fiókbeállításokat és a biztonsági mentéseket."
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--3--1": {
     "messageformat": "A fiókbeállítások és a biztonsági mentések csak az elsődleges eszközödön kezelhetők."
@@ -673,6 +673,9 @@
   },
   "icu:KeyTransparencyOnboardingDialog__Description": {
     "messageformat": "Azoknál a névjegyeknél, amelyekhez telefonszámon keresztül kapcsolódsz, a Signal egy kulcsátláthatóságnak nevezett folyamat segítségével automatikusan megerősítheti, hogy a kapcsolat biztonságos-e. A fokozott biztonság érdekében továbbra is ellenőrizheted manuálisan a névjegyeket egy QR-kóddal vagy biztonsági számok összehasonlításával."
+  },
+  "icu:KeyTransparencyOnboardingDialog__Description-v2": {
+    "messageformat": "<paragraph>Azoknál a névjegyeknél, amelyekhez telefonszámon keresztül kapcsolódsz, a Signal egy kulcsátláthatóságnak nevezett folyamat segítségével automatikusan megerősítheti, hogy a kapcsolat biztonságos-e.</paragraph><paragraph>A fokozott biztonság érdekében továbbra is ellenőrizheted a névjegyeket manuálisan egy QR-kóddal vagy a biztonsági számok összehasonlításával.</paragraph>"
   },
   "icu:KeyTransparencyOnboardingDialog__Continue": {
     "messageformat": "Folytatás"
@@ -1481,6 +1484,9 @@
   "icu:ConversationMerge--learn-more": {
     "messageformat": "Tudj meg többet"
   },
+  "icu:ConversationMerge--explainer-dialog--label": {
+    "messageformat": "Üzenetelőzmények összevonva"
+  },
   "icu:ConversationMerge--explainer-dialog--line-1": {
     "messageformat": "{obsoleteConversationTitle} felhasználóval való üzenetváltás után megtudtad, hogy ez a szám {conversationTitle} felhasználóhoz tartozik. A telefonszám privát."
   },
@@ -1741,6 +1747,9 @@
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__Search__Placeholder": {
     "messageformat": "Keresés"
+  },
+  "icu:Preferences__EditChatFolderPage__SelectChatsDialog__NoChats": {
+    "messageformat": "Nincs csevegés"
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__ChatTypesSection__Title": {
     "messageformat": "Csevegéstípusok"
@@ -3512,6 +3521,9 @@
   "icu:MessageRequests--unblock-group-confirm-body": {
     "messageformat": "A tagok ezután újra hozzáadhatnak majd a csoporthoz."
   },
+  "icu:MessageRequests--unblock-signal-confirm-body": {
+    "messageformat": "A Signallal kapcsolatos frissítéseket és híreket fogsz kapni."
+  },
   "icu:MessageRequests--block-and-report-spam-success-toast": {
     "messageformat": "Megjelölve kéretlen üzenetként és letiltva."
   },
@@ -3526,6 +3538,9 @@
   },
   "icu:MessageRequests--block-group-confirm-body": {
     "messageformat": "Többé nem kapsz üzeneteket és frissítéseket ebből a csoportból, illetve a tagok sem fognak tudni újra felvenni."
+  },
+  "icu:MessageRequests--block-signal-confirm-body": {
+    "messageformat": "Többé nem fogsz kapni Signallal kapcsolatos frissítéseket és híreket."
   },
   "icu:MessageRequests--reportAndMaybeBlock": {
     "messageformat": "Jelentés..."
@@ -6169,9 +6184,6 @@
   "icu:Preferences__SignalAccountKeys__Description": {
     "messageformat": "Őrizd ezt meg biztonságos helyen, a bejelentkezési adataid szükségesek a fiókod és az adataid helyreállításához. Soha ne oszd meg senkivel!"
   },
-  "icu:Preferences__SignalAccountKeys__AccountKey": {
-    "messageformat": "Fiókkulcs"
-  },
   "icu:Preferences__SignalAccountKeys__AccountID": {
     "messageformat": "Fiókazonosító"
   },
@@ -6673,6 +6685,9 @@
   "icu:Preferences--blocked-users--description": {
     "messageformat": "A letiltott felhasználók nem fognak tudni sem felhívni, sem üzenetet küldeni neked"
   },
+  "icu:Preferences--add-blocked": {
+    "messageformat": "Letiltott felhasználó vagy csoport hozzáadása"
+  },
   "icu:Preferences--blocked-users": {
     "messageformat": "Letiltott felhasználók"
   },
@@ -6681,6 +6696,12 @@
   },
   "icu:Preferences--blocked--blocked-on": {
     "messageformat": "Letiltás időpontja: {blockedAt}"
+  },
+  "icu:Preferences--BlockChooser--Done": {
+    "messageformat": "Befejezés"
+  },
+  "icu:Preferences--BlockChooser--Search--Placeholder": {
+    "messageformat": "Keresés"
   },
   "icu:Preferences--signal-backups": {
     "messageformat": "Signal Biztonságos Biztonsági mentések"
@@ -7097,7 +7118,7 @@
     "messageformat": "Kérjük, próbáld újra {duration} múlva"
   },
   "icu:StandaloneRegistration--PhoneNumber--RegionCodeSelector--Label": {
-    "messageformat": "Select region code"
+    "messageformat": "Válassz országhívószámot"
   },
   "icu:StandaloneRegistration--PhoneNumber--placeholder": {
     "messageformat": "Telefonszám"
@@ -8561,12 +8582,6 @@
   "icu:CallLinkPendingParticipantModal__DenyButtonLabel": {
     "messageformat": "Csatlakozás megtagadása"
   },
-  "icu:CallLinkRestrictionsSelect__Option--Off": {
-    "messageformat": "Ki"
-  },
-  "icu:CallLinkRestrictionsSelect__Option--On": {
-    "messageformat": "Be"
-  },
   "icu:CallLinkAddNameModal__Title": {
     "messageformat": "Hívásnév megadása"
   },
@@ -8614,6 +8629,39 @@
   },
   "icu:SaveMultiDialog__title": {
     "messageformat": "Mellékletek mentése"
+  },
+  "icu:EmbeddedContact__message": {
+    "messageformat": "Üzenet"
+  },
+  "icu:ContactDetail__message": {
+    "messageformat": "Üzenet"
+  },
+  "icu:ContactDetail__add-to-group": {
+    "messageformat": "Hozzáadás egy csoporthoz"
+  },
+  "icu:ContactDetail__nickname": {
+    "messageformat": "Becenév"
+  },
+  "icu:ContactDetail__note": {
+    "messageformat": "Megjegyzések"
+  },
+  "icu:email-v2": {
+    "messageformat": "E-mail"
+  },
+  "icu:home-v2": {
+    "messageformat": "Kezdőlap"
+  },
+  "icu:mobile-v2": {
+    "messageformat": "Mobil"
+  },
+  "icu:work-v2": {
+    "messageformat": "Munkahelyi"
+  },
+  "icu:phone-v2": {
+    "messageformat": "Telefonszám"
+  },
+  "icu:address-v2": {
+    "messageformat": "Cím"
   },
   "icu:WhatsNew__modal-title": {
     "messageformat": "Újdonságok"
@@ -8781,7 +8829,7 @@
     "messageformat": "Köszönjük, hogy támogatod a Signalt! Adományoddal hozzájárulsz a szabad véleménynyilvánítást és milliók számára biztonságos kommunikációt biztosító, nyílt forrású adatvédelmi technológiák fejlesztéséhez. Ha az Egyesült Államokban adózol, kérjük, őrizd meg ezt a nyugtát adóbevallásodhoz. A Signal Technology Foundation egy adómentes, nonprofit szervezet, amely az USA területén az 501c3 Internal Revenue Code hatálya alá tartozik. Federal Tax ID: 82-4506840. A Signal semmilyen terméket vagy szolgáltatást nem nyújtott e hozzájárulás fejében."
   },
   "icu:MessageCta__Donate": {
-    "messageformat": "Donate Now"
+    "messageformat": "Adományozás most"
   },
   "icu:Donations__OfflineTooltip": {
     "messageformat": "Offline állapotban vagy. Az adományozás befejezéséhez, kérjük, csatlakozz az internethez."
@@ -8981,6 +9029,9 @@
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__AccessibilityLabel": {
     "messageformat": "A probléma leírása"
   },
+  "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__Placeholder": {
+    "messageformat": "Írd le a problémádat"
+  },
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__HelpText": {
     "messageformat": "Kérjük, add meg a problémához kapcsolódó összes részletet. Amit itt megosztottál, az bizalmas marad, és csak a Signal-hívások fejlesztésére használjuk fel."
   },
@@ -9095,5 +9146,14 @@
   },
   "icu:WhatsNew__8.30--1": {
     "messageformat": "Hozzáadtunk egy praktikus parancsikont is, amellyel megnyithatod a rendszerbeállításaidat Windows-operációs rendszerben, ha megpróbálsz csatlakozni egy videohíváshoz, és a Signal nem rendelkezik engedéllyel a kamera eléréséhez."
+  },
+  "icu:WhatsNew__8.32--0": {
+    "messageformat": "Az olvasatlan üzenetek szűrője mostantól az üzenetmappákban és a keresési felületen is támogatott."
+  },
+  "icu:WhatsNew__8.32--1": {
+    "messageformat": "Javított feltöltési megbízhatóság rossz hálózati körülmények között. Köszönjük, <GH3mmmbulus></GH3mmmbulus>!"
+  },
+  "icu:WhatsNew__8.32--2": {
+    "messageformat": "Az „(N)” gyorsbillentyű helyesen a lefelé mutató hüvelykujj emojira mutat. Felfelé mutató hüvelykujj <lnicola></lnicola> számára a hibajavításért!"
   }
 }

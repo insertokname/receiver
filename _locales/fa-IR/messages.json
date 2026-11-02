@@ -2,6 +2,9 @@
   "icu:AxoAlertDialog.Cancel": {
     "messageformat": "لغو"
   },
+  "icu:AxoAlertDialog.Ok": {
+    "messageformat": "باشه"
+  },
   "icu:AxoButton.Pending": {
     "messageformat": "در انتظار…"
   },
@@ -73,9 +76,6 @@
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--2": {
     "messageformat": "دستگاه اصلی‌تان موارد متصل را مدیریت می‌کند، می‌توانید حداکثر ۵ دستگاه را متصل کنید."
-  },
-  "icu:LinkedDevicesOnboardingDialog__bullet--3": {
-    "messageformat": "تنظیمات حساب، از‌جمله تنظیمات حساب و پشتیبان‌گیری، فقط در دستگاه اصلی مدیریت می‌شوند."
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--3--1": {
     "messageformat": "تنظیمات حساب و پشتیبان‌گیری فقط در دستگاه اصلی‌تان قابل مدیریت هستند."
@@ -673,6 +673,9 @@
   },
   "icu:KeyTransparencyOnboardingDialog__Description": {
     "messageformat": "برای مخاطبانی که از طریق شماره تلفن به آن‌ها متصل هستید، سیگنال می‌تواند با استفاده از فرایندی به نام «شفافیت کلید» به‌طور خودکار تأیید کند که اتصال امن است. برای امنیت بیشتر، همچنان می‌توانید مخاطبان را به‌صورت دستی و با استفاده از کد QR یا مقایسه شماره ایمنی تأیید کنید."
+  },
+  "icu:KeyTransparencyOnboardingDialog__Description-v2": {
+    "messageformat": "<paragraph>برای مخاطبانی که از طریق شماره تلفن به آن‌ها متصل هستید، سیگنال می‌تواند با استفاده از فرایندی به نام «شفافیت کلید» به‌طور خودکار تأیید کند که اتصال امن است.</paragraph><paragraph>برای امنیت بیشتر، همچنان می‌توانید اتصال‌ها را به‌صورت دستی و با استفاده از کد QR یا مقایسه شماره‌های ایمنی تأیید کنید.</paragraph>"
   },
   "icu:KeyTransparencyOnboardingDialog__Continue": {
     "messageformat": "ادامه"
@@ -1481,6 +1484,9 @@
   "icu:ConversationMerge--learn-more": {
     "messageformat": "اطلاعات بیشتر"
   },
+  "icu:ConversationMerge--explainer-dialog--label": {
+    "messageformat": "تاریخچه پیام ادغام شد"
+  },
   "icu:ConversationMerge--explainer-dialog--line-1": {
     "messageformat": "پس از ارسال پیام با {obsoleteConversationTitle} متوجه شدید که این شماره متعلق به {conversationTitle} است. شماره تلفن او خصوصی است."
   },
@@ -1741,6 +1747,9 @@
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__Search__Placeholder": {
     "messageformat": "جستجو"
+  },
+  "icu:Preferences__EditChatFolderPage__SelectChatsDialog__NoChats": {
+    "messageformat": "گفتگویی وجود ندارد"
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__ChatTypesSection__Title": {
     "messageformat": "انواع گفتگوها"
@@ -3512,6 +3521,9 @@
   "icu:MessageRequests--unblock-group-confirm-body": {
     "messageformat": "اعضای گروه می‌توانند دوباره شما را به این گروه اضافه کنند."
   },
+  "icu:MessageRequests--unblock-signal-confirm-body": {
+    "messageformat": "به‌روزرسانی‌ها و اخبار سیگنال را دریافت خواهید کرد."
+  },
   "icu:MessageRequests--block-and-report-spam-success-toast": {
     "messageformat": "به‌عنوان هرزنامه گزارش و مسدود شد."
   },
@@ -3526,6 +3538,9 @@
   },
   "icu:MessageRequests--block-group-confirm-body": {
     "messageformat": "شما دیگر از این گروه پیام و به‌روزرسانی دریافت نخواهید کرد و اعضا قادر نخواهند بود دوباره شما را به این گروه اضافه کنند."
+  },
+  "icu:MessageRequests--block-signal-confirm-body": {
+    "messageformat": "دیگر به‌روزرسانی‌ها و اخبار سیگنال را دریافت نخواهید کرد."
   },
   "icu:MessageRequests--reportAndMaybeBlock": {
     "messageformat": "گزارش کردن..."
@@ -6169,9 +6184,6 @@
   "icu:Preferences__SignalAccountKeys__Description": {
     "messageformat": "این را در جای امنی ذخیره کنید، اطلاعات ورود شما برای بازیابی حساب و داده‌هایتان ضروری است. هرگز آن را با کسی به اشتراک نگذارید."
   },
-  "icu:Preferences__SignalAccountKeys__AccountKey": {
-    "messageformat": "رمز حساب"
-  },
   "icu:Preferences__SignalAccountKeys__AccountID": {
     "messageformat": "شناسه حساب"
   },
@@ -6673,6 +6685,9 @@
   "icu:Preferences--blocked-users--description": {
     "messageformat": "کاربران مسدودشده، امکان تماس با شما یا ارسال پیام به شما را نخواهند داشت"
   },
+  "icu:Preferences--add-blocked": {
+    "messageformat": "افزودن کاربر یا گروه مسدودشده"
+  },
   "icu:Preferences--blocked-users": {
     "messageformat": "کاربران مسدودشده"
   },
@@ -6681,6 +6696,12 @@
   },
   "icu:Preferences--blocked--blocked-on": {
     "messageformat": "مسدودشده در {blockedAt}"
+  },
+  "icu:Preferences--BlockChooser--Done": {
+    "messageformat": "تمام"
+  },
+  "icu:Preferences--BlockChooser--Search--Placeholder": {
+    "messageformat": "جستجو"
   },
   "icu:Preferences--signal-backups": {
     "messageformat": "پشتیبان‌های امن سیگنال"
@@ -7097,7 +7118,7 @@
     "messageformat": "لطفاً بعد از {duration} دوباره تلاش کنید"
   },
   "icu:StandaloneRegistration--PhoneNumber--RegionCodeSelector--Label": {
-    "messageformat": "Select region code"
+    "messageformat": "پیش‌شماره کشور را انتخاب کنید"
   },
   "icu:StandaloneRegistration--PhoneNumber--placeholder": {
     "messageformat": "شماره تلفن"
@@ -8561,12 +8582,6 @@
   "icu:CallLinkPendingParticipantModal__DenyButtonLabel": {
     "messageformat": "رد ورود"
   },
-  "icu:CallLinkRestrictionsSelect__Option--Off": {
-    "messageformat": "خاموش"
-  },
-  "icu:CallLinkRestrictionsSelect__Option--On": {
-    "messageformat": "روشن"
-  },
   "icu:CallLinkAddNameModal__Title": {
     "messageformat": "افزودن نام تماس"
   },
@@ -8614,6 +8629,39 @@
   },
   "icu:SaveMultiDialog__title": {
     "messageformat": "ذخیره پیوست‌ها"
+  },
+  "icu:EmbeddedContact__message": {
+    "messageformat": "پیام"
+  },
+  "icu:ContactDetail__message": {
+    "messageformat": "پیام"
+  },
+  "icu:ContactDetail__add-to-group": {
+    "messageformat": "افزودن به گروه"
+  },
+  "icu:ContactDetail__nickname": {
+    "messageformat": "نام مستعار"
+  },
+  "icu:ContactDetail__note": {
+    "messageformat": "یادداشت‌ها"
+  },
+  "icu:email-v2": {
+    "messageformat": "ایمیل"
+  },
+  "icu:home-v2": {
+    "messageformat": "خانه"
+  },
+  "icu:mobile-v2": {
+    "messageformat": "موبایل"
+  },
+  "icu:work-v2": {
+    "messageformat": "محل کار"
+  },
+  "icu:phone-v2": {
+    "messageformat": "تلفن"
+  },
+  "icu:address-v2": {
+    "messageformat": "آدرس"
   },
   "icu:WhatsNew__modal-title": {
     "messageformat": "تازه‌ها"
@@ -8781,7 +8829,7 @@
     "messageformat": "قدردان حمایتتان از سیگنال هستیم. مشارکت شما به پیشبرد ماموریت حفاظت از آزادی بیان و ایجاد امکان ارتباط جهانی امن برای میلیون‌ها نفر در سراسر جهان، از طریق فناوری متن‌باز حفظ حریم خصوصی، کمک می‌کند. اگر ساکن ایالات متحده هستید، لطفاً این رسید را در سوابق مالیاتی خود نگه دارید. بنیاد فناوری سیگنال یک سازمان غیرانتفاعی معاف از مالیات در ایالات متحده است که طبق بخش ۵۰۱c۳ قانون درآمد داخلی فعالیت می‌کند. شناسه مالیاتی ما ۴۵۰۶۸۴۰-۸۲ است. سیگنال در ازای این مشارکت، هیچ کالا یا خدماتی ارائه نداد."
   },
   "icu:MessageCta__Donate": {
-    "messageformat": "Donate Now"
+    "messageformat": "اکنون اهدا کنید"
   },
   "icu:Donations__OfflineTooltip": {
     "messageformat": "شما آفلاین هستید. لطفاً برای تکمیل اهدای مالی، به اینترنت متصل شوید."
@@ -8981,6 +9029,9 @@
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__AccessibilityLabel": {
     "messageformat": "شرح مشکلات"
   },
+  "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__Placeholder": {
+    "messageformat": "مشکلتان را شرح دهید"
+  },
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__HelpText": {
     "messageformat": "لطفاً هرگونه جزئیات مرتبط با مشکل را ارائه دهید. هرچه که با ما به اشتراک می‌گذارید خصوصی خواهد ماند و فقط برای کمک به بهبود تماس‌ها در سیگنال استفاده خواهد شد."
   },
@@ -9095,5 +9146,14 @@
   },
   "icu:WhatsNew__8.30--1": {
     "messageformat": "همچنین میان‌بر مناسبی اضافه کردیم تا اگر هنگام تلاش برای پیوستن به تماس تصویری، سیگنال اجازه دسترسی به دوربین را نداد، بتوانید تنظیمات سیستم خود را در ویندوز باز کنید."
+  },
+  "icu:WhatsNew__8.32--0": {
+    "messageformat": "اکنون فیلتر «خوانده‌نشده» در پوشه‌های پیام و همچنین در رابط کاربری جستجو نیز پشتیبانی می‌شود."
+  },
+  "icu:WhatsNew__8.32--1": {
+    "messageformat": "بهبود قابلیت اطمینان بارگذاری در شرایط نامناسب شبکه. ممنون، <GH3mmmbulus></GH3mmmbulus>!"
+  },
+  "icu:WhatsNew__8.32--2": {
+    "messageformat": "میان‌بر «(N)» به‌درستی به ایموجی «دیسلایک» اشاره دارد. لایک به <lnicola></lnicola> بابت رفع این اشکال."
   }
 }

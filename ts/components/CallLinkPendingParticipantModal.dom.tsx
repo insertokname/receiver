@@ -53,10 +53,8 @@ export function CallLinkPendingParticipantModal({
     <AxoTheme.Override theme="force-dark">
       <AxoDialog.Root open onOpenChange={onClose}>
         <AxoDialog.Content size="sm" escape="cancel-is-noop">
-          <AxoDialog.Header>
-            <AxoDialog.Title screenReaderOnly>
-              {conversation.title}
-            </AxoDialog.Title>
+          <AxoDialog.Header floating>
+            <AxoDialog.Title>{conversation.title}</AxoDialog.Title>
             <AxoDialog.Close />
           </AxoDialog.Header>
           <AxoDialog.Body>
@@ -86,7 +84,7 @@ export function CallLinkPendingParticipantModal({
                   toggleAboutContactModal({ contactId: conversation.id });
                 }}
               >
-                <div className={tw('type-title-large text-primary')}>
+                <span className={tw('block type-title-large text-primary')}>
                   <UserText text={conversation.title} />
                   {isInSystemContacts(conversation) && (
                     <>
@@ -101,19 +99,21 @@ export function CallLinkPendingParticipantModal({
                       label={null}
                     />
                   </span>
-                </div>
+                </span>
               </button>
 
-              <p className={tw('mt-2.5 text-secondary')}>
-                {sharedGroupNames.length > 0 ? (
-                  <SharedGroupNames
-                    i18n={i18n}
-                    sharedGroupNames={sharedGroupNames}
-                  />
-                ) : (
-                  i18n('icu:no-groups-in-common-warning')
-                )}
-              </p>
+              <AxoDialog.Description>
+                <p className={tw('mt-2.5')}>
+                  {sharedGroupNames.length > 0 ? (
+                    <SharedGroupNames
+                      i18n={i18n}
+                      sharedGroupNames={sharedGroupNames}
+                    />
+                  ) : (
+                    i18n('icu:no-groups-in-common-warning')
+                  )}
+                </p>
+              </AxoDialog.Description>
             </div>
 
             <hr className={tw('my-6 border-primary')} />

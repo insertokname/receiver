@@ -15,7 +15,7 @@ The app is the site's root; `test/` and `libsignal/` are check pages.
 | `transport/src/timers.js`, `timer-worker.js` | Timers on a dedicated worker, kept on time while the tab is in the background (connection keepalives, see App shell) |
 | `transport/build.sh` | Builds `transport/dist/` (WASM and its SRI digest, `signal-ca.js` from `config/default.json`, policy); `--test-relay` builds the end-to-end tests' variant into `transport/dist-e2e/` |
 | `transport/verify-directory.mjs` | Verifies a Tor directory snapshot with the transport's own WebAssembly (build-site.sh runs it) |
-| `libsignal/libsignal/` | libsignal 0.103.0 (the version Desktop pins): git submodule, [insertokname/libsignal](https://github.com/insertokname/libsignal) branch `web-wasm` |
+| `libsignal/libsignal/` | libsignal 0.105.4 (the version Desktop pins): git submodule, [insertokname/libsignal](https://github.com/insertokname/libsignal) branch `web-wasm` |
 | `libsignal/build.sh` | Builds `libsignal/dist/package/`: `@signalapp/libsignal-client` with its native addon replaced by WebAssembly (see below) |
 | `libsignal/loader.js` | Loads the WebAssembly module on emnapi; provides `initLibsignal()` |
 | `libsignal/test/node.mjs` | Runs libsignal's own TypeScript tests against the WebAssembly build in Node |

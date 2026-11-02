@@ -174,6 +174,7 @@ import {
   STORAGE_KEY_DEFAULTS,
   type UnreadCountBadgeType,
 } from '../../types/StorageKeys.std.ts';
+import { fromAciUuidBytes } from '../../util/ServiceId.node.ts';
 
 const { isNumber } = lodash;
 
@@ -285,7 +286,7 @@ export class BackupImportStream extends Writable {
   >();
 
   #flushMessagesPromise: Promise<void> | undefined;
-  readonly #stickerPacks = new Array<StickerPackPointerType>();
+  readonly #installedStickerPacks = new Array<StickerPackPointerType>();
   #ourConversation?: ConversationAttributesType;
   readonly #pinnedConversations = new Array<[number, string]>();
   readonly #customColorById = new Map<number, CustomColorDataType>();
@@ -406,7 +407,7 @@ export class BackupImportStream extends Writable {
       }
 
       // Store sticker packs and schedule downloads
-      await createPacksFromBackup(this.#stickerPacks);
+      await createPacksFromBackup(this.#installedStickerPacks);
 
       // Add placeholder call history for unused admin call links to show in calls tab
       for (const [callLink, hasCall] of this.#adminCallLinksToHasCall) {
@@ -596,8 +597,8 @@ export class BackupImportStream extends Writable {
         }
 
         await this.#fromChatItem(item.chatItem, { aboutMe });
-      } else if (item.stickerPack) {
-        await this.#fromStickerPack(item.stickerPack);
+      } else if (item.installedStickerPack) {
+        await this.#fromStickerPack(item.installedStickerPack);
       } else if (item.adHocCall) {
         await this.#fromAdHocCall(item.adHocCall);
       } else if (item.notificationProfile) {
@@ -1185,6 +1186,8 @@ export class BackupImportStream extends Writable {
       systemGivenName: dropNull(contact.systemGivenName),
       systemFamilyName: dropNull(contact.systemFamilyName),
       systemNickname: dropNull(contact.systemNickname),
+      sharedGivenName: dropNull(contact.sharedName?.given),
+      sharedFamilyName: dropNull(contact.sharedName?.family),
       hideStory: contact.hideStory,
       username: dropNull(contact.username),
       expireTimerVersion: 1,
@@ -2621,7 +2624,20 @@ export class BackupImportStream extends Writable {
       const { contact: details } = item.contactMessage;
       strictAssert(details != null, 'contactMessage must have a contact');
 
-      const { avatar, name, number, email, address, organization } = details;
+      const {
+        avatar,
+        name,
+        number,
+        email,
+        address,
+        organization,
+        nickname,
+        note,
+        aci,
+      } = details;
+
+      const givenNickname = nickname?.given || undefined;
+      const familyNickname = nickname?.family || undefined;
 
       return {
         message: {
@@ -2704,6 +2720,15 @@ export class BackupImportStream extends Writable {
                     isProfile: false,
                   }
                 : undefined,
+              aci: Bytes.isEmpty(aci) ? undefined : fromAciUuidBytes(aci),
+              note: note || undefined,
+              nickname:
+                givenNickname || familyNickname
+                  ? {
+                      givenName: givenNickname,
+                      familyName: familyNickname,
+                    }
+                  : undefined,
             },
           ],
           reactions: this.#fromReactions(item.contactMessage.reactions),
@@ -2947,10 +2972,11 @@ export class BackupImportStream extends Writable {
     }
 
     if (update.learnedProfileChange) {
-      const { e164, username } = update.learnedProfileChange.previousName ?? {};
-      if (e164 == null && username == null) {
+      const { e164, username, sharedName } =
+        update.learnedProfileChange.previousName ?? {};
+      if (e164 == null && username == null && sharedName == null) {
         log.error(
-          `${options.timestamp}: learnedProfileChange had no previous e164 or username`
+          `${options.timestamp}: learnedProfileChange had no previous e164, username, or sharedName`
         );
         this.#frameErrorCount += 1;
       }
@@ -2962,6 +2988,8 @@ export class BackupImportStream extends Writable {
               type: 'private',
               e164: e164 && e164 !== 0n ? `+${e164}` : undefined,
               username: dropNull(username),
+              // The backup only has the combined name
+              sharedGivenName: dropNull(sharedName),
             },
           },
         },
@@ -3920,7 +3948,7 @@ export class BackupImportStream extends Writable {
     );
     const key = Bytes.toBase64(packKeyBytes);
 
-    this.#stickerPacks.push({ id, key });
+    this.#installedStickerPacks.push({ id, key });
   }
 
   async #fromAdHocCall({

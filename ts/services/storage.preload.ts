@@ -21,14 +21,14 @@ import {
   mergeGroupV1Record,
   mergeGroupV2Record,
   mergeStoryDistributionListRecord,
-  mergeStickerPackRecord,
+  mergeInstalledStickerPackRecord,
   toAccountRecord,
   toContactRecord,
   toGroupV1Record,
   toGroupV2Record,
   toNotificationProfileRecord,
   toStoryDistributionListRecord,
-  toStickerPackRecord,
+  toInstalledStickerPackRecord,
   toCallLinkRecord,
   mergeCallLinkRecord,
   toChatFolderRecord,
@@ -585,7 +585,7 @@ async function generateManifest(
   uninstalledStickerPacks.forEach(stickerPack => {
     const storageRecord: Proto.StorageRecord.Params = {
       record: {
-        stickerPack: toStickerPackRecord(stickerPack),
+        installedStickerPack: toInstalledStickerPackRecord(stickerPack),
       },
     };
 
@@ -654,7 +654,7 @@ async function generateManifest(
 
     const storageRecord: Proto.StorageRecord.Params = {
       record: {
-        stickerPack: toStickerPackRecord(stickerPack),
+        installedStickerPack: toInstalledStickerPackRecord(stickerPack),
       },
     };
 
@@ -1151,12 +1151,8 @@ async function uploadManifest(
     log.warn(`${logId}: nothing to upload`);
   }
 
+  const storageKeyBase64 = itemStorage.get('storageKey');
   const recordIkm = itemStorage.get('manifestRecordIkm');
-  window.SignalCI?.handleEvent('uploadManifest', {
-    version,
-    storageKeyBase64: itemStorage.get('storageKey'),
-    recordIkmBase64: recordIkm ? Bytes.toBase64(recordIkm) : undefined,
-  });
 
   const credentials = itemStorage.get('storageCredentials');
   try {
@@ -1175,6 +1171,12 @@ async function uploadManifest(
 
     await modifyStorageRecords(writeOperation, {
       credentials,
+    });
+
+    window.SignalCI?.handleEvent('uploadManifest', {
+      version,
+      storageKeyBase64,
+      recordIkmBase64: recordIkm ? Bytes.toBase64(recordIkm) : undefined,
     });
 
     log.info(
@@ -1609,12 +1611,12 @@ async function mergeRecord(
       );
     } else if (
       itemType === ITEM_TYPE.STICKER_PACK &&
-      storageRecord.record?.stickerPack
+      storageRecord.record?.installedStickerPack
     ) {
-      mergeResult = await mergeStickerPackRecord(
+      mergeResult = await mergeInstalledStickerPackRecord(
         storageID,
         storageVersion,
-        storageRecord.record.stickerPack
+        storageRecord.record.installedStickerPack
       );
     } else if (
       itemType === ITEM_TYPE.CALL_LINK &&
@@ -2651,7 +2653,7 @@ async function sync({ reason }: { reason: string }): Promise<SyncResult> {
   }
 
   log.info(`${logId}: starting...`);
-  await maybeFixStorageKey(`sync/${reason}`);
+  await maybeFixStorageKey(logId);
 
   let manifest: Proto.ManifestRecord;
   try {
@@ -2664,7 +2666,7 @@ async function sync({ reason }: { reason: string }): Promise<SyncResult> {
 
     const localManifestVersion = manifestFromStorage || 0;
 
-    log.info(`sync: fetching latest after version=${localManifestVersion}`);
+    log.info(`${logId}: fetching latest after version=${localManifestVersion}`);
     const fetchResult = await fetchManifest(localManifestVersion);
     if (fetchResult.type === 'cannotDecrypt') {
       return {
@@ -2675,7 +2677,7 @@ async function sync({ reason }: { reason: string }): Promise<SyncResult> {
     }
     if (fetchResult.type === 'noManifest') {
       log.info(
-        `sync: no updates, version=${localManifestVersion}, marking storageFetchComplete=true`
+        `${logId}: no updates, version=${localManifestVersion}, marking storageFetchComplete=true`
       );
       await itemStorage.put('storageFetchComplete', true);
       return {
@@ -2696,7 +2698,7 @@ async function sync({ reason }: { reason: string }): Promise<SyncResult> {
       (version !== 0 || localManifestVersion !== 0)
     ) {
       log.error(
-        'sync: remote manifest version mismatch ' +
+        `${logId}: remote manifest version mismatch ` +
           `${version} <= ${localManifestVersion}`
       );
       return {
@@ -2708,14 +2710,14 @@ async function sync({ reason }: { reason: string }): Promise<SyncResult> {
     await window.waitForEmptyEventQueue();
 
     log.info(
-      `sync: updating to remoteVersion=${version} ` +
+      `${logId}: updating to remoteVersion=${version} ` +
         `sourceDevice=${manifest.sourceDevice ?? '?'} from ` +
         `version=${localManifestVersion}`
     );
 
     await processManifest(manifest, version);
 
-    log.info(`sync: updated to version=${version}`);
+    log.info(`${logId}: updated to version=${version}`);
 
     await itemStorage.put('manifestVersion', version);
     if (Bytes.isNotEmpty(manifest.recordIkm)) {
@@ -2733,13 +2735,12 @@ async function sync({ reason }: { reason: string }): Promise<SyncResult> {
       });
     }
 
-    log.info('sync: complete');
-  } catch (error) {
-    log.error('sync: error processing manifest', Errors.toLogFormat(error));
-    throw error;
+    log.info(`${logId}: complete`);
+    return { success: true, manifest };
+  } catch (err) {
+    log.error(`${logId}: error processing manifest`, Errors.toLogFormat(err));
+    throw err;
   }
-
-  return { success: true, manifest };
 }
 
 async function upload({

@@ -38,6 +38,22 @@ export enum RenderLocation {
   Timeline = 'Timeline',
 }
 
+const RenderLocationClassNames: Record<RenderLocation, string> = {
+  [RenderLocation.ConversationList]:
+    'MessageTextRenderer__formatting--spoiler-ConversationList',
+  [RenderLocation.Quote]: 'MessageTextRenderer__formatting--spoiler-Quote',
+  [RenderLocation.MediaEditor]:
+    'MessageTextRenderer__formatting--spoiler-MediaEditor',
+  [RenderLocation.PinnedMessagesBar]:
+    'MessageTextRenderer__formatting--spoiler-PinnedMessagesBar',
+  [RenderLocation.SearchResult]:
+    'MessageTextRenderer__formatting--spoiler-SearchResult',
+  [RenderLocation.StoryViewer]:
+    'MessageTextRenderer__formatting--spoiler-StoryViewer',
+  [RenderLocation.Timeline]:
+    'MessageTextRenderer__formatting--spoiler-Timeline',
+};
+
 type Props = {
   bodyRanges: BodyRangesForDisplayType;
   direction: 'incoming' | 'outgoing' | undefined;
@@ -167,10 +183,7 @@ function renderNode({
 
     if (!isSpoilerHidden) {
       return (
-        <span
-          key={key}
-          className="MessageTextRenderer__formatting--spoiler--revealed"
-        >
+        <span key={key} data-spoiler>
           {content}
         </span>
       );
@@ -180,16 +193,18 @@ function renderNode({
       // oxlint-disable-next-line jsx_a11y/no-static-element-interactions
       <span
         key={key}
+        data-spoiler
         tabIndex={disableLinks ? undefined : 0}
         role={disableLinks ? undefined : 'button'}
         aria-label={i18n('icu:MessageTextRenderer--spoiler--label')}
         aria-expanded={false}
         className={classNames(
           'MessageTextRenderer__formatting--spoiler',
-          `MessageTextRenderer__formatting--spoiler-${renderLocation}`,
-          direction
-            ? `MessageTextRenderer__formatting--spoiler-${renderLocation}--${direction}`
-            : null,
+          RenderLocationClassNames[renderLocation],
+          direction === 'incoming' &&
+            'MessageTextRenderer__formatting--spoiler-incoming',
+          direction === 'outgoing' &&
+            'MessageTextRenderer__formatting--spoiler-outgoing',
           disableLinks
             ? 'MessageTextRenderer__formatting--spoiler--noninteractive'
             : null
@@ -270,6 +285,7 @@ function renderNode({
         href={node.url}
         target="_blank"
         rel="noreferrer"
+        data-monospace={node.isMonospace ? true : undefined}
       >
         {content}
       </a>
@@ -277,7 +293,11 @@ function renderNode({
   }
 
   return (
-    <span key={key} className={formattingClasses}>
+    <span
+      key={key}
+      className={formattingClasses}
+      data-monospace={node.isMonospace ? true : undefined}
+    >
       {content}
     </span>
   );

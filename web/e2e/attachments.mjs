@@ -532,7 +532,7 @@ export async function runAttachmentScenarios(ctx) {
     for (let attempt = 1; ; attempt += 1) {
       try {
         // eslint-disable-next-line no-await-in-loop
-        await page().click('.Inbox__conversation button[aria-label="Add attachment or poll"]');
+        await page().click('.ConversationPanel button[aria-label="Add attachment or poll"]');
         // eslint-disable-next-line no-await-in-loop
         const menuItem = await page().waitForSelector(`::-p-xpath(//*[@role="menuitem"][contains(., "${item}")])`, { timeout: 10_000 });
         // eslint-disable-next-line no-await-in-loop
@@ -543,7 +543,7 @@ export async function runAttachmentScenarios(ctx) {
           await page().keyboard.press('Escape');
           const testId = item === 'File' ? 'attachfile-input' : 'attachfile-input-media';
           // eslint-disable-next-line no-await-in-loop
-          const input = await page().waitForSelector(`.Inbox__conversation input[data-testid="${testId}"]`, { timeout: 10_000 });
+          const input = await page().waitForSelector(`.ConversationPanel input[data-testid="${testId}"]`, { timeout: 10_000 });
           // eslint-disable-next-line no-await-in-loop
           await input.uploadFile(file);
           break;
@@ -582,7 +582,7 @@ export async function runAttachmentScenarios(ctx) {
 
   /** Types `text` into the composer and sends; resolves to what Alice's phone received. */
   async function sendFromComposer(text) {
-    const editor = '.Inbox__conversation [data-testid=CompositionInput][data-enabled=true] .ql-editor';
+    const editor = '.ConversationView__composition-area [data-testid=CompositionInput][data-enabled=true] .ql-editor';
     await page().waitForSelector(editor, { timeout: STEP_TIMEOUT_MS });
     await page().click(editor);
     await page().keyboard.type(text);
@@ -634,7 +634,7 @@ export async function runAttachmentScenarios(ctx) {
     const imageFile = join(REPO, 'fixtures/kitten-4-112-112.jpg');
     await attachViaMenu('Photos & videos', imageFile);
     await page()
-      .waitForSelector('.CompositionArea__attachment-list .module-image--loaded, .CompositionArea__attachment-list img', { timeout: STEP_TIMEOUT_MS })
+      .waitForSelector('.CompositionArea__attachment-list .module-image[data-loaded], .CompositionArea__attachment-list img', { timeout: STEP_TIMEOUT_MS })
       .catch(() => {
         throw new Error('the picked image did not show in the composer');
       });
@@ -925,7 +925,7 @@ export async function runAttachmentScenarios(ctx) {
     });
     await new Promise(resolve => setTimeout(resolve, 1000));
     const before = await page().evaluate(() => window.__microphoneRequests);
-    const record = '.Inbox__conversation button[aria-label="Start recording voice message"]';
+    const record = '.ConversationPanel button[aria-label="Start recording voice message"]';
     await page()
       .waitForSelector(record, { timeout: STEP_TIMEOUT_MS })
       .catch(() => {

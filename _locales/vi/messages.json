@@ -2,6 +2,9 @@
   "icu:AxoAlertDialog.Cancel": {
     "messageformat": "Hủy"
   },
+  "icu:AxoAlertDialog.Ok": {
+    "messageformat": "OK"
+  },
   "icu:AxoButton.Pending": {
     "messageformat": "Đang chờ"
   },
@@ -73,9 +76,6 @@
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--2": {
     "messageformat": "Thiết bị chính của bạn sẽ quản lý các thiết bị đã liên kết, bạn có thể liên kết tối đa 5 thiết bị."
-  },
-  "icu:LinkedDevicesOnboardingDialog__bullet--3": {
-    "messageformat": "Cài đặt tài khoản chỉ được quản lý trên thiết bị chính của bạn, bao gồm cài đặt tài khoản và bản sao lưu."
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--3--1": {
     "messageformat": "Cài đặt tài khoản và các bản sao lưu chỉ có thể được quản lý trên thiết bị chính của bạn."
@@ -673,6 +673,9 @@
   },
   "icu:KeyTransparencyOnboardingDialog__Description": {
     "messageformat": "Đối với các liên hệ bạn đã kết nối thông qua số điện thoại, Signal có thể tự động xác nhận xem kết nối có an toàn hay không bằng cách sử dụng quy trình được gọi là độ minh bạch của mã khóa. Để tăng độ bảo mật, bạn vẫn có thể xác minh thủ công các kết nối bằng mã QR hoặc bằng cách so sánh mã số an toàn."
+  },
+  "icu:KeyTransparencyOnboardingDialog__Description-v2": {
+    "messageformat": "<paragraph>Đối với các liên hệ bạn đã kết nối thông qua số điện thoại, Signal có thể tự động xác nhận xem kết nối có an toàn hay không bằng cách sử dụng quy trình được gọi là độ minh bạch của mã khóa.</paragraph><paragraph>Để tăng độ bảo mật, bạn vẫn có thể xác minh thủ công các kết nối bằng mã QR hoặc bằng cách so sánh mã số an toàn.</paragraph>"
   },
   "icu:KeyTransparencyOnboardingDialog__Continue": {
     "messageformat": "Tiếp tục"
@@ -1481,6 +1484,9 @@
   "icu:ConversationMerge--learn-more": {
     "messageformat": "Tìm hiểu thêm"
   },
+  "icu:ConversationMerge--explainer-dialog--label": {
+    "messageformat": "Lịch sử tin nhắn đã được hợp nhất"
+  },
   "icu:ConversationMerge--explainer-dialog--line-1": {
     "messageformat": "Sau khi nhắn tin với {obsoleteConversationTitle} bạn biết số này thuộc về {conversationTitle}. Số điện thoại của người đó riêng tư."
   },
@@ -1741,6 +1747,9 @@
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__Search__Placeholder": {
     "messageformat": "Tìm kiếm"
+  },
+  "icu:Preferences__EditChatFolderPage__SelectChatsDialog__NoChats": {
+    "messageformat": "Không có cuộc trò chuyện"
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__ChatTypesSection__Title": {
     "messageformat": "Loại cuộc trò chuyện"
@@ -3512,6 +3521,9 @@
   "icu:MessageRequests--unblock-group-confirm-body": {
     "messageformat": "Các thành viên trong nhóm có thể thêm lại bạn vào nhóm."
   },
+  "icu:MessageRequests--unblock-signal-confirm-body": {
+    "messageformat": "Bạn sẽ nhận được các cập nhật và tin tức của Signal."
+  },
   "icu:MessageRequests--block-and-report-spam-success-toast": {
     "messageformat": "Đã báo cáo spam và chặn."
   },
@@ -3526,6 +3538,9 @@
   },
   "icu:MessageRequests--block-group-confirm-body": {
     "messageformat": "Bạn sẽ không thể nhận được tin nhắn hoặc cập nhật từ nhóm này và các thành viên sẽ không thể thêm bạn vào lại nhóm này."
+  },
+  "icu:MessageRequests--block-signal-confirm-body": {
+    "messageformat": "Bạn sẽ không còn nhận được các cập nhật và tin tức của Signal nữa."
   },
   "icu:MessageRequests--reportAndMaybeBlock": {
     "messageformat": "Báo cáo…"
@@ -6169,9 +6184,6 @@
   "icu:Preferences__SignalAccountKeys__Description": {
     "messageformat": "Lưu ở nơi an toàn, bạn sẽ cần thông tin đăng nhập để khôi phục tài khoản và dữ liệu của mình. Không bao giờ chia sẻ Signal Login với bất kỳ ai."
   },
-  "icu:Preferences__SignalAccountKeys__AccountKey": {
-    "messageformat": "Mã khóa tài khoản"
-  },
   "icu:Preferences__SignalAccountKeys__AccountID": {
     "messageformat": "ID tài khoản"
   },
@@ -6673,6 +6685,9 @@
   "icu:Preferences--blocked-users--description": {
     "messageformat": "Người dùng bị chặn sẽ không thể gửi tin nhắn hay gọi cho bạn"
   },
+  "icu:Preferences--add-blocked": {
+    "messageformat": "Thêm người dùng bị chặn hoặc nhóm"
+  },
   "icu:Preferences--blocked-users": {
     "messageformat": "Người dùng Đã Chặn"
   },
@@ -6681,6 +6696,12 @@
   },
   "icu:Preferences--blocked--blocked-on": {
     "messageformat": "Bị chặn vào {blockedAt}"
+  },
+  "icu:Preferences--BlockChooser--Done": {
+    "messageformat": "Xong"
+  },
+  "icu:Preferences--BlockChooser--Search--Placeholder": {
+    "messageformat": "Tìm kiếm"
   },
   "icu:Preferences--signal-backups": {
     "messageformat": "Sao lưu bảo mật Signal"
@@ -7097,7 +7118,7 @@
     "messageformat": "Vui lòng thử lại trong {duration}"
   },
   "icu:StandaloneRegistration--PhoneNumber--RegionCodeSelector--Label": {
-    "messageformat": "Select region code"
+    "messageformat": "Chọn Mã quốc gia"
   },
   "icu:StandaloneRegistration--PhoneNumber--placeholder": {
     "messageformat": "Số điện thoại"
@@ -8561,12 +8582,6 @@
   "icu:CallLinkPendingParticipantModal__DenyButtonLabel": {
     "messageformat": "Từ chối"
   },
-  "icu:CallLinkRestrictionsSelect__Option--Off": {
-    "messageformat": "Tắt"
-  },
-  "icu:CallLinkRestrictionsSelect__Option--On": {
-    "messageformat": "Bật"
-  },
   "icu:CallLinkAddNameModal__Title": {
     "messageformat": "Thêm tên cuộc gọi"
   },
@@ -8614,6 +8629,39 @@
   },
   "icu:SaveMultiDialog__title": {
     "messageformat": "Lưu tập tin đính kèm"
+  },
+  "icu:EmbeddedContact__message": {
+    "messageformat": "Tin nhắn"
+  },
+  "icu:ContactDetail__message": {
+    "messageformat": "Tin nhắn"
+  },
+  "icu:ContactDetail__add-to-group": {
+    "messageformat": "Thêm vào một nhóm"
+  },
+  "icu:ContactDetail__nickname": {
+    "messageformat": "Biệt danh"
+  },
+  "icu:ContactDetail__note": {
+    "messageformat": "Ghi chú"
+  },
+  "icu:email-v2": {
+    "messageformat": "Email"
+  },
+  "icu:home-v2": {
+    "messageformat": "Nhà"
+  },
+  "icu:mobile-v2": {
+    "messageformat": "Di động"
+  },
+  "icu:work-v2": {
+    "messageformat": "Công việc"
+  },
+  "icu:phone-v2": {
+    "messageformat": "Số điện thoại"
+  },
+  "icu:address-v2": {
+    "messageformat": "Địa chỉ"
   },
   "icu:WhatsNew__modal-title": {
     "messageformat": "Có gì mới"
@@ -8781,7 +8829,7 @@
     "messageformat": "Cảm ơn bạn đã hỗ trợ Signal. Đóng góp của bạn giúp duy trì sứ mệnh bảo vệ việc tự biểu đạt và cung cấp nền tảng giao tiếp bảo mật cho hàng triệu người trên thế giới, thông qua công nghệ mã nguồn mở hướng tới quyền riêng tư. Nếu bạn là một cư dân của Hoa Kỳ, vui lòng giữ biên lai này cho hồ sơ thuế. Signal Technology Foundation là một tổ chức phi lợi nhuận được miễn trừ nghĩa vụ thuế ở Hoa Kỳ theo mục 501c3 của Internal Revenue Code. ID Thuế Liên bang của chúng tôi là 82-4506840. Signal không cung cấp bất kỳ hàng hóa hoặc dịch vụ nào để đổi lấy khoản đóng góp này."
   },
   "icu:MessageCta__Donate": {
-    "messageformat": "Donate Now"
+    "messageformat": "Ủng Hộ Ngay"
   },
   "icu:Donations__OfflineTooltip": {
     "messageformat": "Bạn đang ngoại tuyến. Vui lòng kết nối internet để hoàn tất khoản ủng hộ."
@@ -8981,6 +9029,9 @@
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__AccessibilityLabel": {
     "messageformat": "Mô tả vấn đề"
   },
+  "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__Placeholder": {
+    "messageformat": "Mô tả vấn đề của bạn"
+  },
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__HelpText": {
     "messageformat": "Vui lòng cung cấp mọi thông tin liên quan đến vấn đề. Mọi thông tin bạn chia sẻ ở đây sẽ được bảo mật và chỉ được sử dụng để tăng chất lượng cuộc gọi Signal."
   },
@@ -9095,5 +9146,14 @@
   },
   "icu:WhatsNew__8.30--1": {
     "messageformat": "Chúng tôi cũng đã thêm một lối tắt tiện lợi để mở cài đặt hệ thống trên Windows trong trường hợp bạn cố gắng tham gia cuộc gọi video nhưng Signal chưa được cấp quyền truy cập camera."
+  },
+  "icu:WhatsNew__8.32--0": {
+    "messageformat": "Bộ lọc tin nhắn chưa đọc hiện đã được hỗ trợ trong các thư mục tin nhắn cũng như trên giao diện tìm kiếm."
+  },
+  "icu:WhatsNew__8.32--1": {
+    "messageformat": "Cải thiện độ tin cậy khi tải lên trong điều kiện mạng kém. Cảm ơn, <GH3mmmbulus></GH3mmmbulus>!"
+  },
+  "icu:WhatsNew__8.32--2": {
+    "messageformat": "Phím tắt &quot;(N)&quot; trỏ chính xác đến emoji ngón cái hướng xuống. Cảm ơn <lnicola></lnicola> vì đã sửa lỗi."
   }
 }

@@ -74,7 +74,7 @@ import {
 import type { BackupPresentationHeadersType } from '../types/backups.node.ts';
 import { HTTPError } from '../types/HTTPError.std.ts';
 import * as Bytes from '../Bytes.std.ts';
-import { getRandomBytes, randomInt } from '../Crypto.node.ts';
+import { randomInt } from '../Crypto.node.ts';
 import * as linkPreviewFetch from '../linkPreviews/linkPreviewFetch.preload.ts';
 import { isBadgeImageFileUrlValid } from '../badges/isBadgeImageFileUrlValid.std.ts';
 
@@ -144,6 +144,7 @@ import {
 import { PhoneNumberDiscoverability } from '../util/phoneNumberDiscoverability.std.ts';
 import { sleep } from '../util/sleep.std.ts';
 import { exponentialBackoffSleepTime } from '../util/exponentialBackoff.std.ts';
+import { getCapabilities } from '../util/getCapabilities.std.ts';
 
 const { escapeRegExp, isNumber, throttle } = lodash;
 
@@ -779,6 +780,7 @@ export function makeKeysLowercase<V>(
 }
 
 const CHAT_CALLS = {
+  accountAttributes: 'v1/accounts/attributes',
   attachmentUploadForm: 'v4/attachments/form/upload',
   attestation: 'v1/attestation',
   backupAuth: 'v2/backup/auth',
@@ -1089,6 +1091,7 @@ export type CreateAccountOptionsType = Readonly<{
   aciSignedPreKey: UploadSignedPreKeyType;
   aciPqLastResortPreKey: UploadKyberPreKeyType;
   registrationLockToken?: string;
+  recoveryPassword: Uint8Array<ArrayBuffer>;
   phoneNumberDiscoverability: PhoneNumberDiscoverability;
 
   number: string;
@@ -2881,6 +2884,7 @@ export async function createAccount({
   newPassword,
   aciPqLastResortPreKey,
   registrationLockToken,
+  recoveryPassword,
   phoneNumberDiscoverability,
 
   number,
@@ -2900,16 +2904,10 @@ export async function createAccount({
     );
   }
 
-  const capabilities: CapabilitiesUploadType = {
-    attachmentBackfill: true,
-    spqr: true,
-    usernameChangeSyncMessage: true,
-    optionalPhoneNumber: false,
-  };
+  const capabilities: CapabilitiesUploadType = getCapabilities({
+    optionalPhoneNumber: number == null,
+  });
 
-  // Desktop doesn't support recovery but we need to provide a recovery password.
-  // Since the value isn't used, just use a random one and then throw it away.
-  const recoveryPassword = getRandomBytes(32);
   const accountAttributes = new AccountAttributes({
     aciRegistrationId: registrationId,
     pniRegistrationId,
@@ -2968,12 +2966,9 @@ export async function linkDevice(
     aciPqLastResortPreKey,
   } = options;
 
-  const capabilities: CapabilitiesUploadType = {
-    attachmentBackfill: true,
-    spqr: true,
-    usernameChangeSyncMessage: true,
+  const capabilities: CapabilitiesUploadType = getCapabilities({
     optionalPhoneNumber: !options.hasE164,
-  };
+  });
 
   const jsonData = {
     verificationCode,
@@ -3014,6 +3009,32 @@ export async function linkDevice(
       return response;
     }
   );
+}
+
+export type AccountAttributesJSON = {
+  // Per-device
+  fetchesMessages: boolean;
+  capabilities: Record<string, boolean>;
+  name: string | null;
+  // Per-account
+  registrationId: number;
+  pniRegistrationId: number | null;
+  registrationLock: string | null;
+  unidentifiedAccessKey: string;
+  unrestrictedUnidentifiedAccess: boolean;
+  discoverableByPhoneNumber: boolean;
+  recoveryPassword: string | null;
+};
+
+export async function updateAccountAttributes(
+  attributes: AccountAttributesJSON
+): Promise<void> {
+  await _ajax({
+    host: 'chatService',
+    call: 'accountAttributes',
+    httpType: 'PUT',
+    jsonData: attributes,
+  });
 }
 
 export async function unlink(): Promise<void> {

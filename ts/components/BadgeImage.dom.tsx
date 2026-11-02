@@ -24,20 +24,12 @@ export function BadgeImage({
   );
 
   if (!imagePath) {
-    return (
-      <Spinner
-        ariaLabel={name}
-        moduleClassName="BadgeImage BadgeImage__loading"
-        size={`${size}px`}
-        svgSize="normal"
-      />
-    );
+    return <Spinner ariaLabel={name} size={`${size}px`} svgSize="normal" />;
   }
 
   return (
     <img
       alt={name}
-      className="BadgeImage"
       src={imagePath}
       style={{
         width: size,

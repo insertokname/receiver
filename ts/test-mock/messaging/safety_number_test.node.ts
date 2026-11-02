@@ -129,7 +129,7 @@ describe('safety number', function (this: Mocha.Suite) {
     await input.press('Enter');
 
     debug('Waiting for safety number dialog');
-    const dialog = window.getByRole('alertdialog', {
+    const dialog = window.getByRole('dialog', {
       name: 'Safety Number Changes',
     });
 
@@ -155,13 +155,12 @@ describe('safety number', function (this: Mocha.Suite) {
     await window.getByTestId('NavTabsItem--Stories').click();
 
     await storiesPane
-      .locator('button.Stories__pane__add-story__button')
+      .locator('.Stories__pane__list')
+      .getByRole('button', { name: 'Add a story' })
       .click();
     await storiesPane
-      .locator(
-        '.ContextMenu__popper .Stories__pane__add-story__option--title ' +
-          '>> "Text story"'
-      )
+      .locator('.ContextMenu__popper')
+      .getByRole('button', { name: 'Text story' })
       .click();
 
     debug('Focusing textarea');
@@ -187,7 +186,7 @@ describe('safety number', function (this: Mocha.Suite) {
     await window.locator('button.SendStoryModal__send').click();
 
     debug('Waiting for safety number dialog');
-    const dialog = window.getByRole('alertdialog', {
+    const dialog = window.getByRole('dialog', {
       name: 'Safety Number Changes',
     });
     await dialog.locator(`"${alice.profileName}"`).waitFor();

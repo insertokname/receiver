@@ -2,6 +2,9 @@
   "icu:AxoAlertDialog.Cancel": {
     "messageformat": "გაუქმება"
   },
+  "icu:AxoAlertDialog.Ok": {
+    "messageformat": "OK"
+  },
   "icu:AxoButton.Pending": {
     "messageformat": "იგზავნება"
   },
@@ -73,9 +76,6 @@
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--2": {
     "messageformat": "შენი მთავარი მოწყობილობა მართავს რა იქნება მიბმული, შეგიძლია 5-მდე მოწყობილობა მიაბა."
-  },
-  "icu:LinkedDevicesOnboardingDialog__bullet--3": {
-    "messageformat": "ანგარიშის პარამეტრები მხოლოდ შენს მთავარ მოწყობილობაზე იმართება, ანგარიშის პარამეტრებისა და სათადარიგო ასლების ჩათვლით."
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--3--1": {
     "messageformat": "ანგარიშის პარამეტრებისა და სათადარიგო ასლების მართვა მხოლოდ შენს მთავარ მოწყობილობაზეა შესაძლებელი."
@@ -673,6 +673,9 @@
   },
   "icu:KeyTransparencyOnboardingDialog__Description": {
     "messageformat": "Signal-ს შეუძლია კონტაქტებისთვის, რომლებთანაც მობილურის ნომრით ხარ დაკავშირებული, კავშირის უსაფრთხოება ავტომატურად დაადასტუროს პროცესის დახმარებით, რომელსაც გასაღების გამჭვირვალობა ჰქვია. დამატებითი უსაფრთხოებისთვის, კავშირების ვერიფიკაცია ხელითაც შეგიძლია, QR კოდის ან ნომრის გამოყენებით."
+  },
+  "icu:KeyTransparencyOnboardingDialog__Description-v2": {
+    "messageformat": "<paragraph>Signal-ს შეუძლია კონტაქტებისთვის, რომლებთანაც მობილურის ნომრით ხარ დაკავშირებული, კავშირის უსაფრთხოება ავტომატურად დაადასტუროს პროცესის დახმარებით, რომელსაც გასაღების გამჭვირვალობა ჰქვია.</paragraph><paragraph>დამატებითი უსაფრთხოებისთვის, კავშირების ვერიფიკაცია ხელითაც შეგიძლია, QR კოდის ან ნომრის გამოყენებით.</paragraph>"
   },
   "icu:KeyTransparencyOnboardingDialog__Continue": {
     "messageformat": "გაგრძელება"
@@ -1481,6 +1484,9 @@
   "icu:ConversationMerge--learn-more": {
     "messageformat": "გაიგე მეტი"
   },
+  "icu:ConversationMerge--explainer-dialog--label": {
+    "messageformat": "მიმოწერის ისტორია გაერთიანდა"
+  },
   "icu:ConversationMerge--explainer-dialog--line-1": {
     "messageformat": "{obsoleteConversationTitle}-თან მიმოწერის შემდეგ შეიტყვე, რომ ეს ნომერი {conversationTitle}-ს ეკუთვნის. ეს მობილურის ნომერი კონფიდენციალურია."
   },
@@ -1741,6 +1747,9 @@
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__Search__Placeholder": {
     "messageformat": "ძიება"
+  },
+  "icu:Preferences__EditChatFolderPage__SelectChatsDialog__NoChats": {
+    "messageformat": "ჩატები ვერ მოიძებნა"
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__ChatTypesSection__Title": {
     "messageformat": "ჩატის ტიპები"
@@ -3512,6 +3521,9 @@
   "icu:MessageRequests--unblock-group-confirm-body": {
     "messageformat": "ჯგუფის წევრებს შეეძლებათ ისევ ამ ჯგუფში თქვენი დამატება."
   },
+  "icu:MessageRequests--unblock-signal-confirm-body": {
+    "messageformat": "Signal-ის შესახებ სიახლეებსა და აფდეითებს მიიღებ."
+  },
   "icu:MessageRequests--block-and-report-spam-success-toast": {
     "messageformat": "დაფიქსირდა როგორც სპამი და დაიბლოკა."
   },
@@ -3526,6 +3538,9 @@
   },
   "icu:MessageRequests--block-group-confirm-body": {
     "messageformat": "ამ ჯგუფიდან შეტყობინებებს ან განახლებებს აღარ მიიღებ, და წევრები ვეღარ შეძლებენ შენს დამატებას ამ ჯგუფში."
+  },
+  "icu:MessageRequests--block-signal-confirm-body": {
+    "messageformat": "Signal-ის შესახებ სიახლეებსა და აფდეითებს აღარ მიიღებ."
   },
   "icu:MessageRequests--reportAndMaybeBlock": {
     "messageformat": "დარეპორტება..."
@@ -6169,9 +6184,6 @@
   "icu:Preferences__SignalAccountKeys__Description": {
     "messageformat": "ეს უსაფრთხო ადგილას შეინახე, შენი შესვლის ინფორმაცია შენი ანგარიშისა და მონაცემების აღსადგენადაა საჭირო. არასდროს არავის გაუზიარო."
   },
-  "icu:Preferences__SignalAccountKeys__AccountKey": {
-    "messageformat": "ანგარიშის გასაღები"
-  },
   "icu:Preferences__SignalAccountKeys__AccountID": {
     "messageformat": "ანგარიშის ID"
   },
@@ -6673,6 +6685,9 @@
   "icu:Preferences--blocked-users--description": {
     "messageformat": "დაბლოკილ მომხმარებლებს არ ექნებათ შესაძლებლობა დაგირეკონ ან მოგწერონ."
   },
+  "icu:Preferences--add-blocked": {
+    "messageformat": "დაამატე დაბლოკილი მომხმარებელი ან ჯგუფი"
+  },
   "icu:Preferences--blocked-users": {
     "messageformat": "დაბლოკილი მომხმარებლები"
   },
@@ -6681,6 +6696,12 @@
   },
   "icu:Preferences--blocked--blocked-on": {
     "messageformat": "დაბლოკვის თარიღია {blockedAt}"
+  },
+  "icu:Preferences--BlockChooser--Done": {
+    "messageformat": "შესრულებულია"
+  },
+  "icu:Preferences--BlockChooser--Search--Placeholder": {
+    "messageformat": "ძიება"
   },
   "icu:Preferences--signal-backups": {
     "messageformat": "Signal-ის უსაფრთხო სათადარიგო ასლები"
@@ -7097,7 +7118,7 @@
     "messageformat": "გთხოვთ, {duration}-ში თავიდან სცადო"
   },
   "icu:StandaloneRegistration--PhoneNumber--RegionCodeSelector--Label": {
-    "messageformat": "Select region code"
+    "messageformat": "აირჩიე ქვეყნის კოდი"
   },
   "icu:StandaloneRegistration--PhoneNumber--placeholder": {
     "messageformat": "ტელეფონის ნომერი"
@@ -8561,12 +8582,6 @@
   "icu:CallLinkPendingParticipantModal__DenyButtonLabel": {
     "messageformat": "უარყოფა"
   },
-  "icu:CallLinkRestrictionsSelect__Option--Off": {
-    "messageformat": "გამორთული"
-  },
-  "icu:CallLinkRestrictionsSelect__Option--On": {
-    "messageformat": "ჩართული"
-  },
   "icu:CallLinkAddNameModal__Title": {
     "messageformat": "ზარის სახელის დამატება"
   },
@@ -8614,6 +8629,39 @@
   },
   "icu:SaveMultiDialog__title": {
     "messageformat": "დანართების შენახვა"
+  },
+  "icu:EmbeddedContact__message": {
+    "messageformat": "მიწერა"
+  },
+  "icu:ContactDetail__message": {
+    "messageformat": "მიწერა"
+  },
+  "icu:ContactDetail__add-to-group": {
+    "messageformat": "ჯგუფში დამატება"
+  },
+  "icu:ContactDetail__nickname": {
+    "messageformat": "მეტსახელი"
+  },
+  "icu:ContactDetail__note": {
+    "messageformat": "ჩანიშვნები"
+  },
+  "icu:email-v2": {
+    "messageformat": "ელ-ფოსტა"
+  },
+  "icu:home-v2": {
+    "messageformat": "მისამართი"
+  },
+  "icu:mobile-v2": {
+    "messageformat": "მობილური"
+  },
+  "icu:work-v2": {
+    "messageformat": "სამსახური"
+  },
+  "icu:phone-v2": {
+    "messageformat": "ტელეფონი"
+  },
+  "icu:address-v2": {
+    "messageformat": "მისამართი"
   },
   "icu:WhatsNew__modal-title": {
     "messageformat": "რა არის ახალი"
@@ -8781,7 +8829,7 @@
     "messageformat": "მადლობა Signal-ის მხარდაჭერისთვის. შენი წვლილი ხელს უწყობს გამოხატვის თავისუფლების დაცვისა და მთელ მსოფლიოში მილიონობით ადამიანისთვის უსაფრთხო გლობალური კომუნიკაციის უზრუნველყოფის მისიის განხორციელებას ღია კოდის კონფიდენციალურობის ტექნოლოგიების მეშვეობით. თუ შეერთებული შტატების რეზიდენტი ხარ, გთხოვთ, ეს ქვითარი შენი საგადასახადო ჩანაწერებისთვის შეინახო. Signal-ის ტექნოლოგიების ფონდი არის გადასახადებისგან გათავისუფლებული არაკომერციული ორგანიზაცია შეერთებულ შტატებში, Internal Revenue Code-ის 501c3 მუხლის შესაბამისად. ჩვენი ფედერალური საგადასახადო ID არის 82-4506840. ამ კონტრიბუციის გათვალისწინებით, Signal-ს პროდუქტები თუ მომსახურება არ მიუწოდებია."
   },
   "icu:MessageCta__Donate": {
-    "messageformat": "Donate Now"
+    "messageformat": "გააკეთე დონაცია ახლა"
   },
   "icu:Donations__OfflineTooltip": {
     "messageformat": "ონლაინ არ ხარ. გთხოვთ, დონაციის შესასრულებლად ინტერნეტს დაუკავშირდე."
@@ -8981,6 +9029,9 @@
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__AccessibilityLabel": {
     "messageformat": "პრობლემის აღწერა"
   },
+  "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__Placeholder": {
+    "messageformat": "აღწერე შენი პრობლემა"
+  },
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__HelpText": {
     "messageformat": "გთხოვთ საკითხთან დაკავშირებული ნებისმიერი დეტალი მიუთითო. ყველაფერს, რასაც აქ გააზიარებ, კონფიდენციალურობას შევუნარჩუნებთ და მხოლოდ Signal-ის ზარების გასაუმჯობესებლად გამოვიყენებთ."
   },
@@ -9095,5 +9146,14 @@
   },
   "icu:WhatsNew__8.30--1": {
     "messageformat": "გარდა ამისა, Windows-ზე სისტემის პარამეტრების გასახსნელად მოსახერხებელი მალსახმობი დავამატეთ იმ შემთხვევისთვის, თუ ვიდეო ზარში ჩართვას ეცდები, მაგრამ Signal-ს კამერაზე წვდომის ნებართვა არ ექნება. ახლა უფრო მარტივად გაიგებ, რა უნდა გააკეთო, რომ ხალხმა დაგინახოს."
+  },
+  "icu:WhatsNew__8.32--0": {
+    "messageformat": "წაუკითხავი შეტყობინებების ფილტრი ახლა უკვე შეტყობინებების საქაღალდეებსა და ძიების ინტერფეისშიცაა ხელმისაწვდომი."
+  },
+  "icu:WhatsNew__8.32--1": {
+    "messageformat": "უფრო საიმედო ატვირთვა არასტაბილური ინტერნეტკავშირის პირობებში. გმადლობთ, <GH3mmmbulus></GH3mmmbulus>!"
+  },
+  "icu:WhatsNew__8.32--2": {
+    "messageformat": "„(N)“ მალსახმობი სწორად მიუთითებს ქვემოთ დაშვებული ცერა თითის ემოჯიზე. გმადლობთ, <lnicola></lnicola>, ხარვეზების გამოსწორებისთვის."
   }
 }

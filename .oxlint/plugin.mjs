@@ -2,8 +2,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // @ts-check
 import { enforceArrayBuffer } from './rules/enforceArrayBuffer.mjs';
+import { enforceClassNameHasStyles } from './rules/enforceClassNameHasStyles.mjs';
 import { enforceFileSuffix } from './rules/enforceFileSuffix.mjs';
 import { enforceLicenseComments } from './rules/enforceLicenseComments.mjs';
+import { enforceStaticClassNames } from './rules/enforceStaticClassNames.mjs';
 import { enforceTw } from './rules/enforceTw.mjs';
 import { enforceTypeAliasReadonlyDeep } from './rules/enforceTypeAliasReadonlyDeep.mjs';
 import { noDisabledTests } from './rules/noDisabledTests.mjs';
@@ -21,8 +23,10 @@ const plugin = {
   },
   rules: {
     'enforce-array-buffer': enforceArrayBuffer,
+    'enforce-class-name-has-styles': enforceClassNameHasStyles,
     'enforce-file-suffix': enforceFileSuffix,
     'enforce-license-comments': enforceLicenseComments,
+    'enforce-static-class-names': enforceStaticClassNames,
     'enforce-tw': enforceTw,
     'enforce-type-alias-readonlydeep': enforceTypeAliasReadonlyDeep,
     'no-disabled-tests': noDisabledTests,

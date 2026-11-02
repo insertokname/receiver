@@ -86,7 +86,6 @@ const defaultMessageProps: TimelineMessagesProps = {
   canSendPollVote: true,
   canDeleteForEveryone: true,
   canDownload: true,
-  checkForAccount: action('checkForAccount'),
   clearTargetedMessage: action('default--clearTargetedMessage'),
   containerElementRef: createRef<HTMLElement | null>(),
   containerWidthBreakpoint: WidthBreakpoint.Wide,
@@ -164,7 +163,9 @@ const defaultMessageProps: TimelineMessagesProps = {
   toggleDeleteMessagesModal: action('default--toggleDeleteMessagesModal'),
   toggleForwardMessagesModal: action('default--toggleForwardMessagesModal'),
   showLightbox: action('default--showLightbox'),
-  startConversation: action('default--startConversation'),
+  startConversationWithSharedContact: action(
+    'default--startConversationWithSharedContact'
+  ),
   status: 'sent',
   text: 'This is really interesting.',
   textDirection: TextDirection.Default,
@@ -631,7 +632,7 @@ IsStoryReply.args = {
   text: 'Wow!',
   authorTitle: 'Amanda',
   isStoryReply: true,
-  moduleClassName: 'StoryReplyQuote',
+  className: 'StoryReplyQuote',
   onClose: undefined,
   rawAttachment: {
     contentType: VIDEO_MP4,
@@ -644,7 +645,7 @@ export const IsStoryReplyEmoji = Template.bind({});
 IsStoryReplyEmoji.args = {
   authorTitle: getDefaultConversation().firstName,
   isStoryReply: true,
-  moduleClassName: 'StoryReplyQuote',
+  className: 'StoryReplyQuote',
   onClose: undefined,
   rawAttachment: {
     contentType: IMAGE_PNG,

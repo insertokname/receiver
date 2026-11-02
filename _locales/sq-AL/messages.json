@@ -2,6 +2,9 @@
   "icu:AxoAlertDialog.Cancel": {
     "messageformat": "Anulo"
   },
+  "icu:AxoAlertDialog.Ok": {
+    "messageformat": "OK"
+  },
   "icu:AxoButton.Pending": {
     "messageformat": "Pezull"
   },
@@ -73,9 +76,6 @@
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--2": {
     "messageformat": "Pajisja kryesore menaxhon pajisjet e lidhura. Mund të lidhësh deri në 5 pajisje."
-  },
-  "icu:LinkedDevicesOnboardingDialog__bullet--3": {
-    "messageformat": "Parametrat e llogarisë menaxhohen vetëm në pajisjen kryesore, duke përfshirë parametrat e llogarisë dhe kopjeruajtjet."
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--3--1": {
     "messageformat": "Parametrat e llogarisë dhe kopjeruajtjet mund të menaxhohen vetëm në pajisjen kryesore."
@@ -673,6 +673,9 @@
   },
   "icu:KeyTransparencyOnboardingDialog__Description": {
     "messageformat": "Për kontaktet me të cilët je lidhur me anë të numrit të telefonit, Signal mund të konfirmojë automatikisht nëse lidhja është e sigurt duke përdorur një proces të quajtur kod transparence. Për siguri të shtuar, mund t’i verifikosh lidhjet manualisht duke përdorur kod QR ose duke krahasuar numrat e sigurisë."
+  },
+  "icu:KeyTransparencyOnboardingDialog__Description-v2": {
+    "messageformat": "<paragraph>Për kontaktet me të cilët je lidhur me anë të numrit të telefonit, Signal mund të konfirmojë automatikisht nëse lidhja është e sigurt duke përdorur një proces të quajtur kod transparence.</paragraph><paragraph>Për siguri të shtuar, mund t’i verifikosh lidhjet manualisht duke përdorur kod QR ose duke krahasuar numrat e sigurisë.</paragraph>"
   },
   "icu:KeyTransparencyOnboardingDialog__Continue": {
     "messageformat": "Vazhdo"
@@ -1481,6 +1484,9 @@
   "icu:ConversationMerge--learn-more": {
     "messageformat": "Mësoni më tepër"
   },
+  "icu:ConversationMerge--explainer-dialog--label": {
+    "messageformat": "Historiku i mesazheve u bashkua"
+  },
   "icu:ConversationMerge--explainer-dialog--line-1": {
     "messageformat": "Pas mesazheve me {obsoleteConversationTitle} mësove se ky numër i përket {conversationTitle}. Numri i tyre i telefonit është privat."
   },
@@ -1741,6 +1747,9 @@
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__Search__Placeholder": {
     "messageformat": "Kërko"
+  },
+  "icu:Preferences__EditChatFolderPage__SelectChatsDialog__NoChats": {
+    "messageformat": "Asnjë bisedë"
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__ChatTypesSection__Title": {
     "messageformat": "Llojet e bisedave"
@@ -3512,6 +3521,9 @@
   "icu:MessageRequests--unblock-group-confirm-body": {
     "messageformat": "Anëtarë të grupit do të jenë në gjendje t’ju rishtojnë te ky grup."
   },
+  "icu:MessageRequests--unblock-signal-confirm-body": {
+    "messageformat": "Do të marrësh përditësime dhe lajme nga Signal."
+  },
   "icu:MessageRequests--block-and-report-spam-success-toast": {
     "messageformat": "I raportuar si mesazh i padëshiruar dhe është bllokuar."
   },
@@ -3526,6 +3538,9 @@
   },
   "icu:MessageRequests--block-group-confirm-body": {
     "messageformat": "S’do të merrni më mesazhe apo përditësime nga ky grup, dhe anëtarët e tij s’do të jenë në gjendje t’ju shtojnë sërish te ky grup."
+  },
+  "icu:MessageRequests--block-signal-confirm-body": {
+    "messageformat": "Nuk do të marrësh më përditësime dhe lajme nga Signal."
   },
   "icu:MessageRequests--reportAndMaybeBlock": {
     "messageformat": "Raporto..."
@@ -6169,9 +6184,6 @@
   "icu:Preferences__SignalAccountKeys__Description": {
     "messageformat": "Ruaje në një vend të sigurt; të dhënat e hyrjes nevojiten për të rikthyer llogarinë dhe të dhënat. Mos ia trego askujt."
   },
-  "icu:Preferences__SignalAccountKeys__AccountKey": {
-    "messageformat": "Kodi i llogarisë"
-  },
   "icu:Preferences__SignalAccountKeys__AccountID": {
     "messageformat": "ID-ja e llogarisë"
   },
@@ -6673,6 +6685,9 @@
   "icu:Preferences--blocked-users--description": {
     "messageformat": "Përdoruesit e bllokuar nuk do të mund të telefonojnë apo të dërgojnë mesazhe"
   },
+  "icu:Preferences--add-blocked": {
+    "messageformat": "Shto përdoruesin ose grupin e bllokuar"
+  },
   "icu:Preferences--blocked-users": {
     "messageformat": "Përdoruesit e bllokuar"
   },
@@ -6681,6 +6696,12 @@
   },
   "icu:Preferences--blocked--blocked-on": {
     "messageformat": "Bllokuar më {blockedAt}"
+  },
+  "icu:Preferences--BlockChooser--Done": {
+    "messageformat": "U bë"
+  },
+  "icu:Preferences--BlockChooser--Search--Placeholder": {
+    "messageformat": "Kërko"
   },
   "icu:Preferences--signal-backups": {
     "messageformat": "Kopjeruajtjet e sigurta të Signal"
@@ -7097,7 +7118,7 @@
     "messageformat": "Të lutem, provo përsëri për {duration}"
   },
   "icu:StandaloneRegistration--PhoneNumber--RegionCodeSelector--Label": {
-    "messageformat": "Select region code"
+    "messageformat": "Përzgjidhni Kod Vendi"
   },
   "icu:StandaloneRegistration--PhoneNumber--placeholder": {
     "messageformat": "Numër telefoni"
@@ -8561,12 +8582,6 @@
   "icu:CallLinkPendingParticipantModal__DenyButtonLabel": {
     "messageformat": "Refuzo hyrjen"
   },
-  "icu:CallLinkRestrictionsSelect__Option--Off": {
-    "messageformat": "Joaktiv"
-  },
-  "icu:CallLinkRestrictionsSelect__Option--On": {
-    "messageformat": "Aktiv"
-  },
   "icu:CallLinkAddNameModal__Title": {
     "messageformat": "Shto emrin e thirrjes"
   },
@@ -8614,6 +8629,39 @@
   },
   "icu:SaveMultiDialog__title": {
     "messageformat": "Ruaj bashkëngjitjet"
+  },
+  "icu:EmbeddedContact__message": {
+    "messageformat": "Mesazh"
+  },
+  "icu:ContactDetail__message": {
+    "messageformat": "Mesazh"
+  },
+  "icu:ContactDetail__add-to-group": {
+    "messageformat": "Shtoje në grup"
+  },
+  "icu:ContactDetail__nickname": {
+    "messageformat": "Pseudonimi"
+  },
+  "icu:ContactDetail__note": {
+    "messageformat": "Shënime"
+  },
+  "icu:email-v2": {
+    "messageformat": "Email"
+  },
+  "icu:home-v2": {
+    "messageformat": "Kryefaqja"
+  },
+  "icu:mobile-v2": {
+    "messageformat": "Celular"
+  },
+  "icu:work-v2": {
+    "messageformat": "Pune"
+  },
+  "icu:phone-v2": {
+    "messageformat": "telefon"
+  },
+  "icu:address-v2": {
+    "messageformat": "Adresë"
   },
   "icu:WhatsNew__modal-title": {
     "messageformat": "Ç’ka të Re"
@@ -8781,7 +8829,7 @@
     "messageformat": "Faleminderit që mbështet Signal. Kontributi yt ndihmon në nxitjen e misionit të mbrojtjes së shprehjes së lirë dhe mundësimit të komunikimit të sigurt global për miliona njerëz në mbarë botën, përmes teknologjisë së privatësisë me burim të hapur. Nëse je banor i Shteteve të Bashkuara, të lutem, ruaje këtë faturë për të dhënat tatimore. Signal Technology Foundation është një ent jofitimprurës, i përjashtuar nga taksat, në Shtetet e Bashkuara sipas seksionit 501c3 të Kodit të të Ardhurave të Brendshme. Numri i ID-së federale të tatimeve është 82-4506840. Signal nuk ka ofruar asnjë mall ose shërbim në këmbim të këtij kontributi."
   },
   "icu:MessageCta__Donate": {
-    "messageformat": "Donate Now"
+    "messageformat": "Dhuro tani"
   },
   "icu:Donations__OfflineTooltip": {
     "messageformat": "Je jashtë linje. Të lutem, lidh internetin për të përfunduar dhurimin."
@@ -8981,6 +9029,9 @@
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__AccessibilityLabel": {
     "messageformat": "Përshkrimi i problemeve"
   },
+  "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__Placeholder": {
+    "messageformat": "Përshkruaj problemin"
+  },
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__HelpText": {
     "messageformat": "Të lutem, përfshi çdo detaj që lidhet me çështjen. Çdo gjë që ndan këtu do të mbahet private dhe do të përdoret vetëm për të ndihmuar në përmirësimin e thirrjeve në Signal."
   },
@@ -9095,5 +9146,14 @@
   },
   "icu:WhatsNew__8.30--1": {
     "messageformat": "Kemi shtuar gjithashtu një shkurtore të dobishme për të hapur parametrat e sistemit në Windows, nëse përpiqesh t’i bashkohesh një thirrjeje me video dhe Signal nuk ka leje për të përdorur kamerën."
+  },
+  "icu:WhatsNew__8.32--0": {
+    "messageformat": "Filtri i mesazheve të palexuara tashmë mbështetet edhe te dosjet e mesazheve dhe te ndërfaqja e kërkimit."
+  },
+  "icu:WhatsNew__8.32--1": {
+    "messageformat": "Besueshmëri e përmirësuar e ngarkimit edhe në kushte të dobëta të rrjetit. Faleminderit, <GH3mmmbulus></GH3mmmbulus>!"
+  },
+  "icu:WhatsNew__8.32--2": {
+    "messageformat": "Shkurtorja &quot;(N)&quot; tani i referohet saktë figurës emoxhi me gishtin e madh poshtë. Ngritja e gishtit të madh lart <lnicola></lnicola> për rregullimin e gabimit."
   }
 }

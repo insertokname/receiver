@@ -2,6 +2,9 @@
   "icu:AxoAlertDialog.Cancel": {
     "messageformat": "Annulla"
   },
+  "icu:AxoAlertDialog.Ok": {
+    "messageformat": "OK"
+  },
   "icu:AxoButton.Pending": {
     "messageformat": "In attesa"
   },
@@ -73,9 +76,6 @@
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--2": {
     "messageformat": "Il tuo dispositivo principale gestisce i dispositivi collegati e puoi collegarne fino a 5."
-  },
-  "icu:LinkedDevicesOnboardingDialog__bullet--3": {
-    "messageformat": "Alcune Impostazioni del tuo account vengono gestite solo sul tuo dispositivo principale, tra cui le Impostazioni dell'account e dei backup."
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--3--1": {
     "messageformat": "Puoi gestire i backup e le impostazioni dell'account solo sul tuo dispositivo principale."
@@ -673,6 +673,9 @@
   },
   "icu:KeyTransparencyOnboardingDialog__Description": {
     "messageformat": "Per le chat avviate usando il numero di telefono, Signal può confermare automaticamente che la conversazione sia sicura tramite la \"trasparenza delle chiavi\". Per maggiore sicurezza, puoi comunque effettuare una verifica manuale scansionando un codice QR o confrontando i numeri di sicurezza."
+  },
+  "icu:KeyTransparencyOnboardingDialog__Description-v2": {
+    "messageformat": "<paragraph>Per le chat avviate usando il numero di telefono, Signal può confermare automaticamente che la conversazione sia sicura tramite un processo chiamato &quot;trasparenza delle chiavi&quot;.</paragraph><paragraph>Per maggiore sicurezza, puoi comunque effettuare una verifica manuale delle chat scansionando un codice QR o confrontando i numeri di sicurezza.</paragraph>"
   },
   "icu:KeyTransparencyOnboardingDialog__Continue": {
     "messageformat": "Continua"
@@ -1481,6 +1484,9 @@
   "icu:ConversationMerge--learn-more": {
     "messageformat": "Scopri di più"
   },
+  "icu:ConversationMerge--explainer-dialog--label": {
+    "messageformat": "Cronologia messaggi unita"
+  },
   "icu:ConversationMerge--explainer-dialog--line-1": {
     "messageformat": "Dopo aver inviato un messaggio a {obsoleteConversationTitle} hai scoperto che quel numero appartiene a {conversationTitle}. Il numero di telefono di questa persona è privato."
   },
@@ -1741,6 +1747,9 @@
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__Search__Placeholder": {
     "messageformat": "Cerca"
+  },
+  "icu:Preferences__EditChatFolderPage__SelectChatsDialog__NoChats": {
+    "messageformat": "Nessuna chat"
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__ChatTypesSection__Title": {
     "messageformat": "Tipi di chat"
@@ -3512,6 +3521,9 @@
   "icu:MessageRequests--unblock-group-confirm-body": {
     "messageformat": "I membri del gruppo potranno aggiungerti di nuovo a questo gruppo."
   },
+  "icu:MessageRequests--unblock-signal-confirm-body": {
+    "messageformat": "Riceverai aggiornamenti e novità da Signal."
+  },
   "icu:MessageRequests--block-and-report-spam-success-toast": {
     "messageformat": "Utente segnalato come spam e bloccato."
   },
@@ -3526,6 +3538,9 @@
   },
   "icu:MessageRequests--block-group-confirm-body": {
     "messageformat": "Non riceverai più messaggi o aggiornamenti da questo gruppo e i membri non potranno aggiungerti di nuovo a questo gruppo."
+  },
+  "icu:MessageRequests--block-signal-confirm-body": {
+    "messageformat": "Non riceverai più aggiornamenti e novità da Signal."
   },
   "icu:MessageRequests--reportAndMaybeBlock": {
     "messageformat": "Segnala…"
@@ -6169,9 +6184,6 @@
   "icu:Preferences__SignalAccountKeys__Description": {
     "messageformat": "Conserva queste informazioni in un posto sicuro: i dettagli per il login servono per recuperare il tuo account e i tuoi dati. Non condividerle mai con altre persone."
   },
-  "icu:Preferences__SignalAccountKeys__AccountKey": {
-    "messageformat": "Chiave dell'account"
-  },
   "icu:Preferences__SignalAccountKeys__AccountID": {
     "messageformat": "ID account"
   },
@@ -6673,6 +6685,9 @@
   "icu:Preferences--blocked-users--description": {
     "messageformat": "Gli utenti bloccati non potranno chiamarti né inviarti messaggi"
   },
+  "icu:Preferences--add-blocked": {
+    "messageformat": "Aggiungi utente o gruppo bloccato"
+  },
   "icu:Preferences--blocked-users": {
     "messageformat": "Utenti bloccati"
   },
@@ -6681,6 +6696,12 @@
   },
   "icu:Preferences--blocked--blocked-on": {
     "messageformat": "Bloccato il {blockedAt}"
+  },
+  "icu:Preferences--BlockChooser--Done": {
+    "messageformat": "Fatto"
+  },
+  "icu:Preferences--BlockChooser--Search--Placeholder": {
+    "messageformat": "Cerca"
   },
   "icu:Preferences--signal-backups": {
     "messageformat": "Backup sicuri di Signal"
@@ -7097,7 +7118,7 @@
     "messageformat": "Riprova tra {duration}"
   },
   "icu:StandaloneRegistration--PhoneNumber--RegionCodeSelector--Label": {
-    "messageformat": "Select region code"
+    "messageformat": "Seleziona il codice del Paese"
   },
   "icu:StandaloneRegistration--PhoneNumber--placeholder": {
     "messageformat": "Numero di telefono"
@@ -8561,12 +8582,6 @@
   "icu:CallLinkPendingParticipantModal__DenyButtonLabel": {
     "messageformat": "Rifiuta richiesta"
   },
-  "icu:CallLinkRestrictionsSelect__Option--Off": {
-    "messageformat": "Off"
-  },
-  "icu:CallLinkRestrictionsSelect__Option--On": {
-    "messageformat": "On"
-  },
   "icu:CallLinkAddNameModal__Title": {
     "messageformat": "Aggiungi nome chiamata"
   },
@@ -8614,6 +8629,39 @@
   },
   "icu:SaveMultiDialog__title": {
     "messageformat": "Salva allegati"
+  },
+  "icu:EmbeddedContact__message": {
+    "messageformat": "Messaggio"
+  },
+  "icu:ContactDetail__message": {
+    "messageformat": "Messaggio"
+  },
+  "icu:ContactDetail__add-to-group": {
+    "messageformat": "Aggiungi a un gruppo"
+  },
+  "icu:ContactDetail__nickname": {
+    "messageformat": "Soprannome"
+  },
+  "icu:ContactDetail__note": {
+    "messageformat": "Note"
+  },
+  "icu:email-v2": {
+    "messageformat": "Email"
+  },
+  "icu:home-v2": {
+    "messageformat": "Casa"
+  },
+  "icu:mobile-v2": {
+    "messageformat": "Cellulare"
+  },
+  "icu:work-v2": {
+    "messageformat": "Ufficio"
+  },
+  "icu:phone-v2": {
+    "messageformat": "Telefono"
+  },
+  "icu:address-v2": {
+    "messageformat": "Indirizzo"
   },
   "icu:WhatsNew__modal-title": {
     "messageformat": "Cosa c'è di nuovo"
@@ -8781,7 +8829,7 @@
     "messageformat": "Grazie per sostenere Signal. Il tuo contributo aiuta a supportare la nostra missione di sviluppare una tecnologia open source per la privacy che tuteli la libera espressione e che consenta una comunicazione globale sicura per milioni di persone in tutto il mondo. Se sei residente negli Stati Uniti, conserva questa ricevuta per la tua documentazione fiscale. Signal Technology Foundation è un'organizzazione non profit esente da tasse negli Stati Uniti ai sensi della sezione 501c3 dell'Internal Revenue Code. Il nostro Federal Tax ID è 82-4506840. Signal non ha fornito alcun bene o servizio in cambio di questa donazione."
   },
   "icu:MessageCta__Donate": {
-    "messageformat": "Donate Now"
+    "messageformat": "Dona ora"
   },
   "icu:Donations__OfflineTooltip": {
     "messageformat": "Sei offline. Connettiti a Internet per completare una donazione."
@@ -8981,6 +9029,9 @@
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__AccessibilityLabel": {
     "messageformat": "Descrizione del problema"
   },
+  "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__Placeholder": {
+    "messageformat": "Descrivi il tuo problema"
+  },
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__HelpText": {
     "messageformat": "Includi qualsiasi dettaglio rilevante relativo al problema riscontrato. Tutto ciò che condividi qui rimarrà privato e verrà usato solo per migliorare la qualità delle chiamate su Signal."
   },
@@ -9095,5 +9146,14 @@
   },
   "icu:WhatsNew__8.30--1": {
     "messageformat": "Abbiamo anche aggiunto una comoda shortcut per aprire le Impostazioni del tuo sistema operativo su Windows, nel caso in cui provassi a unirti a una videochiamata e Signal non avesse l'autorizzazione ad accedere alla fotocamera. Da ora è più semplice vedere e capire cosa fare in questi casi, così entrerai nelle tue videochiamate senza fare tardi."
+  },
+  "icu:WhatsNew__8.32--0": {
+    "messageformat": "Da adesso, il filtro \"Da leggere\" è supportato anche nelle cartelle dei messaggi e nell'interfaccia di ricerca, così puoi subito trovare i messaggi non letti."
+  },
+  "icu:WhatsNew__8.32--1": {
+    "messageformat": "Migliorato il funzionamento dei processi di caricamento in caso di rete instabile. Grazie, <GH3mmmbulus></GH3mmmbulus>!"
+  },
+  "icu:WhatsNew__8.32--2": {
+    "messageformat": "Da adesso, la scorciatoia da tastiera &quot;(N)&quot; è correttamente associata all'emoji del pollice verso il basso. Facciamo invece un bel pollice verso l'alto a <lnicola></lnicola> per averci aiutato a individuare questo bug!"
   }
 }

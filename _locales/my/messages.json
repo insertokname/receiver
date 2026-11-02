@@ -2,6 +2,9 @@
   "icu:AxoAlertDialog.Cancel": {
     "messageformat": "မလုပ်တော့ပါ"
   },
+  "icu:AxoAlertDialog.Ok": {
+    "messageformat": "အိုကေ"
+  },
   "icu:AxoButton.Pending": {
     "messageformat": "ဆိုင်းငံ့နေသည်"
   },
@@ -73,9 +76,6 @@
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--2": {
     "messageformat": "သင့် ပင်မစက်မှ ချိတ်ဆက်ထားသော စက်များကို စီမံခန့်ခွဲနိုင်ပြီး စက်အများဆုံး ၅ ခုအထိ ချိတ်ဆက်နိုင်ပါသည်။"
-  },
-  "icu:LinkedDevicesOnboardingDialog__bullet--3": {
-    "messageformat": "အကောင့်ဆက်တင်နှင့် ဘက်ခ်အပ် အပါအဝင် အချို့သော ဆက်တင်များကို သင့်ပင်မစက်တွင်သာ စီမံခန့်ခွဲနိုင်ပါသည်။"
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--3--1": {
     "messageformat": "အကောင့် ဆက်တင်များနှင့် ဘက်ခ်အပ်များကို အဓိကစက်တွင်သာ စီမံခန့်ခွဲနိုင်ပါသည်။"
@@ -673,6 +673,9 @@
   },
   "icu:KeyTransparencyOnboardingDialog__Description": {
     "messageformat": "ဖုန်းနံပါတ်ဖြင့် ချိတ်ဆက်ထားသော အဆက်အသွယ်များအတွက် Signal သည် ကီး ပွင့်လင်းမြင်သာမှုဟုခေါ်သော လုပ်ငန်းစဉ်ကို အသုံးပြု၍ ချိတ်ဆက်မှု လုံခြုံခြင်းရှိမရှိကို အလိုအလျောက် အတည်ပြုနိုင်သည်။ လုံခြုံရေးပိုမိုရရှိစေရန်အတွက် QR ကုဒ်ကို အသုံးပြု၍ သို့မဟုတ် လုံခြုံရေးနံပါတ်များကို နှိုင်းယှဉ်ခြင်းဖြင့် ချိတ်ဆက်မှုများကို ကိုယ်တိုင်အတည်ပြုနိုင်ပါသည်။"
+  },
+  "icu:KeyTransparencyOnboardingDialog__Description-v2": {
+    "messageformat": "<paragraph>ဖုန်းနံပါတ်ဖြင့် ချိတ်ဆက်ထားသော အဆက်အသွယ်များအတွက် Signal သည် ကီး ပွင့်လင်းမြင်သာမှုဟုခေါ်သော လုပ်ငန်းစဉ်ကို အသုံးပြု၍ ချိတ်ဆက်မှု လုံခြုံခြင်းရှိမရှိကို အလိုအလျောက် အတည်ပြုနိုင်သည်။</paragraph><paragraph>လုံခြုံရေးပိုမိုရရှိစေရန်အတွက် QR ကုဒ်ကို အသုံးပြု၍သော်လည်းကောင်း၊ လုံခြုံရေးနံပါတ်များကို နှိုင်းယှဉ်ခြင်းဖြင့်သော်လည်းကောင်း ချိတ်ဆက်မှုများကို ကိုယ်တိုင်အတည်ပြုနိုင်ပါသည်။</paragraph>"
   },
   "icu:KeyTransparencyOnboardingDialog__Continue": {
     "messageformat": "ဆက်လုပ်ရန်"
@@ -1481,6 +1484,9 @@
   "icu:ConversationMerge--learn-more": {
     "messageformat": "ပိုလေ့လာရန်"
   },
+  "icu:ConversationMerge--explainer-dialog--label": {
+    "messageformat": "မက်ဆေ့ချ်မှတ်တမ်းကို ပေါင်းစည်းပြီးပါပြီ"
+  },
   "icu:ConversationMerge--explainer-dialog--line-1": {
     "messageformat": "{obsoleteConversationTitle} နှင့် မက်ဆေ့ချ်ပေးပို့ပြီးနောက် ဤနံပါတ်ကို{conversationTitle} က ပိုင်ဆိုင်ကြောင်း သိရှိရပါသည်။ ၎င်းတို့ဖုန်းနံပါတ်ကို ကိုယ်ပိုင်သီးသန့်အဖြစ် ထားရှိ ထားပါသည်။"
   },
@@ -1741,6 +1747,9 @@
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__Search__Placeholder": {
     "messageformat": "ရှာရန်"
+  },
+  "icu:Preferences__EditChatFolderPage__SelectChatsDialog__NoChats": {
+    "messageformat": "ချက်(တ်)များမရှိပါ"
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__ChatTypesSection__Title": {
     "messageformat": "ချက်(တ်)အမျိုးအစားများ"
@@ -3512,6 +3521,9 @@
   "icu:MessageRequests--unblock-group-confirm-body": {
     "messageformat": "အဖွဲ့ဝင်များသည် သင့်ကို အဖွဲ့ထဲသို့ ပြန်ထည့်နိုင်ပါမည်။"
   },
+  "icu:MessageRequests--unblock-signal-confirm-body": {
+    "messageformat": "Signal မှ အပ်ဒိတ်များနှင့် သတင်းများကို သင် လက်ခံရရှိပါမည်။"
+  },
   "icu:MessageRequests--block-and-report-spam-success-toast": {
     "messageformat": "စပမ်းအဖြစ် ရီပို့(တ်)လုပ်ပြီး ဘလော့ခ်ပြီးပါပြီ။"
   },
@@ -3526,6 +3538,9 @@
   },
   "icu:MessageRequests--block-group-confirm-body": {
     "messageformat": "သင်သည် ဤအဖွဲ့မှ မက်ဆေ့ချ်များ သို့မဟုတ် အပ်ဒိတ်များကို ရရှိတော့မည် မဟုတ်ပါ၊ မန်ဘာများက ဤအဖွဲ့တွင် သင့်အား ထပ်မံပေါင်းထည့်၍ ရနိုင်မည် မဟုတ်ပါ။"
+  },
+  "icu:MessageRequests--block-signal-confirm-body": {
+    "messageformat": "Signal မှ အပ်ဒိတ်များနှင့် သတင်းများကို သင် လက်ခံရရှိတော့မည် မဟုတ်ပါ။"
   },
   "icu:MessageRequests--reportAndMaybeBlock": {
     "messageformat": "ရီပို့(တ်)လုပ်ရန်…"
@@ -6169,9 +6184,6 @@
   "icu:Preferences__SignalAccountKeys__Description": {
     "messageformat": "ဤအချက်အလက်ကို လုံခြုံသောနေရာတွင် သိမ်းဆည်းထားပါ။ သင့်အကောင့်နှင့် ဒေတာများကို ပြန်လည်ရယူရန် သင့် လော့ဂ်အင်အချက်အလက် လိုအပ်ပါသည်။ မည်သူ့ကိုမျှ မျှဝေခြင်းမပြုပါနှင့်။"
   },
-  "icu:Preferences__SignalAccountKeys__AccountKey": {
-    "messageformat": "အကောင့်ကီး"
-  },
   "icu:Preferences__SignalAccountKeys__AccountID": {
     "messageformat": "အကောင့် ID"
   },
@@ -6673,6 +6685,9 @@
   "icu:Preferences--blocked-users--description": {
     "messageformat": "ဘလော့ခ်ထားသော သုံးစွဲသူများသည် သင့်ထံ ဖုန်းခေါ်ခြင်း သို့မဟုတ် မက်ဆေ့ချ်ပို့ခြင်းများ မလုပ်နိုင်တော့ပါ"
   },
+  "icu:Preferences--add-blocked": {
+    "messageformat": "ဘလော့ခ်ထားသော သုံးစွဲသူ သို့မဟုတ် အဖွဲ့ကို ထည့်ရန်"
+  },
   "icu:Preferences--blocked-users": {
     "messageformat": "ဘလော့ခ်ထားသော သုံးစွဲသူများ"
   },
@@ -6681,6 +6696,12 @@
   },
   "icu:Preferences--blocked--blocked-on": {
     "messageformat": "{blockedAt} တွင် ပိတ်ထားသည်"
+  },
+  "icu:Preferences--BlockChooser--Done": {
+    "messageformat": "ပြီးပါပြီ"
+  },
+  "icu:Preferences--BlockChooser--Search--Placeholder": {
+    "messageformat": "ရှာရန်"
   },
   "icu:Preferences--signal-backups": {
     "messageformat": "Signal လုံခြုံရေးဘက်ခ်အပ်"
@@ -7097,7 +7118,7 @@
     "messageformat": "{duration} အကြာတွင် ထပ်မံကြိုးစားပါ"
   },
   "icu:StandaloneRegistration--PhoneNumber--RegionCodeSelector--Label": {
-    "messageformat": "Select region code"
+    "messageformat": "နိုင်ငံကုဒ်ကို ရွေးချယ်ပါ"
   },
   "icu:StandaloneRegistration--PhoneNumber--placeholder": {
     "messageformat": "ဖုန်းနံပါတ်"
@@ -8561,12 +8582,6 @@
   "icu:CallLinkPendingParticipantModal__DenyButtonLabel": {
     "messageformat": "ဝင်ရောက်မှုကို ငြင်းပယ်မည်"
   },
-  "icu:CallLinkRestrictionsSelect__Option--Off": {
-    "messageformat": "ပိတ်မည်"
-  },
-  "icu:CallLinkRestrictionsSelect__Option--On": {
-    "messageformat": "ဖွင့်မည်"
-  },
   "icu:CallLinkAddNameModal__Title": {
     "messageformat": "ကောလ်အမည် ပေါင်းထည့်ရန်"
   },
@@ -8614,6 +8629,39 @@
   },
   "icu:SaveMultiDialog__title": {
     "messageformat": "ပူးတွဲဖိုင်များကို သိမ်းဆည်းပါ"
+  },
+  "icu:EmbeddedContact__message": {
+    "messageformat": "မက်ဆေ့ချ်"
+  },
+  "icu:ContactDetail__message": {
+    "messageformat": "မက်ဆေ့ချ်"
+  },
+  "icu:ContactDetail__add-to-group": {
+    "messageformat": "အဖွဲ့တစ်ဖွဲ့ထဲသို့ ထည့်သွင်းရန်"
+  },
+  "icu:ContactDetail__nickname": {
+    "messageformat": "အမည်ပြောင်"
+  },
+  "icu:ContactDetail__note": {
+    "messageformat": "မှတ်စုများ"
+  },
+  "icu:email-v2": {
+    "messageformat": "အီးမေးလ်"
+  },
+  "icu:home-v2": {
+    "messageformat": "ပင်မစာမျက်နှာ"
+  },
+  "icu:mobile-v2": {
+    "messageformat": "မိုဘိုင်းဖုန်း"
+  },
+  "icu:work-v2": {
+    "messageformat": "အလုပ်"
+  },
+  "icu:phone-v2": {
+    "messageformat": "ဖုန်း"
+  },
+  "icu:address-v2": {
+    "messageformat": "လိပ်စာ"
   },
   "icu:WhatsNew__modal-title": {
     "messageformat": "အသစ်များ"
@@ -8781,7 +8829,7 @@
     "messageformat": "Signal ကို ပံ့ပိုးကူညီသည့်အတွက် ကျေးဇူးတင်ပါသည်။ သင်၏ ကူညီထောက်ပံ့မှုသည် လွတ်လပ်စွာ ထုတ်ဖော်ပြောဆိုခွင့်ကို ကာကွယ်ပေးခြင်းနှင့် သုံးစွဲသူသန်းပေါင်းများစွာ၏ ကမ္ဘာတစ်ဝန်း ဆက်သွယ်မှုများကို လုံခြုံစိတ်ချရစေခြင်း စသည့် မစ်ရှင်ကို Open Source ကိုယ်ပိုင်အချက်အလက် လုံခြုံရေး နည်းပညာမှတစ်ဆင့် ကူညီအားဖြည့်ပေးပါသည်။ သင်သည် အမေရိကန်ပြည်ထောင်စုတွင် နေထိုင်သူဖြစ်ပါက သင်၏အခွန်မှတ်တမ်းများအတွက် ဤပြေစာကိုထိန်းသိမ်းထားပေးပါ။ Signal Technology Foundation သည် ပြည်တွင်းအခွန်ဥပဒေ၏ ပုဒ်မ 501c3 အရ အမေရိကန်ပြည်ထောင်စုရှိ အခွန်ကင်းလွတ်ခွင့်ရသော အကျိုးအမြတ်မယူသည့် အဖွဲ့အစည်း ဖြစ်ပါသည်။ ကျွန်ုပ်တို့၏ ဖက်ဒရယ် အခွန် ID မှာ 82-4506840 ဖြစ်ပါသည်။ ဤပံ့ပိုးမှုအတွက် Signal သည် အပြန်အလှန်အဖြစ် မည်သည့် ကုန်ပစ္စည်း သို့မဟုတ် ဝန်ဆောင်မှုကိုမျှ ပေးအပ်ထားခြင်း မရှိပါ။"
   },
   "icu:MessageCta__Donate": {
-    "messageformat": "Donate Now"
+    "messageformat": "ယခု လှူဒါန်းရန်"
   },
   "icu:Donations__OfflineTooltip": {
     "messageformat": "သင် အော့ဖ်လိုင်းဖြစ်နေသည်။ လှူဒါန်းမှုပြီးမြောက်ရန် အင်တာနက်ချိတ်ဆက်ပါ။"
@@ -8981,6 +9029,9 @@
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__AccessibilityLabel": {
     "messageformat": "ပြဿနာ ဖော်ပြချက်"
   },
+  "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__Placeholder": {
+    "messageformat": "သင့်ပြဿနာကို ဖော်ပြပါ"
+  },
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__HelpText": {
     "messageformat": "ကျေးဇူးပြု၍ ပြဿနာနှင့်သက်ဆိုင်သည့် အသေးစိတ်အချက်အလက်များကို ထည့်သွင်းပါ။ သင်မျှဝေထားသမျှကို လျှို့ဝှက်ထားမည်ဖြစ်ပြီး Signal တွင် ခေါ်ဆိုမှုများကို ပိုမိုကောင်းမွန်စေရန်အတွက်သာ အသုံးပြုမည်ဖြစ်သည်။"
   },
@@ -9095,5 +9146,14 @@
   },
   "icu:WhatsNew__8.30--1": {
     "messageformat": "ဗီဒီယိုကောလ်တွင် ပါဝင်ရန် ကြိုးစားသည့်အခါ Signal တွင် ကင်မရာအသုံးပြုခွင့် မရှိပါက Windows စနစ်ဆက်တင်ကို ဖွင့်နိုင်ရန် အဆင်ပြေသော ရှော့တ်ကတ်တစ်ခုကိုလည်း ထည့်သွင်းထားပါသည်။"
+  },
+  "icu:WhatsNew__8.32--0": {
+    "messageformat": "မဖတ်ရသေးသော မက်ဆေ့ချ်များအား စစ်ထုတ်သည့် လုပ်ဆောင်ချက်ကို မက်ဆေ့ချ်ဖိုင်တွဲများနှင့် ရှာဖွေမှုမျက်နှာပြင်တို့တွင်လည်း ယခု အသုံးပြုနိုင်ပြီဖြစ်သည်။"
+  },
+  "icu:WhatsNew__8.32--1": {
+    "messageformat": "ကွန်ရက်အခြေအနေ မကောင်းသည့်အခါ အပ်လုဒ်လုပ်ခြင်းကို စိတ်ချရစေရန် မွမ်းမံထားသည်။ ကျေးဇူးပါ <GH3mmmbulus></GH3mmmbulus>"
+  },
+  "icu:WhatsNew__8.32--2": {
+    "messageformat": "“(N)” ရှော့တ်ကတ်သည် လက်မအောက်ဆိုက်သည့် အီမိုဂျီကို မှန်ကန်စွာ ညွှန်ပြသည်။ ချို့ယွင်းချက်ကို ပြင်ဆင်ပေးသည့်အတွက် <lnicola></lnicola> ကို ကျေးဇူးတင်ပါသည်။"
   }
 }

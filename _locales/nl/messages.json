@@ -2,6 +2,9 @@
   "icu:AxoAlertDialog.Cancel": {
     "messageformat": "Annuleren"
   },
+  "icu:AxoAlertDialog.Ok": {
+    "messageformat": "Begrepen"
+  },
   "icu:AxoButton.Pending": {
     "messageformat": "In afwachting"
   },
@@ -73,9 +76,6 @@
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--2": {
     "messageformat": "Je primaire apparaat beheert welke apparaten gekoppeld zijn. Je kunt maximaal 5 gekoppelde apparaten tegelijk hebben."
-  },
-  "icu:LinkedDevicesOnboardingDialog__bullet--3": {
-    "messageformat": "Sommige instellingen kunnen alleen worden aangepast op je primaire apparaat, zoals accountinstellingen en back-ups."
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--3--1": {
     "messageformat": "Accountinstellingen en back-ups kunnen alleen op je primaire apparaat worden beheerd."
@@ -673,6 +673,9 @@
   },
   "icu:KeyTransparencyOnboardingDialog__Description": {
     "messageformat": "Voor contacten waarmee je via een telefoonnummer bent verbonden, kan Signal automatisch bevestigen of de verbinding veilig is met een proces dat sleuteltransparantie heet. Voor extra veiligheid kun je nog steeds handmatig verbindingen verifiëren met een QR-code of door veiligheidsnummers te vergelijken."
+  },
+  "icu:KeyTransparencyOnboardingDialog__Description-v2": {
+    "messageformat": "<paragraph>Voor contacten waarmee je via een telefoonnummer bent verbonden, kan Signal automatisch bevestigen of de verbinding veilig is met een proces dat sleuteltransparantie heet.</paragraph><paragraph>Voor extra veiligheid kun je nog steeds handmatig verbindingen verifiëren met een QR-code of door veiligheidsnummers te vergelijken.</paragraph>"
   },
   "icu:KeyTransparencyOnboardingDialog__Continue": {
     "messageformat": "Doorgaan"
@@ -1481,6 +1484,9 @@
   "icu:ConversationMerge--learn-more": {
     "messageformat": "Meer informatie"
   },
+  "icu:ConversationMerge--explainer-dialog--label": {
+    "messageformat": "Chatgeschiedenis samengevoegd"
+  },
   "icu:ConversationMerge--explainer-dialog--line-1": {
     "messageformat": "Na het uitwisselen van berichten met {obsoleteConversationTitle} heb je begrepen dat dit nummer van {conversationTitle} is. Hun telefoonnummer is privé."
   },
@@ -1741,6 +1747,9 @@
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__Search__Placeholder": {
     "messageformat": "Zoeken"
+  },
+  "icu:Preferences__EditChatFolderPage__SelectChatsDialog__NoChats": {
+    "messageformat": "Geen chats"
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__ChatTypesSection__Title": {
     "messageformat": "Chattypes"
@@ -2352,7 +2361,7 @@
     "messageformat": "Je hebt de timer voor verdwijnende berichten op {time} ingesteld."
   },
   "icu:timerSetOnSync": {
-    "messageformat": "De timer voor verdwijnende berichten is bijgewerkt naar {time}."
+    "messageformat": "De timer voor verdwijnende berichten is op {time} ingesteld."
   },
   "icu:timerSetByMember": {
     "messageformat": "Een groepslid heeft de timer voor verdwijnende berichten op {time} ingesteld."
@@ -3512,6 +3521,9 @@
   "icu:MessageRequests--unblock-group-confirm-body": {
     "messageformat": "Groepsleden zullen je weer kunnen toevoegen aan deze groep."
   },
+  "icu:MessageRequests--unblock-signal-confirm-body": {
+    "messageformat": "Je ontvangt updates en nieuws van Signal."
+  },
   "icu:MessageRequests--block-and-report-spam-success-toast": {
     "messageformat": "Gemeld als spam en geblokkeerd."
   },
@@ -3526,6 +3538,9 @@
   },
   "icu:MessageRequests--block-group-confirm-body": {
     "messageformat": "Je zult niet langer berichten of meldingen van deze groep ontvangen, en de leden kunnen je niet opnieuw toevoegen aan de groep."
+  },
+  "icu:MessageRequests--block-signal-confirm-body": {
+    "messageformat": "Je ontvangt geen updates en nieuws van Signal meer."
   },
   "icu:MessageRequests--reportAndMaybeBlock": {
     "messageformat": "Rapporteren"
@@ -6169,9 +6184,6 @@
   "icu:Preferences__SignalAccountKeys__Description": {
     "messageformat": "Bewaar deze op een veilige manier. Je logingegevens zijn nodig om je account en gegevens te herstellen. Deel deze gegevens met niemand."
   },
-  "icu:Preferences__SignalAccountKeys__AccountKey": {
-    "messageformat": "Accountsleutel"
-  },
   "icu:Preferences__SignalAccountKeys__AccountID": {
     "messageformat": "Account-ID"
   },
@@ -6662,16 +6674,19 @@
     "messageformat": "Geblokkeerd"
   },
   "icu:Preferences--blocked-count-both-new": {
-    "messageformat": "{num, plural, =0 { Geen gebruikers of groepen } one {{num,number} gebruiker of groep} other {{num,number} gebruikers of groepen}}"
+    "messageformat": "{num, plural, =0 { Geen personen of groepen } one {{num,number} persoon of groep} other {{num,number} personen of groepen}}"
   },
   "icu:Preferences--blocked-count-contacts-new": {
-    "messageformat": "{num, plural, =0 { Geen gebruikers } one {{num,number} gebruiker} other {{num,number} gebruikers}}"
+    "messageformat": "{num, plural, =0 { Geen personen } one {{num,number} persoon} other {{num,number} personen}}"
   },
   "icu:Preferences--blocked-count-groups-new": {
     "messageformat": "{num, plural, =0 { Geen groepen } one {{num,number} groep} other {{num,number} groepen}}"
   },
   "icu:Preferences--blocked-users--description": {
     "messageformat": "Geblokkeerde personen kunnen je niet bellen en geen berichten sturen"
+  },
+  "icu:Preferences--add-blocked": {
+    "messageformat": "Persoon of groep blokkeren"
   },
   "icu:Preferences--blocked-users": {
     "messageformat": "Geblokkeerde personen"
@@ -6681,6 +6696,12 @@
   },
   "icu:Preferences--blocked--blocked-on": {
     "messageformat": "Geblokkeerd op {blockedAt}"
+  },
+  "icu:Preferences--BlockChooser--Done": {
+    "messageformat": "Klaar"
+  },
+  "icu:Preferences--BlockChooser--Search--Placeholder": {
+    "messageformat": "Zoeken"
   },
   "icu:Preferences--signal-backups": {
     "messageformat": "Signal Secure Backups"
@@ -7097,7 +7118,7 @@
     "messageformat": "Probeer het opnieuw over {duration}"
   },
   "icu:StandaloneRegistration--PhoneNumber--RegionCodeSelector--Label": {
-    "messageformat": "Select region code"
+    "messageformat": "Selecteer landcode"
   },
   "icu:StandaloneRegistration--PhoneNumber--placeholder": {
     "messageformat": "Telefoonnummer"
@@ -8561,12 +8582,6 @@
   "icu:CallLinkPendingParticipantModal__DenyButtonLabel": {
     "messageformat": "Deelnameverzoek afwijzen"
   },
-  "icu:CallLinkRestrictionsSelect__Option--Off": {
-    "messageformat": "Uit"
-  },
-  "icu:CallLinkRestrictionsSelect__Option--On": {
-    "messageformat": "Aan"
-  },
   "icu:CallLinkAddNameModal__Title": {
     "messageformat": "Oproepnaam toevoegen"
   },
@@ -8614,6 +8629,39 @@
   },
   "icu:SaveMultiDialog__title": {
     "messageformat": "Bijlagen opslaan"
+  },
+  "icu:EmbeddedContact__message": {
+    "messageformat": "Bericht sturen"
+  },
+  "icu:ContactDetail__message": {
+    "messageformat": "Bericht"
+  },
+  "icu:ContactDetail__add-to-group": {
+    "messageformat": "Aan groep toevoegen"
+  },
+  "icu:ContactDetail__nickname": {
+    "messageformat": "Bijnaam"
+  },
+  "icu:ContactDetail__note": {
+    "messageformat": "Notities"
+  },
+  "icu:email-v2": {
+    "messageformat": "E-mail"
+  },
+  "icu:home-v2": {
+    "messageformat": "Thuis"
+  },
+  "icu:mobile-v2": {
+    "messageformat": "Mobiel"
+  },
+  "icu:work-v2": {
+    "messageformat": "Werk"
+  },
+  "icu:phone-v2": {
+    "messageformat": "Telefoon"
+  },
+  "icu:address-v2": {
+    "messageformat": "Adres"
   },
   "icu:WhatsNew__modal-title": {
     "messageformat": "Wat er nieuw is"
@@ -8781,7 +8829,7 @@
     "messageformat": "Bedankt dat je Signal steunt! Jouw bijdrage helpt bij het voortzetten van onze missie om via opensource privacytechnologie de vrijheid van expressie te beschermen en beveiligde communicatie voor miljoenen mensen over de hele wereld mogelijk te maken. Bewaar dit donatiebewijs als je een inwoner bent van de Verenigde Staten van Amerika, zodat je je donatie kunt opgeven bij je belastingaangifte. Signal Technology Foundation is een organisatie zonder winstoogmerk in de Verenigde Staten van Amerika en is vrijgesteld van belastingen volgens sectie 501c3 van de US Internal Revenue Code (het Amerikaanse belastingreglement). Ons federale-belasting-ID is 82-4506840. Signal heeft in ruil voor deze bijdrage geen goederen of diensten geleverd."
   },
   "icu:MessageCta__Donate": {
-    "messageformat": "Donate Now"
+    "messageformat": "Nu doneren"
   },
   "icu:Donations__OfflineTooltip": {
     "messageformat": "Je bent offline. Maak verbinding met internet om een donatie te voltooien."
@@ -8981,6 +9029,9 @@
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__AccessibilityLabel": {
     "messageformat": "Probleemomschrijving"
   },
+  "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__Placeholder": {
+    "messageformat": "Beschrijf het probleem"
+  },
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__HelpText": {
     "messageformat": "Vermeld alle details die relevant zijn voor het probleem. Alles wat je hier deelt, blijft vertrouwelijk en wordt uitsluitend gebruikt om oproepen in Signal te verbeteren."
   },
@@ -9012,7 +9063,7 @@
     "messageformat": "Diagnostische informatie"
   },
   "icu:CallQualitySurvey__ConfirmSubmission__SubmitButton": {
-    "messageformat": "Uploaden"
+    "messageformat": "Indienen"
   },
   "icu:CallQualitySurvey__SubmissionFailed": {
     "messageformat": "Indienen is mislukt"
@@ -9095,5 +9146,14 @@
   },
   "icu:WhatsNew__8.30--1": {
     "messageformat": "We hebben ook een handige snelkoppeling toegevoegd om je systeeminstellingen in Windows te openen als je probeert deel te nemen aan een video-oproep en Signal geen toestemming heeft om de camera te gebruiken. Nu heb je een beter beeld van wat je moet doen om zelf in beeld te komen."
+  },
+  "icu:WhatsNew__8.32--0": {
+    "messageformat": "Je kunt nu ook in chatmappen en in de zoekfunctie filteren op ongelezen berichten. Zo zie je gemakkelijk welke berichten je nog niet hebt gelezen."
+  },
+  "icu:WhatsNew__8.32--1": {
+    "messageformat": "Betrouwbaarder uploaden bij een slechte netwerkverbinding. Bedankt <GH3mmmbulus></GH3mmmbulus>!"
+  },
+  "icu:WhatsNew__8.32--2": {
+    "messageformat": "Als je nu ‘(N)’ typt krijg je het juiste duimpje, namelijk omlaag. Duimpje omhoog voor <lnicola></lnicola> die dit heeft opgelost."
   }
 }

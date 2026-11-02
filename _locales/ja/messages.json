@@ -2,6 +2,9 @@
   "icu:AxoAlertDialog.Cancel": {
     "messageformat": "キャンセル"
   },
+  "icu:AxoAlertDialog.Ok": {
+    "messageformat": "OK"
+  },
   "icu:AxoButton.Pending": {
     "messageformat": "保留中"
   },
@@ -73,9 +76,6 @@
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--2": {
     "messageformat": "リンクした端末はメイン端末で管理します。最大5台の端末がリンク可能です。"
-  },
-  "icu:LinkedDevicesOnboardingDialog__bullet--3": {
-    "messageformat": "アカウント設定や、バックアップなどの設定はメイン端末からのみ管理できます。"
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--3--1": {
     "messageformat": "アカウントの設定とバックアップは、メイン端末でのみ管理できます。"
@@ -673,6 +673,9 @@
   },
   "icu:KeyTransparencyOnboardingDialog__Description": {
     "messageformat": "電話番号を介して繋がっている連絡先の場合、Signalはkey transparencyと呼ばれるプロセスを使用して、接続の安全性を自動的に確認します。セキュリティをさらに強化したい場合は、QRコードを使う、安全番号を見比べるなど、手動で接続を確認することもできます。"
+  },
+  "icu:KeyTransparencyOnboardingDialog__Description-v2": {
+    "messageformat": "<paragraph>電話番号を介して繋がっている連絡先の場合、Signalはkey transparencyと呼ばれるプロセスを使用して、接続の安全性を自動的に確認します。</paragraph><paragraph>セキュリティをさらに強化したい場合は、QRコードを使う、安全番号を見比べるなど、手動で接続を確認することもできます。</paragraph>"
   },
   "icu:KeyTransparencyOnboardingDialog__Continue": {
     "messageformat": "続ける"
@@ -1481,6 +1484,9 @@
   "icu:ConversationMerge--learn-more": {
     "messageformat": "詳しく見る"
   },
+  "icu:ConversationMerge--explainer-dialog--label": {
+    "messageformat": "メッセージ履歴が統合されました"
+  },
   "icu:ConversationMerge--explainer-dialog--line-1": {
     "messageformat": "{obsoleteConversationTitle} へのメッセージ送信後、この番号は {conversationTitle}に含まれていると確認されました。電話番号は非公開です。"
   },
@@ -1741,6 +1747,9 @@
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__Search__Placeholder": {
     "messageformat": "検索"
+  },
+  "icu:Preferences__EditChatFolderPage__SelectChatsDialog__NoChats": {
+    "messageformat": "チャットがありません"
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__ChatTypesSection__Title": {
     "messageformat": "チャットのタイプ"
@@ -3512,6 +3521,9 @@
   "icu:MessageRequests--unblock-group-confirm-body": {
     "messageformat": "グループのメンバーはあなたをもう一度このグループに加えることができるようになります。"
   },
+  "icu:MessageRequests--unblock-signal-confirm-body": {
+    "messageformat": "Signalのアップデート情報やニュースを受信します。"
+  },
   "icu:MessageRequests--block-and-report-spam-success-toast": {
     "messageformat": "スパムとして報告してブロックしました。"
   },
@@ -3526,6 +3538,9 @@
   },
   "icu:MessageRequests--block-group-confirm-body": {
     "messageformat": "あなたはこのグループからメッセージやアップデートを受け取ることができなくなり、グループのメンバーはあなたをもう一度このグループに加えることができなくなります。"
+  },
+  "icu:MessageRequests--block-signal-confirm-body": {
+    "messageformat": "Signalのアップデート情報やニュースを受信しなくなります。"
   },
   "icu:MessageRequests--reportAndMaybeBlock": {
     "messageformat": "報告する"
@@ -6169,9 +6184,6 @@
   "icu:Preferences__SignalAccountKeys__Description": {
     "messageformat": "これは安全な場所に保管してください。ログイン情報は、アカウントとデータを復元する際に必要です。誰とも共有しないでください。"
   },
-  "icu:Preferences__SignalAccountKeys__AccountKey": {
-    "messageformat": "アカウントキー"
-  },
   "icu:Preferences__SignalAccountKeys__AccountID": {
     "messageformat": "アカウントID"
   },
@@ -6673,6 +6685,9 @@
   "icu:Preferences--blocked-users--description": {
     "messageformat": "ブロックしたユーザーは、あなたに通話したりメッセージを送信したりできなくなります"
   },
+  "icu:Preferences--add-blocked": {
+    "messageformat": "ブロックするユーザーまたはグループを追加"
+  },
   "icu:Preferences--blocked-users": {
     "messageformat": "ブロック中のユーザー"
   },
@@ -6681,6 +6696,12 @@
   },
   "icu:Preferences--blocked--blocked-on": {
     "messageformat": "{blockedAt} にブロック済み"
+  },
+  "icu:Preferences--BlockChooser--Done": {
+    "messageformat": "完了"
+  },
+  "icu:Preferences--BlockChooser--Search--Placeholder": {
+    "messageformat": "検索"
   },
   "icu:Preferences--signal-backups": {
     "messageformat": "Signalセキュアバックアップ"
@@ -7097,7 +7118,7 @@
     "messageformat": "{duration}分後にもう一度お試しください"
   },
   "icu:StandaloneRegistration--PhoneNumber--RegionCodeSelector--Label": {
-    "messageformat": "Select region code"
+    "messageformat": "国番号を選択してください"
   },
   "icu:StandaloneRegistration--PhoneNumber--placeholder": {
     "messageformat": "電話番号"
@@ -8561,12 +8582,6 @@
   "icu:CallLinkPendingParticipantModal__DenyButtonLabel": {
     "messageformat": "拒否する"
   },
-  "icu:CallLinkRestrictionsSelect__Option--Off": {
-    "messageformat": "オフ"
-  },
-  "icu:CallLinkRestrictionsSelect__Option--On": {
-    "messageformat": "オン"
-  },
   "icu:CallLinkAddNameModal__Title": {
     "messageformat": "通話名を追加する"
   },
@@ -8614,6 +8629,39 @@
   },
   "icu:SaveMultiDialog__title": {
     "messageformat": "添付ファイルの保存"
+  },
+  "icu:EmbeddedContact__message": {
+    "messageformat": "メッセージ"
+  },
+  "icu:ContactDetail__message": {
+    "messageformat": "メッセージ"
+  },
+  "icu:ContactDetail__add-to-group": {
+    "messageformat": "グループへ追加"
+  },
+  "icu:ContactDetail__nickname": {
+    "messageformat": "ニックネーム"
+  },
+  "icu:ContactDetail__note": {
+    "messageformat": "メモ"
+  },
+  "icu:email-v2": {
+    "messageformat": "メールアドレス"
+  },
+  "icu:home-v2": {
+    "messageformat": "自宅"
+  },
+  "icu:mobile-v2": {
+    "messageformat": "携帯"
+  },
+  "icu:work-v2": {
+    "messageformat": "職場"
+  },
+  "icu:phone-v2": {
+    "messageformat": "電話番号"
+  },
+  "icu:address-v2": {
+    "messageformat": "住所"
   },
   "icu:WhatsNew__modal-title": {
     "messageformat": "更新情報"
@@ -8781,7 +8829,7 @@
     "messageformat": "Signalをサポートしていただきありがとうございます。皆様のご寄付は、オープンソースのプライバシー技術を通して表現の自由を守り、世界中の何百万人もの人々に安全なグローバルコミュニケーションを可能にするというミッションを推進する原動力となるものです。米国にお住まいの方は、この領収書を税務記録のために保管しておいてください。Signal Technology Foundationは、米国内国歳入法第501c3条に基づく非課税の非営利団体です。連邦税IDは82-4506840です。Signalは、寄付の対価としていかなるグッズもサービスも提供していません。"
   },
   "icu:MessageCta__Donate": {
-    "messageformat": "Donate Now"
+    "messageformat": "今すぐ寄付"
   },
   "icu:Donations__OfflineTooltip": {
     "messageformat": "オフラインです。寄付を完了するには、インターネットに接続してください。"
@@ -8981,6 +9029,9 @@
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__AccessibilityLabel": {
     "messageformat": "問題の詳細をご記入ください"
   },
+  "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__Placeholder": {
+    "messageformat": "問題について記入してください"
+  },
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__HelpText": {
     "messageformat": "問題に関して、できるだけ詳細にご記入ください。ここで共有いただいた内容はすべて非公開であり、Signalでの通話品質の改善の為のみに使用されます。"
   },
@@ -9095,5 +9146,14 @@
   },
   "icu:WhatsNew__8.30--1": {
     "messageformat": "また、ビデオ通話に参加しようとした際にSignalがカメラへのアクセスを許可されていない場合、システム設定を開くための便利なショートカットをWindows版に追加しました。"
+  },
+  "icu:WhatsNew__8.32--0": {
+    "messageformat": "メッセージフォルダや検索インターフェースが、未読フィルターにも対応できるようになりました。"
+  },
+  "icu:WhatsNew__8.32--1": {
+    "messageformat": "ネットワーク接続が不安定な環境でのアップロードの信頼性が向上しました。ありがとうございます、<GH3mmmbulus></GH3mmmbulus>！"
+  },
+  "icu:WhatsNew__8.32--2": {
+    "messageformat": "ショートカット「(N)」が、正しく「低評価」の絵文字を表示するようになりました。不具合を修正してくれた<lnicola></lnicola>に「いいね」を送ります。"
   }
 }

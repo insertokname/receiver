@@ -93,7 +93,7 @@ function AxoSelectTest() {
 function AxoDialogTest() {
   return (
     <AxoDialog.Root>
-      <AxoDialog.Trigger>
+      <AxoDialog.Trigger asChild>
         <AxoButton.Root variant="strong-primary" size="md">
           AxoDialog
         </AxoButton.Root>
@@ -108,7 +108,7 @@ function AxoDialogTest() {
         </AxoDialog.Body>
         <AxoDialog.Footer>
           <AxoDialog.Actions>
-            <AxoDialog.Action variant="strong-secondary" onClick={() => null}>
+            <AxoDialog.Action variant="subtle-secondary" onClick={() => null}>
               Cancel
             </AxoDialog.Action>
             <AxoDialog.Action variant="strong-primary" onClick={() => null}>
@@ -138,9 +138,7 @@ function AxoAlertDialogTest() {
         </AxoAlertDialog.Body>
         <AxoAlertDialog.Footer>
           <AxoAlertDialog.Cancel />
-          <AxoAlertDialog.Action variant="strong-primary" onClick={() => null}>
-            OK
-          </AxoAlertDialog.Action>
+          <AxoAlertDialog.Ok />
         </AxoAlertDialog.Footer>
       </AxoAlertDialog.Content>
     </AxoAlertDialog.Root>

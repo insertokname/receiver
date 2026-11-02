@@ -305,9 +305,7 @@ export function ForwardMessagesModal({
         title={null}
         description={i18n('icu:GroupV2--cannot-send')}
       >
-        <AxoConfirmDialog.Cancel>
-          {i18n('icu:Confirmation--confirm')}
-        </AxoConfirmDialog.Cancel>
+        <AxoConfirmDialog.Ok />
       </AxoConfirmDialog.Root>
       <Modal
         modalName="ForwardMessageModal"
@@ -315,7 +313,7 @@ export function ForwardMessagesModal({
         i18n={i18n}
         onClose={onClose}
         onBackButtonClick={isEditingMessage ? handleBackOrClose : undefined}
-        moduleClassName="module-ForwardMessageModal"
+        className="module-ForwardMessageModal"
         title={title}
         theme={modalTheme}
         padded={false}

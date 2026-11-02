@@ -506,7 +506,7 @@ async function linkWithFaults({ name, transfer = 'none', answerOnPoll = 1, backu
   // The inbox can open before the sync is done (Desktop opens it when the
   // connection drops) and search results do not follow new contacts: search
   // again until he is found.
-  const search = '.module-SearchInput__input.LeftPaneSearchInput__input';
+  const search = '.LeftPaneSearchInput .module-SearchInput__input';
   const bobResult = `#LeftPane [data-testid="${bob.device.aci}"]`;
   const searchDeadline = Date.now() + STEP_TIMEOUT_MS;
   for (;;) {
@@ -660,7 +660,7 @@ try {
         throw new Error(`timed out waiting for the group "${GROUP_TITLE}" in the conversation list`);
       });
     // The other contacts have no conversation yet: search finds them.
-    const search = '.module-SearchInput__input.LeftPaneSearchInput__input';
+    const search = '.LeftPaneSearchInput .module-SearchInput__input';
     for (const contact of contacts.slice(1)) {
       // eslint-disable-next-line no-await-in-loop
       await clearInput(search);
@@ -686,7 +686,7 @@ try {
   await scenario('d', 'send: typed in the composer, decrypted by the contact', async () => {
     const text = `Hello Alice, from the web ${Date.now()}`;
     const editor = await waitForSelector(
-      '.Inbox__conversation [data-testid=CompositionInput][data-enabled=true] .ql-editor',
+      '.ConversationView__composition-area [data-testid=CompositionInput][data-enabled=true] .ql-editor',
       'an enabled composer'
     );
     await editor.click();
@@ -739,7 +739,7 @@ try {
     const opened = await page.$eval('.module-ConversationHeader', el => el.textContent);
     const first = await page.$eval('#LeftPane [role=row] [data-testid]', el => el.textContent).catch(() => '?');
     // In the composer, Ctrl+B (bold) is still the app's.
-    const editor = await waitForSelector('.Inbox__conversation [data-testid=CompositionInput][data-enabled=true] .ql-editor', 'an enabled composer');
+    const editor = await waitForSelector('.ConversationView__composition-area [data-testid=CompositionInput][data-enabled=true] .ql-editor', 'an enabled composer');
     await editor.click();
     await press(['Control'], 'KeyB');
     await press(['Control'], 'KeyB');
@@ -750,20 +750,20 @@ try {
   });
 
   await scenario('ag', 'keyboard: Escape closes the conversation, as in WhatsApp, once nothing else has a use for it', async () => {
-    const isOpen = () => page.evaluate(() => Boolean(document.querySelector('.Inbox__conversation')));
+    const isOpen = () => page.evaluate(() => Boolean(document.querySelector('.ConversationPanel')));
     const expectOpen = async what => {
       await new Promise(resolve => setTimeout(resolve, 500));
       if (!(await isOpen())) throw new Error(`Escape closed the conversation ${what}`);
     };
     const expectClosed = async what => {
       await page
-        .waitForFunction(() => !document.querySelector('.Inbox__conversation') && document.querySelector('.Inbox__welcome'), { timeout: 10_000 })
+        .waitForFunction(() => !document.querySelector('.ConversationPanel') && document.querySelector('.Inbox__welcome'), { timeout: 10_000 })
         .catch(() => {
           throw new Error(`Escape did not close the conversation ${what}`);
         });
     };
     const composer = async () => {
-      const editor = await waitForSelector('.Inbox__conversation [data-testid=CompositionInput][data-enabled=true] .ql-editor', 'an enabled composer');
+      const editor = await waitForSelector('.ConversationView__composition-area [data-testid=CompositionInput][data-enabled=true] .ql-editor', 'an enabled composer');
       await editor.click();
       return editor;
     };
@@ -808,7 +808,7 @@ try {
 
     // The search field in focus: Escape is the search's.
     await openConversation(alice);
-    await page.click('.LeftPaneSearchInput__input');
+    await page.click('.LeftPaneSearchInput .module-SearchInput__input');
     await page.keyboard.press('Escape');
     await expectOpen('with the search field in focus');
     return `closed to "${welcome}"; suggestions, the details panel and the search field kept it open; the draft stayed`;

@@ -1,71 +1,83 @@
 // Copyright 2021 Signal Messenger, LLC
 // SPDX-License-Identifier: AGPL-3.0-only
-
-import type { ReactElement } from 'react';
-
-import { Modal } from '../Modal.dom.tsx';
-
-import { useRestoreFocus } from '../../hooks/useRestoreFocus.dom.ts';
-
+import {
+  useCallback,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 import type { LocalizerType } from '../../types/Util.std.ts';
-import { Button, ButtonSize, ButtonVariant } from '../Button.dom.tsx';
+import { AxoDialog } from '../../axo/AxoDialog.dom.tsx';
+import { tw } from '../../axo/tw.dom.tsx';
+import { openLinkInWebBrowser } from '../../util/openLinkInWebBrowser.dom.ts';
 
-export type PropsType = {
+export type ChatSessionRefreshedDialogProps = Readonly<{
   i18n: LocalizerType;
-  contactSupport: () => unknown;
-  onClose: () => unknown;
-};
+  children: ReactNode;
+}>;
 
-export function ChatSessionRefreshedDialog(props: PropsType): ReactElement {
-  const { i18n, contactSupport, onClose } = props;
+export function ChatSessionRefreshedDialog(
+  props: ChatSessionRefreshedDialogProps
+): ReactElement {
+  const { i18n } = props;
+  const [open, setOpen] = useState(false);
 
-  // Focus first button after initial render, restore focus on teardown
-  const [focusRef] = useRestoreFocus();
+  const handleOpenSupportUrl = useCallback(() => {
+    openLinkInWebBrowser(
+      'https://support.signal.org/hc/requests/new?desktop&chat_refreshed'
+    );
+    setOpen(false);
+  }, []);
 
-  const footer = (
-    <>
-      <Button
-        onClick={contactSupport}
-        size={ButtonSize.Medium}
-        variant={ButtonVariant.Secondary}
-      >
-        {i18n('icu:ChatRefresh--contactSupport')}
-      </Button>
-      <Button
-        onClick={onClose}
-        ref={focusRef}
-        size={ButtonSize.Medium}
-        variant={ButtonVariant.Primary}
-        className="module-chat-session-refreshed-dialog__close-button"
-      >
-        {i18n('icu:Confirmation--confirm')}
-      </Button>
-    </>
-  );
+  const handleClose = useCallback(() => {
+    setOpen(false);
+  }, []);
+
   return (
-    <Modal
-      modalName="ChatSessionRefreshedDialog"
-      hasXButton={false}
-      onClose={onClose}
-      i18n={i18n}
-      modalFooter={footer}
-    >
-      <>
-        <div className="module-chat-session-refreshed-dialog__image">
-          <img
-            src="images/chat-session-refresh.svg"
-            height="110"
-            width="200"
-            alt=""
-          />
-        </div>
-        <div className="module-chat-session-refreshed-dialog__title">
-          {i18n('icu:ChatRefresh--notification')}
-        </div>
-        <div className="module-chat-session-refreshed-dialog__description">
-          {i18n('icu:ChatRefresh--summary')}
-        </div>
-      </>
-    </Modal>
+    <AxoDialog.Root open={open} onOpenChange={setOpen}>
+      <AxoDialog.Trigger asChild>{props.children}</AxoDialog.Trigger>
+      <AxoDialog.Content size="md" escape="cancel-is-noop">
+        <AxoDialog.Header floating>
+          <AxoDialog.Close />
+        </AxoDialog.Header>
+        <AxoDialog.Body>
+          <div className={tw('mb-2.5 flex justify-center')}>
+            <img
+              src="images/chat-session-refresh.svg"
+              height="110"
+              width="200"
+              alt=""
+            />
+          </div>
+
+          <AxoDialog.Title>
+            <span className={tw('type-title-medium')}>
+              {i18n('icu:ChatRefresh--notification')}
+            </span>
+          </AxoDialog.Title>
+          <AxoDialog.Description>
+            <p>{i18n('icu:ChatRefresh--summary')}</p>
+          </AxoDialog.Description>
+        </AxoDialog.Body>
+        <AxoDialog.Footer>
+          <AxoDialog.Actions>
+            <AxoDialog.Action
+              onClick={handleOpenSupportUrl}
+              variant="subtle-secondary"
+              arrow="external-link"
+            >
+              {i18n('icu:ChatRefresh--contactSupport')}
+            </AxoDialog.Action>
+            <AxoDialog.Action
+              onClick={handleClose}
+              autoFocus
+              variant="strong-primary"
+            >
+              {i18n('icu:ok')}
+            </AxoDialog.Action>
+          </AxoDialog.Actions>
+        </AxoDialog.Footer>
+      </AxoDialog.Content>
+    </AxoDialog.Root>
   );
 }

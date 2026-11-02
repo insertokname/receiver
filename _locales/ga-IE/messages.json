@@ -2,6 +2,9 @@
   "icu:AxoAlertDialog.Cancel": {
     "messageformat": "Cuir ar ceal"
   },
+  "icu:AxoAlertDialog.Ok": {
+    "messageformat": "CGL"
+  },
   "icu:AxoButton.Pending": {
     "messageformat": "Ar feitheamh"
   },
@@ -73,9 +76,6 @@
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--2": {
     "messageformat": "Déanann do phríomhghléas bainistíocht ar a bhfuil nasctha, is féidir leat suas le 5 ghléas a nascadh."
-  },
-  "icu:LinkedDevicesOnboardingDialog__bullet--3": {
-    "messageformat": "Ar do phríomhghléas amháin a dhéantar socruithe cuntais a bhainistiú, socruithe agus cúltacaí an chuntais ina measc."
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--3--1": {
     "messageformat": "Ní féidir socruithe an chuntais agus cúltacaí a bhainistiú ach ar do phríomhghléas."
@@ -673,6 +673,9 @@
   },
   "icu:KeyTransparencyOnboardingDialog__Description": {
     "messageformat": "I gcás teagmhálaithe lena bhfuil tú nasctha le huimhir ghutháin, is féidir le Signal slánú an naisc a dheimhniú go huathoibríoch agus próiseas ar a dtugtar trédhearcacht eochracha in úsáid. Mar shlánú sa bhreis, is féidir leat naisc a fhíorú de láimh fós agus cód QR in úsáid nó trí uimhreacha sábháilteachta a chur i gcomparáid le chéile."
+  },
+  "icu:KeyTransparencyOnboardingDialog__Description-v2": {
+    "messageformat": "<paragraph>I gcás teagmhálaithe lena bhfuil tú nasctha le huimhir ghutháin, is féidir le Signal slánú an naisc a dheimhniú go huathoibríoch agus próiseas ar a dtugtar trédhearcacht eochracha in úsáid.</paragraph><paragraph>Mar shlánú sa bhreis, is féidir leat naisc a fhíorú de láimh fós agus cód QR in úsáid nó trí uimhreacha sábháilteachta a chur i gcomparáid le chéile.</paragraph>"
   },
   "icu:KeyTransparencyOnboardingDialog__Continue": {
     "messageformat": "Ar aghaidh"
@@ -1481,6 +1484,9 @@
   "icu:ConversationMerge--learn-more": {
     "messageformat": "Tuilleadh Faisnéise"
   },
+  "icu:ConversationMerge--explainer-dialog--label": {
+    "messageformat": "Stair teachtaireachtaí cumaiscthe"
+  },
   "icu:ConversationMerge--explainer-dialog--line-1": {
     "messageformat": "Tar éis teachtaireachtaí a sheoladh chuig {obsoleteConversationTitle} fuair tú amach gur le {conversationTitle} an uimhir seo. Tá uimhir ghutháin an duine sin príobháideach."
   },
@@ -1741,6 +1747,9 @@
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__Search__Placeholder": {
     "messageformat": "Cuardaigh"
+  },
+  "icu:Preferences__EditChatFolderPage__SelectChatsDialog__NoChats": {
+    "messageformat": "Níl aon chomhráite ann"
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__ChatTypesSection__Title": {
     "messageformat": "Cineálacha comhráite"
@@ -3512,6 +3521,9 @@
   "icu:MessageRequests--unblock-group-confirm-body": {
     "messageformat": "Beidh baill den ghrúpa in ann tusa a chur leis an ngrúpa seo arís."
   },
+  "icu:MessageRequests--unblock-signal-confirm-body": {
+    "messageformat": "Gheobhaidh tú nuashonruithe agus nuacht de chuid Signal."
+  },
   "icu:MessageRequests--block-and-report-spam-success-toast": {
     "messageformat": "Tuairiscithe mar thurscar agus bac curtha air."
   },
@@ -3526,6 +3538,9 @@
   },
   "icu:MessageRequests--block-group-confirm-body": {
     "messageformat": "Ní bhfaighidh tú teachtaireachtaí ná nuashonruithe ón ngrúpa seo a thuilleadh agus ní bheidh baill in ann thú a chur leis an ngrúpa seo arís."
+  },
+  "icu:MessageRequests--block-signal-confirm-body": {
+    "messageformat": "Ní bhfaighidh tú nuashonruithe agus nuacht de chuid Signal a thuilleadh."
   },
   "icu:MessageRequests--reportAndMaybeBlock": {
     "messageformat": "Tuairiscigh..."
@@ -6169,9 +6184,6 @@
   "icu:Preferences__SignalAccountKeys__Description": {
     "messageformat": "Stóráil in áit shábháilte é; éilítear d'fhaisnéis logáil isteach le do chuntas agus do shonraí a athshlánú. Ná comhroinn le duine ar bith choíche é."
   },
-  "icu:Preferences__SignalAccountKeys__AccountKey": {
-    "messageformat": "Eochair an chuntais"
-  },
   "icu:Preferences__SignalAccountKeys__AccountID": {
     "messageformat": "Aitheantas an Chuntais"
   },
@@ -6673,6 +6685,9 @@
   "icu:Preferences--blocked-users--description": {
     "messageformat": "Ní bheidh úsáideoirí bactha in ann glaonna a chur ort ná teachtaireachtaí a sheoladh chugat"
   },
+  "icu:Preferences--add-blocked": {
+    "messageformat": "Cuir úsáideoir nó grúpa bactha leis"
+  },
   "icu:Preferences--blocked-users": {
     "messageformat": "Úsáideoirí Bactha"
   },
@@ -6681,6 +6696,12 @@
   },
   "icu:Preferences--blocked--blocked-on": {
     "messageformat": "Bac curtha air/uirthi an {blockedAt}"
+  },
+  "icu:Preferences--BlockChooser--Done": {
+    "messageformat": "Déanta"
+  },
+  "icu:Preferences--BlockChooser--Search--Placeholder": {
+    "messageformat": "Cuardaigh"
   },
   "icu:Preferences--signal-backups": {
     "messageformat": "Cúltacaí Slána Signal"
@@ -7097,7 +7118,7 @@
     "messageformat": "Triail arís i gceann {duration}"
   },
   "icu:StandaloneRegistration--PhoneNumber--RegionCodeSelector--Label": {
-    "messageformat": "Select region code"
+    "messageformat": "Roghnaigh cód tíre"
   },
   "icu:StandaloneRegistration--PhoneNumber--placeholder": {
     "messageformat": "Uimhir ghutháin"
@@ -8561,12 +8582,6 @@
   "icu:CallLinkPendingParticipantModal__DenyButtonLabel": {
     "messageformat": "Diúltaigh do dhul isteach"
   },
-  "icu:CallLinkRestrictionsSelect__Option--Off": {
-    "messageformat": "As"
-  },
-  "icu:CallLinkRestrictionsSelect__Option--On": {
-    "messageformat": "Air"
-  },
   "icu:CallLinkAddNameModal__Title": {
     "messageformat": "Cuir ainm an ghlao leis"
   },
@@ -8614,6 +8629,39 @@
   },
   "icu:SaveMultiDialog__title": {
     "messageformat": "Sábháil ceangaltáin"
+  },
+  "icu:EmbeddedContact__message": {
+    "messageformat": "Seol tcht"
+  },
+  "icu:ContactDetail__message": {
+    "messageformat": "Seol tcht"
+  },
+  "icu:ContactDetail__add-to-group": {
+    "messageformat": "Cuir le grúpa"
+  },
+  "icu:ContactDetail__nickname": {
+    "messageformat": "Leasainm"
+  },
+  "icu:ContactDetail__note": {
+    "messageformat": "Nótaí"
+  },
+  "icu:email-v2": {
+    "messageformat": "Seoladh ríomhphoist"
+  },
+  "icu:home-v2": {
+    "messageformat": "Baile"
+  },
+  "icu:mobile-v2": {
+    "messageformat": "Guthán póca"
+  },
+  "icu:work-v2": {
+    "messageformat": "An obair"
+  },
+  "icu:phone-v2": {
+    "messageformat": "Guthán"
+  },
+  "icu:address-v2": {
+    "messageformat": "Seoladh"
   },
   "icu:WhatsNew__modal-title": {
     "messageformat": "Cad Atá Nua"
@@ -8781,7 +8829,7 @@
     "messageformat": "Go raibh maith agat as tacú le Signal. Cabhraíonn do rannchuidiú leis an misean chun saoirse cainte a chosaint agus chun cur ar ár gcumas cumarsáid dhomhanda a chur ar fáil do na milliúin ar fud an domhain, trí theicneolaíocht phríobháideachta foinse oscailte. Más cónaitheoir de chuid na Stát Aontaithe thú, coinnigh an admháil seo do do thaifid chánach. Eagraíocht neamhbhrabúis díolmhaithe ó cháin sna Stáit Aontaithe faoi alt 501c3 den Internal Revenue Code is ea Signal Technology Foundation. Is é 82–4506840 ár nUimhir Aitheantais Cánach Feidearálaí. Níor thug Signal aon earraí nó seirbhísí mar chúiteamh ar an rannchuidiú seo."
   },
   "icu:MessageCta__Donate": {
-    "messageformat": "Donate Now"
+    "messageformat": "Tabhair Airgead Anois"
   },
   "icu:Donations__OfflineTooltip": {
     "messageformat": "Tá tú as líne. Nasc leis an Idirlíon le tabhartas a chur i gcrích."
@@ -8981,6 +9029,9 @@
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__AccessibilityLabel": {
     "messageformat": "Cur síos ar an bhfadhb"
   },
+  "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__Placeholder": {
+    "messageformat": "Déan cur síos ar an bhfadhb"
+  },
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__HelpText": {
     "messageformat": "Cuir aon sonraí a bhaineann leis an bhfadhb san áireamh. Coinneofar aon rud a chomhroinneann tú anseo príobháideach agus ní úsáidfear é ach chun cabhrú le glaonna in Signal a fheabhsú."
   },
@@ -9095,5 +9146,14 @@
   },
   "icu:WhatsNew__8.30--1": {
     "messageformat": "Chuireamar aicearra áisiúil leis freisin chun socruithe do chórais a oscailt ar Windows má dhéanann tú iarracht dul isteach i bhfísghlao gan cead rochtana ar an gceamara a bheith ag Signal."
+  },
+  "icu:WhatsNew__8.32--0": {
+    "messageformat": "Tá tacú don scagaire neamhléite i bhfillteáin teachtaireachtaí agus sa chomhéadan cuardaigh freisin."
+  },
+  "icu:WhatsNew__8.32--1": {
+    "messageformat": "Iontaofacht feabhsaithe uaslódála faoi dhrochdhálaí líonra. Go raibh maith agat, <GH3mmmbulus></GH3mmmbulus> !"
+  },
+  "icu:WhatsNew__8.32--2": {
+    "messageformat": "Díríonn an t-aicearra &quot;(N)&quot; ar an emoji Ordóga Síos mar ba cheart. Ordóga Suas do <lnicola></lnicola> as réiteach an fhabht."
   }
 }

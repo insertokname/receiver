@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 import type { ReactNode, JSX } from 'react';
-
+import classNames from 'classnames';
 import { WidthBreakpoint } from '../components/_util.std.ts';
 
 type PropsType = {
@@ -22,7 +22,10 @@ export function FakeLeftPaneContainer({
 }: PropsType): JSX.Element {
   return (
     <div
-      className={`module-left-pane--width-${containerWidthBreakpoint}`}
+      className={classNames(
+        containerWidthBreakpoint === WidthBreakpoint.Narrow &&
+          'module-left-pane--width-narrow'
+      )}
       style={{ width: WIDTHS[containerWidthBreakpoint] }}
     >
       {children}

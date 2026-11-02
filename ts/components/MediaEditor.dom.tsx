@@ -974,7 +974,7 @@ export function MediaEditor({
             <Slider
               handleStyle={{ backgroundColor: getHSL(sliderValue) }}
               label={i18n('icu:CustomColorEditor__hue')}
-              moduleClassName="HueSlider MediaEditor__toolbar__tool"
+              className="HueSlider MediaEditor__toolbar__tool"
               onChange={setSliderValue}
               value={sliderValue}
             />
@@ -982,25 +982,25 @@ export function MediaEditor({
               i18n={i18n}
               menuOptions={[
                 {
-                  icon: 'MediaEditor__icon--text-regular',
+                  iconClassName: 'MediaEditor__icon--text-regular',
                   label: i18n('icu:MediaEditor__text--regular'),
                   onClick: () => setTextStyle(TextStyle.Regular),
                   value: TextStyle.Regular,
                 },
                 {
-                  icon: 'MediaEditor__icon--text-highlight',
+                  iconClassName: 'MediaEditor__icon--text-highlight',
                   label: i18n('icu:MediaEditor__text--highlight'),
                   onClick: () => setTextStyle(TextStyle.Highlight),
                   value: TextStyle.Highlight,
                 },
                 {
-                  icon: 'MediaEditor__icon--text-outline',
+                  iconClassName: 'MediaEditor__icon--text-outline',
                   label: i18n('icu:MediaEditor__text--outline'),
                   onClick: () => setTextStyle(TextStyle.Outline),
                   value: TextStyle.Outline,
                 },
               ]}
-              moduleClassName={classNames('MediaEditor__toolbar__tool', {
+              className={classNames('MediaEditor__toolbar__tool', {
                 'MediaEditor__toolbar__button--text-regular':
                   textStyle === TextStyle.Regular,
                 'MediaEditor__toolbar__button--text-highlight':
@@ -1038,7 +1038,7 @@ export function MediaEditor({
             <Slider
               handleStyle={{ backgroundColor: getHSL(sliderValue) }}
               label={i18n('icu:CustomColorEditor__hue')}
-              moduleClassName="HueSlider MediaEditor__toolbar__tool"
+              className="HueSlider MediaEditor__toolbar__tool"
               onChange={setSliderValue}
               value={sliderValue}
             />
@@ -1046,19 +1046,19 @@ export function MediaEditor({
               i18n={i18n}
               menuOptions={[
                 {
-                  icon: 'MediaEditor__icon--draw-pen',
+                  iconClassName: 'MediaEditor__icon--draw-pen',
                   label: i18n('icu:MediaEditor__draw--pen'),
                   onClick: () => setDrawTool(DrawTool.Pen),
                   value: DrawTool.Pen,
                 },
                 {
-                  icon: 'MediaEditor__icon--draw-highlighter',
+                  iconClassName: 'MediaEditor__icon--draw-highlighter',
                   label: i18n('icu:MediaEditor__draw--highlighter'),
                   onClick: () => setDrawTool(DrawTool.Highlighter),
                   value: DrawTool.Highlighter,
                 },
               ]}
-              moduleClassName={classNames('MediaEditor__toolbar__tool', {
+              className={classNames('MediaEditor__toolbar__tool', {
                 'MediaEditor__toolbar__button--draw-pen':
                   drawTool === DrawTool.Pen,
                 'MediaEditor__toolbar__button--draw-highlighter':
@@ -1071,31 +1071,31 @@ export function MediaEditor({
               i18n={i18n}
               menuOptions={[
                 {
-                  icon: 'MediaEditor__icon--width-thin',
+                  iconClassName: 'MediaEditor__icon--width-thin',
                   label: i18n('icu:MediaEditor__draw--thin'),
                   onClick: () => setDrawWidth(DrawWidth.Thin),
                   value: DrawWidth.Thin,
                 },
                 {
-                  icon: 'MediaEditor__icon--width-regular',
+                  iconClassName: 'MediaEditor__icon--width-regular',
                   label: i18n('icu:MediaEditor__draw--regular'),
                   onClick: () => setDrawWidth(DrawWidth.Regular),
                   value: DrawWidth.Regular,
                 },
                 {
-                  icon: 'MediaEditor__icon--width-medium',
+                  iconClassName: 'MediaEditor__icon--width-medium',
                   label: i18n('icu:MediaEditor__draw--medium'),
                   onClick: () => setDrawWidth(DrawWidth.Medium),
                   value: DrawWidth.Medium,
                 },
                 {
-                  icon: 'MediaEditor__icon--width-heavy',
+                  iconClassName: 'MediaEditor__icon--width-heavy',
                   label: i18n('icu:MediaEditor__draw--heavy'),
                   onClick: () => setDrawWidth(DrawWidth.Heavy),
                   value: DrawWidth.Heavy,
                 },
               ]}
-              moduleClassName={classNames('MediaEditor__toolbar__tool', {
+              className={classNames('MediaEditor__toolbar__tool', {
                 'MediaEditor__toolbar__button--width-thin':
                   drawWidth === DrawWidth.Thin,
                 'MediaEditor__toolbar__button--width-regular':
@@ -1131,39 +1131,30 @@ export function MediaEditor({
       <>
         <div className="MediaEditor__tools-row-1">
           <button
-            className={classNames(
-              'MediaEditor__crop-preset MediaEditor__crop-preset--free',
-              {
-                'MediaEditor__crop-preset--selected':
-                  cropPreset === CropPreset.Freeform,
-              }
-            )}
+            className={classNames('MediaEditor__crop-preset', {
+              'MediaEditor__crop-preset--selected':
+                cropPreset === CropPreset.Freeform,
+            })}
             onClick={() => setCropPreset(CropPreset.Freeform)}
             type="button"
           >
             {i18n('icu:MediaEditor__crop-preset--freeform')}
           </button>
           <button
-            className={classNames(
-              'MediaEditor__crop-preset MediaEditor__crop-preset--square',
-              {
-                'MediaEditor__crop-preset--selected':
-                  cropPreset === CropPreset.Square,
-              }
-            )}
+            className={classNames('MediaEditor__crop-preset', {
+              'MediaEditor__crop-preset--selected':
+                cropPreset === CropPreset.Square,
+            })}
             onClick={() => setCropPreset(CropPreset.Square)}
             type="button"
           >
             {i18n('icu:MediaEditor__crop-preset--square')}
           </button>
           <button
-            className={classNames(
-              'MediaEditor__crop-preset MediaEditor__crop-preset--vertical',
-              {
-                'MediaEditor__crop-preset--selected':
-                  cropPreset === CropPreset.Vertical,
-              }
-            )}
+            className={classNames('MediaEditor__crop-preset', {
+              'MediaEditor__crop-preset--selected':
+                cropPreset === CropPreset.Vertical,
+            })}
             onClick={() => setCropPreset(CropPreset.Vertical)}
             type="button"
           >
@@ -1253,9 +1244,9 @@ export function MediaEditor({
               aria-label={i18n('icu:MediaEditor__crop--lock')}
               className={classNames(
                 'MediaEditor__toolbar__crop__button',
-                `MediaEditor__toolbar__button--crop-${
-                  cropAspectRatioLock ? '' : 'un'
-                }locked`
+                cropAspectRatioLock
+                  ? 'MediaEditor__toolbar__button--crop-locked'
+                  : 'MediaEditor__toolbar__button--crop-unlocked'
               )}
               onClick={() => {
                 if (fabricCanvas) {
@@ -1480,7 +1471,7 @@ export function MediaEditor({
                     inputApi={inputApiRef}
                     isActive
                     isFormattingEnabled={isFormattingEnabled}
-                    moduleClassName="StoryViewsNRepliesModal__input"
+                    className="StoryViewsNRepliesModal__input"
                     onCloseLinkPreview={noop}
                     onEditorStateChange={({ bodyRanges, messageText }) => {
                       setCaptionBodyRanges(bodyRanges);

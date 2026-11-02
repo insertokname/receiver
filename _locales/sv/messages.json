@@ -2,6 +2,9 @@
   "icu:AxoAlertDialog.Cancel": {
     "messageformat": "Avbryt"
   },
+  "icu:AxoAlertDialog.Ok": {
+    "messageformat": "OK"
+  },
   "icu:AxoButton.Pending": {
     "messageformat": "Väntar"
   },
@@ -73,9 +76,6 @@
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--2": {
     "messageformat": "Din primära enhet hanterar vad som är länkat, och du kan länka upp till 5 enheter."
-  },
-  "icu:LinkedDevicesOnboardingDialog__bullet--3": {
-    "messageformat": "Kontoinställningar hanteras endast på din primära enhet, inklusive kontoinställningar och säkerhetskopior."
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--3--1": {
     "messageformat": "Kontoinställningar och säkerhetskopior kan endast hanteras på din primära enhet."
@@ -673,6 +673,9 @@
   },
   "icu:KeyTransparencyOnboardingDialog__Description": {
     "messageformat": "För kontakter som du är ansluten till via telefonnummer kan Signal automatiskt bekräfta om anslutningen är säker med hjälp av en process som kallas nyckeltransparens. För ökad säkerhet kan du fortfarande verifiera anslutningar manuellt med hjälp av en QR-kod eller genom att jämföra säkerhetsnummer."
+  },
+  "icu:KeyTransparencyOnboardingDialog__Description-v2": {
+    "messageformat": "<paragraph>För kontakter som du är ansluten till via telefonnummer kan Signal automatiskt bekräfta om anslutningen är säker med hjälp av en process som kallas nyckeltransparens.</paragraph><paragraph>För ökad säkerhet kan du fortfarande verifiera anslutningar manuellt med hjälp av en QR-kod eller genom att jämföra säkerhetsnummer.</paragraph>"
   },
   "icu:KeyTransparencyOnboardingDialog__Continue": {
     "messageformat": "Fortsätt"
@@ -1481,6 +1484,9 @@
   "icu:ConversationMerge--learn-more": {
     "messageformat": "Läs mer"
   },
+  "icu:ConversationMerge--explainer-dialog--label": {
+    "messageformat": "Meddelandehistoriken sammanfogad"
+  },
   "icu:ConversationMerge--explainer-dialog--line-1": {
     "messageformat": "Efter att ha skickat meddelanden med {obsoleteConversationTitle} fick du reda på att detta nummer tillhör {conversationTitle}. Deras telefonnummer är privat."
   },
@@ -1741,6 +1747,9 @@
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__Search__Placeholder": {
     "messageformat": "Sök"
+  },
+  "icu:Preferences__EditChatFolderPage__SelectChatsDialog__NoChats": {
+    "messageformat": "Inga chattar"
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__ChatTypesSection__Title": {
     "messageformat": "Chattyper"
@@ -3512,6 +3521,9 @@
   "icu:MessageRequests--unblock-group-confirm-body": {
     "messageformat": "Gruppmedlemmar kommer att kunna lägga till dig i den här gruppen igen."
   },
+  "icu:MessageRequests--unblock-signal-confirm-body": {
+    "messageformat": "Du kommer att få uppdateringar och nyheter från Signal."
+  },
   "icu:MessageRequests--block-and-report-spam-success-toast": {
     "messageformat": "Rapporterad som skräppost och blockerad."
   },
@@ -3526,6 +3538,9 @@
   },
   "icu:MessageRequests--block-group-confirm-body": {
     "messageformat": "Du kommer inte längre att få meddelanden eller uppdateringar från den här gruppen och medlemmar kan inte lägga till dig i den här gruppen igen."
+  },
+  "icu:MessageRequests--block-signal-confirm-body": {
+    "messageformat": "Du kommer inte längre att få uppdateringar och nyheter från Signal."
   },
   "icu:MessageRequests--reportAndMaybeBlock": {
     "messageformat": "Rapportera …"
@@ -6169,9 +6184,6 @@
   "icu:Preferences__SignalAccountKeys__Description": {
     "messageformat": "Förvara detta på ett säkert ställe – dina inloggningsuppgifter krävs för att återställa ditt konto och dina data. Dela det aldrig med någon."
   },
-  "icu:Preferences__SignalAccountKeys__AccountKey": {
-    "messageformat": "Kontonyckel"
-  },
   "icu:Preferences__SignalAccountKeys__AccountID": {
     "messageformat": "Konto-ID"
   },
@@ -6673,6 +6685,9 @@
   "icu:Preferences--blocked-users--description": {
     "messageformat": "Blockerade användare kommer inte att kunna ringa eller skicka meddelanden till dig"
   },
+  "icu:Preferences--add-blocked": {
+    "messageformat": "Lägg till blockerad användare eller grupp"
+  },
   "icu:Preferences--blocked-users": {
     "messageformat": "Blockerade användare"
   },
@@ -6681,6 +6696,12 @@
   },
   "icu:Preferences--blocked--blocked-on": {
     "messageformat": "Blockerad {blockedAt}"
+  },
+  "icu:Preferences--BlockChooser--Done": {
+    "messageformat": "Klar"
+  },
+  "icu:Preferences--BlockChooser--Search--Placeholder": {
+    "messageformat": "Sök"
   },
   "icu:Preferences--signal-backups": {
     "messageformat": "Säkerhetskopiering av Signal"
@@ -7097,7 +7118,7 @@
     "messageformat": "Försök igen om {duration}"
   },
   "icu:StandaloneRegistration--PhoneNumber--RegionCodeSelector--Label": {
-    "messageformat": "Select region code"
+    "messageformat": "Välj landskod"
   },
   "icu:StandaloneRegistration--PhoneNumber--placeholder": {
     "messageformat": "Telefonnummer"
@@ -8561,12 +8582,6 @@
   "icu:CallLinkPendingParticipantModal__DenyButtonLabel": {
     "messageformat": "Neka post"
   },
-  "icu:CallLinkRestrictionsSelect__Option--Off": {
-    "messageformat": "Av"
-  },
-  "icu:CallLinkRestrictionsSelect__Option--On": {
-    "messageformat": "På"
-  },
   "icu:CallLinkAddNameModal__Title": {
     "messageformat": "Lägg till samtalsnamn"
   },
@@ -8614,6 +8629,39 @@
   },
   "icu:SaveMultiDialog__title": {
     "messageformat": "Spara bilagor"
+  },
+  "icu:EmbeddedContact__message": {
+    "messageformat": "Meddelande"
+  },
+  "icu:ContactDetail__message": {
+    "messageformat": "Meddelande"
+  },
+  "icu:ContactDetail__add-to-group": {
+    "messageformat": "Lägg till i en grupp"
+  },
+  "icu:ContactDetail__nickname": {
+    "messageformat": "Smeknamn"
+  },
+  "icu:ContactDetail__note": {
+    "messageformat": "Anteckningar"
+  },
+  "icu:email-v2": {
+    "messageformat": "E-post"
+  },
+  "icu:home-v2": {
+    "messageformat": "Hem"
+  },
+  "icu:mobile-v2": {
+    "messageformat": "Mobil"
+  },
+  "icu:work-v2": {
+    "messageformat": "Arbete"
+  },
+  "icu:phone-v2": {
+    "messageformat": "Telefon"
+  },
+  "icu:address-v2": {
+    "messageformat": "Adress"
   },
   "icu:WhatsNew__modal-title": {
     "messageformat": "Vad är nytt"
@@ -8781,7 +8829,7 @@
     "messageformat": "Tack för att du stöder Signal. Ditt bidrag hjälper till att främja uppdraget att skydda yttrandefriheten och möjliggöra säker global kommunikation för miljontals människor runt om i världen, genom öppen källkod för integritetsskydd. Spara detta kvitto för dina skatteuppgifter om du är bosatt i USA. Signal Technology Foundation är en skattebefriad ideell organisation i USA enligt avsnitt 501c3 i Internal Revenue Code. Vårt federala skatte-ID är 82-4506840. Signal har inte tillhandahållit några varor eller tjänster i utbyte mot detta bidrag."
   },
   "icu:MessageCta__Donate": {
-    "messageformat": "Donate Now"
+    "messageformat": "Donera nu"
   },
   "icu:Donations__OfflineTooltip": {
     "messageformat": "Du är offline. Vänligen anslut till internet för att slutföra en donation."
@@ -8981,6 +9029,9 @@
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__AccessibilityLabel": {
     "messageformat": "Problembeskrivning"
   },
+  "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__Placeholder": {
+    "messageformat": "Beskriv ditt problem"
+  },
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__HelpText": {
     "messageformat": "Inkludera alla detaljer som är relevanta för problemet. Allt du delar här kommer att hållas privat och kommer endast att användas för att förbättra samtal i Signal."
   },
@@ -9095,5 +9146,14 @@
   },
   "icu:WhatsNew__8.30--1": {
     "messageformat": "Vi har också lagt till en smidig genväg för att öppna systeminställningarna på Windows om du försöker gå med i ett videosamtal utan att Signal har behörighet att använda kameran."
+  },
+  "icu:WhatsNew__8.32--0": {
+    "messageformat": "Filtret för olästa stöds nu även i meddelandemappar och i sökgränssnittet."
+  },
+  "icu:WhatsNew__8.32--1": {
+    "messageformat": "Förbättrad tillförlitlighet vid uppladdning under dåliga nätverksförhållanden. Tack <GH3mmmbulus></GH3mmmbulus>!"
+  },
+  "icu:WhatsNew__8.32--2": {
+    "messageformat": "Genvägen “(N)” pekar nu korrekt på emojin för tummen ner. Tummen upp till <lnicola>xx</lnicola> för buggfixen."
   }
 }

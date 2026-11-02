@@ -329,9 +329,9 @@ await build({
 
 // Page and static assets.
 let html = await readFile(join(HERE, 'index.html'), 'utf8');
-const PRODUCTION_CONNECT_SRC = "connect-src 'self' wss://snowflake.torproject.net https://snowflake-broker.torproject.net;";
+const PRODUCTION_CONNECT_SRC = "connect-src 'self' blob: wss://snowflake.torproject.net https://snowflake-broker.torproject.net;";
 if (!html.includes(PRODUCTION_CONNECT_SRC)) throw new Error('index.html: connect-src changed, update build.mjs');
-if (E2E) html = html.replace(PRODUCTION_CONNECT_SRC, `connect-src 'self' ${new URL(e2e.RELAY_URL).origin.replace(/^http/, 'ws')};`);
+if (E2E) html = html.replace(PRODUCTION_CONNECT_SRC, `connect-src 'self' blob: ${new URL(e2e.RELAY_URL).origin.replace(/^http/, 'ws')};`);
 await writeFile(join(OUT, 'index.html'), html);
 await cp(join(HERE, 'favicon.svg'), join(OUT, 'favicon.svg'));
 // The app shell's own pieces (web/shell): its stylesheet, the web app

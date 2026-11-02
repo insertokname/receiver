@@ -2,6 +2,9 @@
   "icu:AxoAlertDialog.Cancel": {
     "messageformat": "Peruuta"
   },
+  "icu:AxoAlertDialog.Ok": {
+    "messageformat": "OK"
+  },
   "icu:AxoButton.Pending": {
     "messageformat": "Käsiteltävänä"
   },
@@ -73,9 +76,6 @@
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--2": {
     "messageformat": "Yhdistettyjä laitteita voi olla korkeintaan viisi, ja niitä hallinnoidaan ensisijaiselta laitteelta."
-  },
-  "icu:LinkedDevicesOnboardingDialog__bullet--3": {
-    "messageformat": "Asetuksia pystyy hallinnoimaan vain ensisijaiselta laitteelta, mukaan lukien tiliasetukset ja varmuuskopiointi."
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--3--1": {
     "messageformat": "Tilin asetuksia ja varmuuskopioita voi hallinnoida vain ensisijaisella laitteella."
@@ -673,6 +673,9 @@
   },
   "icu:KeyTransparencyOnboardingDialog__Description": {
     "messageformat": "Kun yhteys toiseen käyttäjään perustuu puhelinnumeroon, Signal voi vahvistaa yhteyden suojauksen automaattisesti avaimen läpinäkyvyydeksi kutsutulla prosessilla. Lisäturvan saamiseksi voit edelleen vahvistaa yhteydet manuaalisesti QR-koodilla tai vertaamalla turvanumeroita."
+  },
+  "icu:KeyTransparencyOnboardingDialog__Description-v2": {
+    "messageformat": "<paragraph>Kun yhteys toiseen käyttäjään perustuu puhelinnumeroon, Signal voi vahvistaa yhteyden suojauksen automaattisesti avaimen läpinäkyvyydeksi kutsutulla prosessilla.</paragraph><paragraph>Lisäturvan saamiseksi voit edelleen vahvistaa yhteydet manuaalisesti QR-koodilla tai vertaamalla turvanumeroita.</paragraph>"
   },
   "icu:KeyTransparencyOnboardingDialog__Continue": {
     "messageformat": "Jatka"
@@ -1481,6 +1484,9 @@
   "icu:ConversationMerge--learn-more": {
     "messageformat": "Lue lisää"
   },
+  "icu:ConversationMerge--explainer-dialog--label": {
+    "messageformat": "Viestihistoria yhdistetty"
+  },
   "icu:ConversationMerge--explainer-dialog--line-1": {
     "messageformat": "Lähetettyäsi viestin keskusteluun {obsoleteConversationTitle} sinulle selvisi, että tämä numero kuuluu keskusteluun {conversationTitle}. Puhelinnumero on yksityinen."
   },
@@ -1741,6 +1747,9 @@
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__Search__Placeholder": {
     "messageformat": "Hae"
+  },
+  "icu:Preferences__EditChatFolderPage__SelectChatsDialog__NoChats": {
+    "messageformat": "Ei keskusteluja"
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__ChatTypesSection__Title": {
     "messageformat": "Keskustelutyypit"
@@ -3512,6 +3521,9 @@
   "icu:MessageRequests--unblock-group-confirm-body": {
     "messageformat": "Ryhmän jäsenet voivat lisätä sinut takaisin tähän ryhmään."
   },
+  "icu:MessageRequests--unblock-signal-confirm-body": {
+    "messageformat": "Saat edelleen Signalin päivityksiä ja uutisia."
+  },
   "icu:MessageRequests--block-and-report-spam-success-toast": {
     "messageformat": "Ilmoitettu roskapostista ja estetty."
   },
@@ -3526,6 +3538,9 @@
   },
   "icu:MessageRequests--block-group-confirm-body": {
     "messageformat": "Et enää saa viestejä tai päivityksiä tältä ryhmältä, eivätkä ryhmän jäsenet voi lisätä sinua takaisin ryhmään."
+  },
+  "icu:MessageRequests--block-signal-confirm-body": {
+    "messageformat": "Et enää saa Signalin päivityksiä ja uutisia."
   },
   "icu:MessageRequests--reportAndMaybeBlock": {
     "messageformat": "Ilmoita…"
@@ -6169,9 +6184,6 @@
   "icu:Preferences__SignalAccountKeys__Description": {
     "messageformat": "Talleta tieto turvallisesti. Kirjautumistietoa tarvitaan, jos tilisi ja tietosi täytyy palauttaa. Älä jaa sitä kenellekään."
   },
-  "icu:Preferences__SignalAccountKeys__AccountKey": {
-    "messageformat": "Tiliavain"
-  },
   "icu:Preferences__SignalAccountKeys__AccountID": {
     "messageformat": "Tilin tunniste"
   },
@@ -6673,6 +6685,9 @@
   "icu:Preferences--blocked-users--description": {
     "messageformat": "Estetyt käyttäjät eivät voi soittaa sinulle tai lähettää sinulle viestejä"
   },
+  "icu:Preferences--add-blocked": {
+    "messageformat": "Lisää estetty käyttäjä tai ryhmä"
+  },
   "icu:Preferences--blocked-users": {
     "messageformat": "Estetyt käyttäjät"
   },
@@ -6681,6 +6696,12 @@
   },
   "icu:Preferences--blocked--blocked-on": {
     "messageformat": "Estetty {blockedAt}"
+  },
+  "icu:Preferences--BlockChooser--Done": {
+    "messageformat": "Valmis"
+  },
+  "icu:Preferences--BlockChooser--Search--Placeholder": {
+    "messageformat": "Hae"
   },
   "icu:Preferences--signal-backups": {
     "messageformat": "Signal Secure -varmuuskopiointi"
@@ -7097,7 +7118,7 @@
     "messageformat": "Yritä uudelleen, kun on kulunut {duration}"
   },
   "icu:StandaloneRegistration--PhoneNumber--RegionCodeSelector--Label": {
-    "messageformat": "Select region code"
+    "messageformat": "Valitse maatunnus"
   },
   "icu:StandaloneRegistration--PhoneNumber--placeholder": {
     "messageformat": "Puhelinnumero"
@@ -8561,12 +8582,6 @@
   "icu:CallLinkPendingParticipantModal__DenyButtonLabel": {
     "messageformat": "Estä pääsy"
   },
-  "icu:CallLinkRestrictionsSelect__Option--Off": {
-    "messageformat": "Ei käytössä"
-  },
-  "icu:CallLinkRestrictionsSelect__Option--On": {
-    "messageformat": "Käytössä"
-  },
   "icu:CallLinkAddNameModal__Title": {
     "messageformat": "Lisää puhelun nimi"
   },
@@ -8614,6 +8629,39 @@
   },
   "icu:SaveMultiDialog__title": {
     "messageformat": "Tallenna liitetiedostot"
+  },
+  "icu:EmbeddedContact__message": {
+    "messageformat": "Viesti"
+  },
+  "icu:ContactDetail__message": {
+    "messageformat": "Viesti"
+  },
+  "icu:ContactDetail__add-to-group": {
+    "messageformat": "Lisää ryhmään"
+  },
+  "icu:ContactDetail__nickname": {
+    "messageformat": "Lempinimi"
+  },
+  "icu:ContactDetail__note": {
+    "messageformat": "Muistiinpanot"
+  },
+  "icu:email-v2": {
+    "messageformat": "Sähköposti"
+  },
+  "icu:home-v2": {
+    "messageformat": "Aloitus"
+  },
+  "icu:mobile-v2": {
+    "messageformat": "Matkapuhelin"
+  },
+  "icu:work-v2": {
+    "messageformat": "Työ"
+  },
+  "icu:phone-v2": {
+    "messageformat": "Puhelin"
+  },
+  "icu:address-v2": {
+    "messageformat": "Osoite"
   },
   "icu:WhatsNew__modal-title": {
     "messageformat": "Uudet ominaisuudet"
@@ -8781,7 +8829,7 @@
     "messageformat": "Kiitos, että tuet Signalia. Lahjoituksesi auttaa edistämään tavoitettamme suojata sananvapautta ja mahdollistaa turvallinen maailmanlaajuinen viestintä miljoonille käyttäjille ympäri maailmaa avoimen lähdekoodin tietosuojateknologialla. Jos asut Yhdysvalloissa, säilytä tämä kuitti verotusta varten. Signal Technology Foundation on verovapaa voittoa tavoittelematon organisaatio Yhdysvaltojen Internal Revenue Code -pykälän 501c3 mukaisesti. Liittovaltion verotunnuksemme on 82-4506840. Signal ei ole tarjonnut lahjoituksesta tavaroita tai palveluja vastineeksi."
   },
   "icu:MessageCta__Donate": {
-    "messageformat": "Donate Now"
+    "messageformat": "Lahjoita nyt"
   },
   "icu:Donations__OfflineTooltip": {
     "messageformat": "Olet offline-tilassa. Yhdistä internetiin lahjoituksen tekemiseksi."
@@ -8981,6 +9029,9 @@
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__AccessibilityLabel": {
     "messageformat": "Kuvaus ongelmista"
   },
+  "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__Placeholder": {
+    "messageformat": "Kuvaile ongelmaa"
+  },
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__HelpText": {
     "messageformat": "Liitä mukaan kaikki asiaan liittyvät oleelliset tiedot. Kaikki täällä jakamasi tiedot pidetään yksityisinä ja niitä käytetään vain Signal-puheluiden parantamiseen."
   },
@@ -9095,5 +9146,14 @@
   },
   "icu:WhatsNew__8.30--1": {
     "messageformat": "Lisäsimme myös kätevän pikakuvakkeen, jolla voit avata Windowsin järjestelmäasetukset, jos yrität liittyä videopuheluun ja Signalilla ei ole lupaa käyttää kameraa."
+  },
+  "icu:WhatsNew__8.32--0": {
+    "messageformat": "Lukemattomien viestien suodatinta tuetaan nyt myös viestikansioissa ja haun käyttöliittymässä."
+  },
+  "icu:WhatsNew__8.32--1": {
+    "messageformat": "Parannettu lähetysten luotettavuus heikoilla verkkoyhteyksillä. Kiitos, <GH3mmmbulus></GH3mmmbulus>!"
+  },
+  "icu:WhatsNew__8.32--2": {
+    "messageformat": "Oikotie (N) osoittaa peukalo alaspäin -emojiin. Peukku virheenkorjaamisesta, <lnicola>.</lnicola>"
   }
 }

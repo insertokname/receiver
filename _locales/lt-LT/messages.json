@@ -2,6 +2,9 @@
   "icu:AxoAlertDialog.Cancel": {
     "messageformat": "Atšaukti"
   },
+  "icu:AxoAlertDialog.Ok": {
+    "messageformat": "Gerai"
+  },
   "icu:AxoButton.Pending": {
     "messageformat": "Laukiama"
   },
@@ -73,9 +76,6 @@
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--2": {
     "messageformat": "Galite susieti iki 5 įrenginių ir juos tvarkyti pagrindiniame įrenginyje."
-  },
-  "icu:LinkedDevicesOnboardingDialog__bullet--3": {
-    "messageformat": "Paskyros nustatymus galima tvarkyti tik pagrindiniame įrenginyje, įskaitant paskyros nustatymus ir atsargines kopijas."
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--3--1": {
     "messageformat": "Paskyros nustatymus ir atsargines kopijas tvarkyti galima tik pagrindiniame įrenginyje."
@@ -673,6 +673,9 @@
   },
   "icu:KeyTransparencyOnboardingDialog__Description": {
     "messageformat": "Jei su adresatais bendraujate naudodami telefono numerius, „Signal“ automatiškai patvirtins, ar ryšys saugus, pagal rakto skaidrumo procesą. Dėl papildomo saugumo ryšius vis dar galite patvirtinti patys, naudodami QR kodą arba palygindami saugumo numerius."
+  },
+  "icu:KeyTransparencyOnboardingDialog__Description-v2": {
+    "messageformat": "<paragraph>Jei su adresatais bendraujate naudodami telefono numerius, „Signal“ automatiškai patvirtins, ar ryšys saugus, pagal rakto skaidrumo procesą.</paragraph><paragraph>Dėl papildomo saugumo ryšius vis dar galite patvirtinti patys, naudodami QR kodą arba palygindami saugumo numerius.</paragraph>"
   },
   "icu:KeyTransparencyOnboardingDialog__Continue": {
     "messageformat": "Tęsti"
@@ -1481,6 +1484,9 @@
   "icu:ConversationMerge--learn-more": {
     "messageformat": "Sužinoti daugiau"
   },
+  "icu:ConversationMerge--explainer-dialog--label": {
+    "messageformat": "Žinučių istorija sujungta"
+  },
   "icu:ConversationMerge--explainer-dialog--line-1": {
     "messageformat": "Po susirašinėjimo su {obsoleteConversationTitle} paaiškėjo, kad šis numeris priklauso {conversationTitle}. Šio žmogaus telefono numeris privatus."
   },
@@ -1741,6 +1747,9 @@
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__Search__Placeholder": {
     "messageformat": "Ieškoti"
+  },
+  "icu:Preferences__EditChatFolderPage__SelectChatsDialog__NoChats": {
+    "messageformat": "Pokalbių nėra"
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__ChatTypesSection__Title": {
     "messageformat": "Pokalbių tipai"
@@ -3512,6 +3521,9 @@
   "icu:MessageRequests--unblock-group-confirm-body": {
     "messageformat": "Grupės nariai galės ir vėl jus pridėti į šią grupę."
   },
+  "icu:MessageRequests--unblock-signal-confirm-body": {
+    "messageformat": "Gausite „Signal“ atnaujinimus ir naujienas."
+  },
   "icu:MessageRequests--block-and-report-spam-success-toast": {
     "messageformat": "Pranešta apie šlamštą ir užblokuota."
   },
@@ -3526,6 +3538,9 @@
   },
   "icu:MessageRequests--block-group-confirm-body": {
     "messageformat": "Jūs daugiau nebegausite žinučių ar atnaujinimų iš šios grupės, o nariai nebegalės vėl pridėti jūsų į šią grupę."
+  },
+  "icu:MessageRequests--block-signal-confirm-body": {
+    "messageformat": "Daugiau nebegausite „Signal“ atnaujinimų ir naujienų."
   },
   "icu:MessageRequests--reportAndMaybeBlock": {
     "messageformat": "Pranešti…"
@@ -6169,9 +6184,6 @@
   "icu:Preferences__SignalAccountKeys__Description": {
     "messageformat": "Išsaugokite tai saugioje vietoje, prisijungimo informacijos jums reikės norint atkurti paskyrą ir duomenis. Su niekuo ja nesidalykite."
   },
-  "icu:Preferences__SignalAccountKeys__AccountKey": {
-    "messageformat": "Paskyros raktas"
-  },
   "icu:Preferences__SignalAccountKeys__AccountID": {
     "messageformat": "Paskyros ID"
   },
@@ -6673,6 +6685,9 @@
   "icu:Preferences--blocked-users--description": {
     "messageformat": "Užblokuoti naudotojai negalės jums skambinti ar siųsti žinučių"
   },
+  "icu:Preferences--add-blocked": {
+    "messageformat": "Pridėti užblokuotą naudotoją ar grupę"
+  },
   "icu:Preferences--blocked-users": {
     "messageformat": "Užblokuoti naudotojai"
   },
@@ -6681,6 +6696,12 @@
   },
   "icu:Preferences--blocked--blocked-on": {
     "messageformat": "Užblokuotas {blockedAt}"
+  },
+  "icu:Preferences--BlockChooser--Done": {
+    "messageformat": "Atlikta"
+  },
+  "icu:Preferences--BlockChooser--Search--Placeholder": {
+    "messageformat": "Ieškoti"
   },
   "icu:Preferences--signal-backups": {
     "messageformat": "„Signal“ saugiosios atsarginės kopijos"
@@ -7097,7 +7118,7 @@
     "messageformat": "Bandykite už {duration}"
   },
   "icu:StandaloneRegistration--PhoneNumber--RegionCodeSelector--Label": {
-    "messageformat": "Select region code"
+    "messageformat": "Pasirinkite valstybės kodą"
   },
   "icu:StandaloneRegistration--PhoneNumber--placeholder": {
     "messageformat": "Telefono numeris"
@@ -8561,12 +8582,6 @@
   "icu:CallLinkPendingParticipantModal__DenyButtonLabel": {
     "messageformat": "Atmesti ir neįleisti"
   },
-  "icu:CallLinkRestrictionsSelect__Option--Off": {
-    "messageformat": "Išjungta"
-  },
-  "icu:CallLinkRestrictionsSelect__Option--On": {
-    "messageformat": "Įjungta"
-  },
   "icu:CallLinkAddNameModal__Title": {
     "messageformat": "Pridėti skambučio pavadinimą"
   },
@@ -8614,6 +8629,39 @@
   },
   "icu:SaveMultiDialog__title": {
     "messageformat": "Įrašyti priedus"
+  },
+  "icu:EmbeddedContact__message": {
+    "messageformat": "Žinutė"
+  },
+  "icu:ContactDetail__message": {
+    "messageformat": "Žinutė"
+  },
+  "icu:ContactDetail__add-to-group": {
+    "messageformat": "Pridėti į grupę"
+  },
+  "icu:ContactDetail__nickname": {
+    "messageformat": "Slapyvardis"
+  },
+  "icu:ContactDetail__note": {
+    "messageformat": "Užrašai"
+  },
+  "icu:email-v2": {
+    "messageformat": "El. paštas"
+  },
+  "icu:home-v2": {
+    "messageformat": "Namų"
+  },
+  "icu:mobile-v2": {
+    "messageformat": "Mobilusis"
+  },
+  "icu:work-v2": {
+    "messageformat": "Darbo"
+  },
+  "icu:phone-v2": {
+    "messageformat": "telefonas"
+  },
+  "icu:address-v2": {
+    "messageformat": "Adresas"
   },
   "icu:WhatsNew__modal-title": {
     "messageformat": "Kas naujo"
@@ -8781,7 +8829,7 @@
     "messageformat": "Dėkojame, kad remiate „Signal“. Jūsų įnašas padeda skatinti misiją apsaugoti žodžio laisvę ir įgalinti saugų bendravimą milijonams žmonių visame pasaulyje dėl atvirojo kodo privatumo technologijos. Jei gyvenate Jungtinėse Valstijose, išsaugokite šį kvitą, kad turėtumėte jį savo mokestinių duomenų reikmėms. „Signal Technology Foundation“ yra Jungtinėse Valstijose įsteigta pelno nesiekianti organizacija, atleista nuo mokesčių pagal Vidaus mokesčių kodekso skirsnį 501c3. Mūsų federalinis mokesčių mokėtojo kodas: 82–4506840. „Signal“ už šį įnašą neteikė jokių prekių ar paslaugų."
   },
   "icu:MessageCta__Donate": {
-    "messageformat": "Donate Now"
+    "messageformat": "Paremk dabar"
   },
   "icu:Donations__OfflineTooltip": {
     "messageformat": "Esate neprisijungęs. Norėdami užbaigti paramos teikimą, prisijunkite prie interneto."
@@ -8981,6 +9029,9 @@
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__AccessibilityLabel": {
     "messageformat": "Problemų aprašymas"
   },
+  "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__Placeholder": {
+    "messageformat": "Aprašykite savo problemą"
+  },
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__HelpText": {
     "messageformat": "Pateikite visą su problema susijusią informaciją. Viskas, kuo čia pasidalinsite, bus laikoma privačiai ir naudojama tik skambučiams „Signal“ sistemoje tobulinti."
   },
@@ -9095,5 +9146,14 @@
   },
   "icu:WhatsNew__8.30--1": {
     "messageformat": "Be to, pridėjome patogų šaukinį, leidžiantį atverti „Windows“ sistemos nustatymus, jei „Signal“ neturi prieigos prie kameros bandant prisijungti prie vaizdo skambučio."
+  },
+  "icu:WhatsNew__8.32--0": {
+    "messageformat": "Neperskaitytų pranešimų filtras dabar palaikomas ir žinučių aplankuose bei paieškos sąsajoje."
+  },
+  "icu:WhatsNew__8.32--1": {
+    "messageformat": "Patikimesnis įkėlimas esant prasto ryšio sąlygoms. Ačiū, <GH3mmmbulus></GH3mmmbulus>!"
+  },
+  "icu:WhatsNew__8.32--2": {
+    "messageformat": "Šaukinys „(N)“ tinkamai nurodo žemyn nuleisto nykščio jaustuką. Ačiū už pataisymą, <lnicola></lnicola>."
   }
 }

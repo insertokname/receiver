@@ -2,6 +2,9 @@
   "icu:AxoAlertDialog.Cancel": {
     "messageformat": "Annuler"
   },
+  "icu:AxoAlertDialog.Ok": {
+    "messageformat": "OK"
+  },
   "icu:AxoButton.Pending": {
     "messageformat": "En attente"
   },
@@ -74,9 +77,6 @@
   "icu:LinkedDevicesOnboardingDialog__bullet--2": {
     "messageformat": "Votre appareil principal vous permet de gérer jusqu'à 5 appareils associés."
   },
-  "icu:LinkedDevicesOnboardingDialog__bullet--3": {
-    "messageformat": "La gestion de certains paramètres n'est possible que depuis l'appareil principal. C'est le cas des sauvegardes et des paramètres du compte."
-  },
   "icu:LinkedDevicesOnboardingDialog__bullet--3--1": {
     "messageformat": "Les paramètres du compte et les sauvegardes ne peuvent être gérés que sur l'appareil principal."
   },
@@ -141,10 +141,10 @@
     "messageformat": "La version de votre base de données est incompatible avec cette version de Signal. Veuillez ouvrir la dernière version de Signal sur votre ordinateur."
   },
   "icu:databaseError__safeStorageBackendChange": {
-    "messageformat": "Impossible d’accéder à la clé de chiffrement de la base de données, car le backend du keyring de chiffrement associé au système d’exploitation est passé de {previousBackend} à {currentBackend}. Cela peut se produire lorsque vous changez d’environnement de bureau pour passer de GNOME à KDE, par exemple.\n\nPour y remédier, revenez à l’ancien environnement de bureau."
+    "messageformat": "Impossible d'accéder à la clé de chiffrement de la base de données, car le backend du trousseau de clés de chiffrement associé au système d'exploitation est passé de {previousBackend} à {currentBackend}. Cela peut se produire lorsque vous changez d'environnement de bureau pour passer de GNOME à KDE, par exemple.\n\nPour y remédier, revenez à l'ancien environnement de bureau."
   },
   "icu:databaseError__safeStorageBackendChangeWithPreviousFlag": {
-    "messageformat": "Impossible d’accéder à la clé de chiffrement de la base de données, car le backend du keyring de chiffrement associé au système d’exploitation est passé de {previousBackend} à {currentBackend}. Cela peut se produire lorsque vous changez d’environnement de bureau pour passer de GNOME à KDE, par exemple.\n\nPour y remédier, revenez à l’ancien environnement de bureau ou essayez d’exécuter Signal avec l’indicateur de ligne de commande --password-store=\"{previousBackendFlag}\""
+    "messageformat": "Impossible d'accéder à la clé de chiffrement de la base de données, car le backend du trousseau de clés de chiffrement associé au système d'exploitation est passé de {previousBackend} à {currentBackend}. Cela peut se produire lorsque vous changez d'environnement de bureau pour passer de GNOME à KDE, par exemple.\n\nPour y remédier, revenez à l'ancien environnement de bureau ou essayez d'exécuter Signal avec l'indicateur de ligne de commande --password-store=\"{previousBackendFlag}\""
   },
   "icu:systemEncryptionError": {
     "messageformat": "System encryption error"
@@ -673,6 +673,9 @@
   },
   "icu:KeyTransparencyOnboardingDialog__Description": {
     "messageformat": "Lorsque vous avez pris contact avec quelqu'un via un numéro de téléphone, Signal peut vérifier automatiquement si la connexion est sécurisée grâce à un processus appelé transparence des clés. Pour une sécurité renforcée, vous pouvez aussi le vérifier manuellement en scannant un code QR ou en comparant des numéros de sécurité."
+  },
+  "icu:KeyTransparencyOnboardingDialog__Description-v2": {
+    "messageformat": "<paragraph>Lorsque vous prenez contact avec quelqu'un via un numéro de téléphone, Signal peut vérifier automatiquement si la connexion est sécurisée grâce à un processus appelé transparence des clés. </paragraph><paragraph>Pour une sécurité renforcée, vous pouvez aussi procéder à une vérification manuelle en scannant le code QR de votre contact ou en comparant vos numéros de sécurité.</paragraph>"
   },
   "icu:KeyTransparencyOnboardingDialog__Continue": {
     "messageformat": "Continuer"
@@ -1481,6 +1484,9 @@
   "icu:ConversationMerge--learn-more": {
     "messageformat": "En savoir plus"
   },
+  "icu:ConversationMerge--explainer-dialog--label": {
+    "messageformat": "Historiques des messages fusionnés"
+  },
   "icu:ConversationMerge--explainer-dialog--line-1": {
     "messageformat": "Après avoir envoyé un message au {obsoleteConversationTitle}, vous avez découvert que ce numéro est en fait celui de {conversationTitle}. Son numéro de téléphone est privé."
   },
@@ -1741,6 +1747,9 @@
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__Search__Placeholder": {
     "messageformat": "Rechercher"
+  },
+  "icu:Preferences__EditChatFolderPage__SelectChatsDialog__NoChats": {
+    "messageformat": "Aucune conversation"
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__ChatTypesSection__Title": {
     "messageformat": "Types de conversations"
@@ -3512,6 +3521,9 @@
   "icu:MessageRequests--unblock-group-confirm-body": {
     "messageformat": "Les membres pourront de nouveau vous ajouter à ce groupe."
   },
+  "icu:MessageRequests--unblock-signal-confirm-body": {
+    "messageformat": "Vous recevrez les notes de version et les actualités de Signal."
+  },
   "icu:MessageRequests--block-and-report-spam-success-toast": {
     "messageformat": "Signalé comme spam et bloqué."
   },
@@ -3526,6 +3538,9 @@
   },
   "icu:MessageRequests--block-group-confirm-body": {
     "messageformat": "Ce groupe ne pourra plus vous envoyer de messages, ni vous tenir informé des dernières actualités, et ses membres ne pourront plus vous y ajouter."
+  },
+  "icu:MessageRequests--block-signal-confirm-body": {
+    "messageformat": "Vous ne recevrez plus ni notes de version, ni actualités de Signal."
   },
   "icu:MessageRequests--reportAndMaybeBlock": {
     "messageformat": "Signaler"
@@ -6169,9 +6184,6 @@
   "icu:Preferences__SignalAccountKeys__Description": {
     "messageformat": "Enregistrez votre login Signal en lieu sûr. Vous en aurez besoin pour restaurer votre compte et vos données. Ne communiquez jamais ces identifiants à personne."
   },
-  "icu:Preferences__SignalAccountKeys__AccountKey": {
-    "messageformat": "Clé de compte"
-  },
   "icu:Preferences__SignalAccountKeys__AccountID": {
     "messageformat": "Identifiant de compte"
   },
@@ -6673,6 +6685,9 @@
   "icu:Preferences--blocked-users--description": {
     "messageformat": "Les utilisateurs bloqués ne pourront ni vous appeler, ni vous envoyer de messages."
   },
+  "icu:Preferences--add-blocked": {
+    "messageformat": "Bloquer un utilisateur ou un groupe"
+  },
   "icu:Preferences--blocked-users": {
     "messageformat": "Utilisateurs bloqués"
   },
@@ -6681,6 +6696,12 @@
   },
   "icu:Preferences--blocked--blocked-on": {
     "messageformat": "Bloqué le {blockedAt}"
+  },
+  "icu:Preferences--BlockChooser--Done": {
+    "messageformat": "OK"
+  },
+  "icu:Preferences--BlockChooser--Search--Placeholder": {
+    "messageformat": "Rechercher"
   },
   "icu:Preferences--signal-backups": {
     "messageformat": "Sauvegardes sécurisées Signal"
@@ -7097,7 +7118,7 @@
     "messageformat": "Veuillez réessayer dans {duration}"
   },
   "icu:StandaloneRegistration--PhoneNumber--RegionCodeSelector--Label": {
-    "messageformat": "Select region code"
+    "messageformat": "Sélectionner l'indicatif du pays"
   },
   "icu:StandaloneRegistration--PhoneNumber--placeholder": {
     "messageformat": "Numéro de téléphone"
@@ -8561,12 +8582,6 @@
   "icu:CallLinkPendingParticipantModal__DenyButtonLabel": {
     "messageformat": "Refuser la demande"
   },
-  "icu:CallLinkRestrictionsSelect__Option--Off": {
-    "messageformat": "Désactivé"
-  },
-  "icu:CallLinkRestrictionsSelect__Option--On": {
-    "messageformat": "Activé"
-  },
   "icu:CallLinkAddNameModal__Title": {
     "messageformat": "Nommer l’appel"
   },
@@ -8614,6 +8629,39 @@
   },
   "icu:SaveMultiDialog__title": {
     "messageformat": "Enregistrer les pièces jointes"
+  },
+  "icu:EmbeddedContact__message": {
+    "messageformat": "Message"
+  },
+  "icu:ContactDetail__message": {
+    "messageformat": "Message"
+  },
+  "icu:ContactDetail__add-to-group": {
+    "messageformat": "Ajouter à un groupe"
+  },
+  "icu:ContactDetail__nickname": {
+    "messageformat": "Pseudo"
+  },
+  "icu:ContactDetail__note": {
+    "messageformat": "Notes"
+  },
+  "icu:email-v2": {
+    "messageformat": "E-mail"
+  },
+  "icu:home-v2": {
+    "messageformat": "Domicile"
+  },
+  "icu:mobile-v2": {
+    "messageformat": "Mobile"
+  },
+  "icu:work-v2": {
+    "messageformat": "Coordonnées professionnelles"
+  },
+  "icu:phone-v2": {
+    "messageformat": "Téléphone"
+  },
+  "icu:address-v2": {
+    "messageformat": "Adresse"
   },
   "icu:WhatsNew__modal-title": {
     "messageformat": "Les nouveautés"
@@ -8781,7 +8829,7 @@
     "messageformat": "Merci de soutenir Signal. Votre contribution nous aide à remplir notre mission : protéger la liberté d'expression et offrir des communications sécurisées à des millions de personnes aux quatre coins du monde – le tout, grâce à une technologie open source conçue pour la protection de la vie privée. Si vous résidez aux États-Unis, conservez ce reçu pour le communiquer aux services fiscaux. La Signal Technology Foundation est un organisme à but non lucratif, régi par le code fédéral des impôts des États-Unis. Notre numéro d'identification fiscale est le suivant : 82-4506840. Aucun bien ni service n'a été fourni par Signal en échange de ce don."
   },
   "icu:MessageCta__Donate": {
-    "messageformat": "Donate Now"
+    "messageformat": "Faire un don"
   },
   "icu:Donations__OfflineTooltip": {
     "messageformat": "Vous êtes hors ligne. Pour faire un don, veuillez vous connecter à Internet."
@@ -8981,6 +9029,9 @@
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__AccessibilityLabel": {
     "messageformat": "Description des problèmes"
   },
+  "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__Placeholder": {
+    "messageformat": "Décrivez le problème rencontré"
+  },
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__HelpText": {
     "messageformat": "Veuillez décrire le problème de la façon la plus précise possible. Toutes ces informations resteront confidentielles. Nous ne les utiliserons que pour améliorer les appels passés sur Signal."
   },
@@ -9095,5 +9146,14 @@
   },
   "icu:WhatsNew__8.30--1": {
     "messageformat": "Un nouveau raccourci fait aussi son entrée : il vous permet d'ouvrir les paramètres Windows lorsque vous tentez de rejoindre un appel vidéo, mais que vous n'avez pas autorisé Signal à accéder à la caméra. Avouons que ça peut être utile."
+  },
+  "icu:WhatsNew__8.32--0": {
+    "messageformat": "Avec l'arrivée du filtre \"Conversations non lues\" dans les dossiers de messages et l'interface de recherche, plus rien ne vous échappe."
+  },
+  "icu:WhatsNew__8.32--1": {
+    "messageformat": "Et pour affronter l'automne, on a aussi boosté la fiabilité des importations pour les jours où la connexion réseau n'est pas optimale. Un grand merci à <GH3mmmbulus></GH3mmmbulus> !"
+  },
+  "icu:WhatsNew__8.32--2": {
+    "messageformat": "Quant au raccourci &quot;(N)&quot;, il correspond bien à l'émoji pouce en bas. Un pouce en l'air <lnicola></lnicola> bien mérité pour ce correctif !"
   }
 }

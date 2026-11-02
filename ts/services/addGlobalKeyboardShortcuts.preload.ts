@@ -102,7 +102,7 @@ const ESCAPE_HAS_A_USE = [
   '.module-left-pane__header__contents__back-button',
   '.module-confirmation-dialog__overlay',
   '.module-emoji-picker',
-  '.Lightbox',
+  '#lightbox',
   '.module-sticker-picker',
   '.module-sticker-manager__preview-modal__overlay',
   '.module-reaction-viewer',
@@ -140,7 +140,7 @@ function canEscapeCloseConversation(): boolean {
     (focused.isContentEditable ||
       focused instanceof HTMLInputElement ||
       focused instanceof HTMLTextAreaElement);
-  return !isTextField || focused.closest('.Inbox__conversation') != null;
+  return !isTextField || focused.closest('.ConversationPanel') != null;
 }
 
 function closeSelectedConversation(reason: string): void {
@@ -332,6 +332,7 @@ function onEscape(event: KeyboardEvent): void {
     (target.attributes as any).class &&
     (target.attributes as any).class.value
   ) {
+    // oxlint-disable-next-line signal-desktop/enforce-static-class-names
     const className = (target.attributes as any).class.value;
     /* oxlint-enable @typescript-eslint/no-explicit-any */
 
@@ -354,7 +355,7 @@ function onEscape(event: KeyboardEvent): void {
     return;
   }
 
-  const lightBox = document.querySelector('.Lightbox');
+  const lightBox = document.querySelector('#lightbox');
   if (lightBox) {
     return;
   }
@@ -422,8 +423,7 @@ function onFocusOldestUnreadOrLastMessage(event: KeyboardEvent) {
   const item: HTMLElement | null =
     document.querySelector(
       '.module-last-seen-indicator ~ div .module-message'
-    ) ||
-    document.querySelector('.module-timeline__last-message .module-message');
+    ) || document.querySelector('[data-message-is-last] .module-message');
   item?.focus();
 }
 

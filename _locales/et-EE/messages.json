@@ -2,6 +2,9 @@
   "icu:AxoAlertDialog.Cancel": {
     "messageformat": "Loobu"
   },
+  "icu:AxoAlertDialog.Ok": {
+    "messageformat": "Sobib"
+  },
   "icu:AxoButton.Pending": {
     "messageformat": "Ootel"
   },
@@ -73,9 +76,6 @@
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--2": {
     "messageformat": "Oma põhiseadme kaudu saad hallata lingitud seadmeid, mida võib olla kuni 5."
-  },
-  "icu:LinkedDevicesOnboardingDialog__bullet--3": {
-    "messageformat": "Kontosätteid saad hallata ainult oma põhiseadmes, sh kontosätteid ja varukoopiaid."
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--3--1": {
     "messageformat": "Konto sätteid ja varukoopiaid saab hallata ainult su peamisest seadmest."
@@ -673,6 +673,9 @@
   },
   "icu:KeyTransparencyOnboardingDialog__Description": {
     "messageformat": "Kontaktide puhul, kellega lõid ühenduse telefoninumbri kaudu, kinnitab Signal automaatselt, kas ühendus on turvaline, kasutades protsessi nimega võtme läbipaistvus. Täiendava turvalisuse eesmärgil saab ühendusi endiselt kinnitada ka käsitsi QR-koodi abil või turvanumbreid võrreldes."
+  },
+  "icu:KeyTransparencyOnboardingDialog__Description-v2": {
+    "messageformat": "<paragraph>Kontaktide puhul, kellega lõid ühenduse telefoninumbri kaudu, kinnitab Signal automaatselt, kas ühendus on turvaline, kasutades protsessi nimega võtme läbipaistvus.</paragraph><paragraph>Täiendava turvalisuse eesmärgil saab ühendusi endiselt kinnitada ka käsitsi QR-koodi abil või turvanumbreid võrreldes.</paragraph>"
   },
   "icu:KeyTransparencyOnboardingDialog__Continue": {
     "messageformat": "Jätka"
@@ -1481,6 +1484,9 @@
   "icu:ConversationMerge--learn-more": {
     "messageformat": "Uuri täpsemalt"
   },
+  "icu:ConversationMerge--explainer-dialog--label": {
+    "messageformat": "Sõnumiajalugu liidetud"
+  },
   "icu:ConversationMerge--explainer-dialog--line-1": {
     "messageformat": "Pärast sõnumite saatmist vestluses {obsoleteConversationTitle} said sa teada, et see number kuulub vestlusesse {conversationTitle}. Tema telefoninumber on privaatne."
   },
@@ -1741,6 +1747,9 @@
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__Search__Placeholder": {
     "messageformat": "Otsi"
+  },
+  "icu:Preferences__EditChatFolderPage__SelectChatsDialog__NoChats": {
+    "messageformat": "Vestlusi ei ole"
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__ChatTypesSection__Title": {
     "messageformat": "Vestluste tüübid"
@@ -3512,6 +3521,9 @@
   "icu:MessageRequests--unblock-group-confirm-body": {
     "messageformat": "Grupi liikmetel on võimalik sind sellesse gruppi uuesti lisada."
   },
+  "icu:MessageRequests--unblock-signal-confirm-body": {
+    "messageformat": "Sa saad Signali värskendusi ja uudiseid."
+  },
   "icu:MessageRequests--block-and-report-spam-success-toast": {
     "messageformat": "Rämpspostitusest teatatud ja blokeeritud."
   },
@@ -3526,6 +3538,9 @@
   },
   "icu:MessageRequests--block-group-confirm-body": {
     "messageformat": "Sa ei saa enam sellelt grupilt sõnumeid ega värskendusi ja liikmed ei saa sind uuesti sellesse gruppi lisada."
+  },
+  "icu:MessageRequests--block-signal-confirm-body": {
+    "messageformat": "Sa ei saa enam Signali värskendusi ega uudiseid."
   },
   "icu:MessageRequests--reportAndMaybeBlock": {
     "messageformat": "Teata …"
@@ -6169,9 +6184,6 @@
   "icu:Preferences__SignalAccountKeys__Description": {
     "messageformat": "Hoia seda turvalises kohas, sisselogimisinfot on vaja sinu andmete ja konto taastamiseks. Ära jaga seda kunagi kellegagi."
   },
-  "icu:Preferences__SignalAccountKeys__AccountKey": {
-    "messageformat": "Konto võti"
-  },
   "icu:Preferences__SignalAccountKeys__AccountID": {
     "messageformat": "Konto ID"
   },
@@ -6673,6 +6685,9 @@
   "icu:Preferences--blocked-users--description": {
     "messageformat": "Blokeeritud kasutajad ei saa sulle helistada ega sõnumeid saata"
   },
+  "icu:Preferences--add-blocked": {
+    "messageformat": "Lisa blokeeritud kasutaja või grupp"
+  },
   "icu:Preferences--blocked-users": {
     "messageformat": "Blokeeritud kasutajad"
   },
@@ -6681,6 +6696,12 @@
   },
   "icu:Preferences--blocked--blocked-on": {
     "messageformat": "Blokeerimise aeg: {blockedAt}"
+  },
+  "icu:Preferences--BlockChooser--Done": {
+    "messageformat": "Valmis"
+  },
+  "icu:Preferences--BlockChooser--Search--Placeholder": {
+    "messageformat": "Otsi"
   },
   "icu:Preferences--signal-backups": {
     "messageformat": "Signali turvalised varukoopiad"
@@ -7097,7 +7118,7 @@
     "messageformat": "Palun proovi uuesti {duration} pärast"
   },
   "icu:StandaloneRegistration--PhoneNumber--RegionCodeSelector--Label": {
-    "messageformat": "Select region code"
+    "messageformat": "Vali riigi suunakood"
   },
   "icu:StandaloneRegistration--PhoneNumber--placeholder": {
     "messageformat": "Telefoninumber"
@@ -8561,12 +8582,6 @@
   "icu:CallLinkPendingParticipantModal__DenyButtonLabel": {
     "messageformat": "Keela sisenemine"
   },
-  "icu:CallLinkRestrictionsSelect__Option--Off": {
-    "messageformat": "Väljas"
-  },
-  "icu:CallLinkRestrictionsSelect__Option--On": {
-    "messageformat": "Sees"
-  },
   "icu:CallLinkAddNameModal__Title": {
     "messageformat": "Lisa kõne nimi"
   },
@@ -8614,6 +8629,39 @@
   },
   "icu:SaveMultiDialog__title": {
     "messageformat": "Salvesta manused"
+  },
+  "icu:EmbeddedContact__message": {
+    "messageformat": "Sõnum"
+  },
+  "icu:ContactDetail__message": {
+    "messageformat": "Sõnum"
+  },
+  "icu:ContactDetail__add-to-group": {
+    "messageformat": "Lisa gruppi"
+  },
+  "icu:ContactDetail__nickname": {
+    "messageformat": "Hüüdnimi"
+  },
+  "icu:ContactDetail__note": {
+    "messageformat": "Märkmed"
+  },
+  "icu:email-v2": {
+    "messageformat": "E-post"
+  },
+  "icu:home-v2": {
+    "messageformat": "Avaleht"
+  },
+  "icu:mobile-v2": {
+    "messageformat": "Mobiil"
+  },
+  "icu:work-v2": {
+    "messageformat": "Töö"
+  },
+  "icu:phone-v2": {
+    "messageformat": "Telefon"
+  },
+  "icu:address-v2": {
+    "messageformat": "Aadress"
   },
   "icu:WhatsNew__modal-title": {
     "messageformat": "Mis on uut"
@@ -8781,7 +8829,7 @@
     "messageformat": "Aitäh, et toetad Signalit. Sinu panus annab tõuke missioonile kaitsta väljendusvabadust ja võimaldada turvalist suhtlust miljonitele inimestele üle kogu maailma avatud lähtekoodiga privaatsustehnoloogia abil. Kui elad Ameerika Ühendriikides, jäta see kviitung alles oma maksude deklareerimiseks. Signal Technology Foundation on Ameerika Ühendriikides maksuseadustiku (US Internal Revenue Code) jao 501c3 järgi registreeritud maksuvaba mittetulundusühing. Meie föderaalne maksukood (Federal Tax ID) on 82-4506840. Signal ei paku selle annetuse eest vastutasuks kaupu ega teenuseid."
   },
   "icu:MessageCta__Donate": {
-    "messageformat": "Donate Now"
+    "messageformat": "Anneta kohe"
   },
   "icu:Donations__OfflineTooltip": {
     "messageformat": "Oled võrguühenduseta. Annetuse tegemiseks loo internetiühendus."
@@ -8981,6 +9029,9 @@
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__AccessibilityLabel": {
     "messageformat": "Probleemide kirjeldus"
   },
+  "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__Placeholder": {
+    "messageformat": "Kirjelda probleemi"
+  },
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__HelpText": {
     "messageformat": "Palun lisa kõik probleemiga seotud üksikasjad. Kogu infot, mida siin jagad, hoitakse privaatsena ja seda kasutatakse ainult Signali kõnede täiustamiseks."
   },
@@ -9095,5 +9146,14 @@
   },
   "icu:WhatsNew__8.30--1": {
     "messageformat": "Samuti lisasime mugava otsetee süsteemi sätete avamiseks Windowsis, kui proovid liituda videokõnega ja Signalil ei ole kaamerale juurdepääsu."
+  },
+  "icu:WhatsNew__8.32--0": {
+    "messageformat": "Nüüd toetavad ka sõnumikaustad ja otsinguliides lugemata sõnumite filtrit."
+  },
+  "icu:WhatsNew__8.32--1": {
+    "messageformat": "Parem üleslaadimiste usaldusväärsus kehvades võrgutingimustes. Aitäh, <GH3mmmbulus></GH3mmmbulus>!"
+  },
+  "icu:WhatsNew__8.32--2": {
+    "messageformat": "Otsetee „(N)“ viitab õigesti pöial allapoole emojile. Aitäh selle paranduse eest, <lnicola></lnicola>!"
   }
 }

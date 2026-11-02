@@ -2,6 +2,9 @@
   "icu:AxoAlertDialog.Cancel": {
     "messageformat": "منسوخ کریں"
   },
+  "icu:AxoAlertDialog.Ok": {
+    "messageformat": "ٹھیک ہے"
+  },
   "icu:AxoButton.Pending": {
     "messageformat": "زیر التواء"
   },
@@ -73,9 +76,6 @@
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--2": {
     "messageformat": "آپ کی پرائمری ڈیوائس لنک کردہ کو منظم کرتی ہے، نیز آپ 5 تک ڈیوائسز کو لنک کر سکتے ہیں۔"
-  },
-  "icu:LinkedDevicesOnboardingDialog__bullet--3": {
-    "messageformat": "اکاؤنٹ کی سیٹنگز صرف آپ کی پرائمری ڈیوائس پر ہی منظم کی جاتی ہیں، بشمول اکاؤنٹ کی سیٹنگز اور بیک اپس۔"
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--3--1": {
     "messageformat": "اکاؤنٹ کی سیٹنگز اور بیک اپس کا نظم صرف آپ کی پرائمری ڈیوائس پر کیا جا سکتا ہے۔"
@@ -673,6 +673,9 @@
   },
   "icu:KeyTransparencyOnboardingDialog__Description": {
     "messageformat": "ان رابطوں کے لیے جن کے ساتھ آپ فون نمبر کے ذریعے مربوط ہیں، Signal خود کار طور پر کیی ٹرانسپیرینسی نامی طریقہ کار استعمال کرتے ہوئے یہ تصدیق کر سکتا ہے کہ آیا کنیکشن محفوظ ہے۔ اضافی تحفظ کے لیے، آپ اب بھی کنیکشنز کی دستی طور پر QR کوڈ یا حفاظتی نمبر کا موازنہ کر کے تصدیق کر سکتے ہیں۔"
+  },
+  "icu:KeyTransparencyOnboardingDialog__Description-v2": {
+    "messageformat": "<paragraph>ان رابطوں کے لیے جن کے ساتھ آپ فون نمبر کے ذریعے مربوط ہیں، Signal خود کار طور پر کیی ٹرانسپیرینسی نامی طریقہ کار استعمال کرتے ہوئے یہ تصدیق کر سکتا ہے کہ آیا کنیکشن محفوظ ہے۔</paragraph><paragraph>اضافی تحفظ کے لیے، آپ اب بھی دستی طور پر QR کوڈ استعمال کر کے یا حفاظتی نمبرز کا موازنہ کر کے کنیکشنز کی تصدیق کر سکتے ہیں۔</paragraph>"
   },
   "icu:KeyTransparencyOnboardingDialog__Continue": {
     "messageformat": "جاری رکھیں"
@@ -1481,6 +1484,9 @@
   "icu:ConversationMerge--learn-more": {
     "messageformat": "مزید پڑھیں"
   },
+  "icu:ConversationMerge--explainer-dialog--label": {
+    "messageformat": "میسج ہسٹری ضم کر دی گئی ہے"
+  },
   "icu:ConversationMerge--explainer-dialog--line-1": {
     "messageformat": "{obsoleteConversationTitle} سے پیغام رسانی کے بعد آپ جان گئے کہ یہ نمبر {conversationTitle} سے تعلق رکھتا ہے۔ یہ فون نمبر پرائیویٹ ہے۔"
   },
@@ -1741,6 +1747,9 @@
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__Search__Placeholder": {
     "messageformat": "تلا ‎ش کر یں"
+  },
+  "icu:Preferences__EditChatFolderPage__SelectChatsDialog__NoChats": {
+    "messageformat": "کوئی چیٹس نہیں ہیں"
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__ChatTypesSection__Title": {
     "messageformat": "چیٹ کی اقسام"
@@ -3512,6 +3521,9 @@
   "icu:MessageRequests--unblock-group-confirm-body": {
     "messageformat": "گروپ ممبران آپ کو دوبارہ اس گروپ میں شامل کرسکیں گے۔"
   },
+  "icu:MessageRequests--unblock-signal-confirm-body": {
+    "messageformat": "آپ کو Signal کی اپ ڈیٹس اور خبریں موصول ہوں گی۔"
+  },
   "icu:MessageRequests--block-and-report-spam-success-toast": {
     "messageformat": "اسپام کے طور پر رپورٹ کیا گیا اور بلاک کر دیا گیا۔"
   },
@@ -3526,6 +3538,9 @@
   },
   "icu:MessageRequests--block-group-confirm-body": {
     "messageformat": "آپ کو اب اس گروپ کی جانب سے پیغامات یا اپ ڈیٹس نہیں آئیں گے اور ممبران آپ کو دوبارہ اس گروپ میں شامل نہیں کرسکیں گے۔"
+  },
+  "icu:MessageRequests--block-signal-confirm-body": {
+    "messageformat": "آپ کو اب Signal کی اپ ڈیٹس اور خبریں موصول نہیں ہوں گی۔"
   },
   "icu:MessageRequests--reportAndMaybeBlock": {
     "messageformat": "رپورٹ کریں..."
@@ -6169,9 +6184,6 @@
   "icu:Preferences__SignalAccountKeys__Description": {
     "messageformat": "اسے کسی محفوظ جگہ پر اسٹور کریں، کیونکہ آپ کے اکاؤنٹ اور ڈیٹا کی بحالی کے لیے آپ کی لاگ ان کی معلومات درکار ہوں گی۔ اسے کبھی بھی کسی کے ساتھ شیئر نہ کریں۔"
   },
-  "icu:Preferences__SignalAccountKeys__AccountKey": {
-    "messageformat": "اکاؤنٹ کیی"
-  },
   "icu:Preferences__SignalAccountKeys__AccountID": {
     "messageformat": "اکاؤنٹ ID"
   },
@@ -6673,6 +6685,9 @@
   "icu:Preferences--blocked-users--description": {
     "messageformat": "بلاک کردہ یوزرز آپ کو کال نہیں کر سکیں گے یا میسجز نہیں بھیج سکیں گے"
   },
+  "icu:Preferences--add-blocked": {
+    "messageformat": "بلاک کردہ یوزر یا گروپ کو شامل کریں"
+  },
   "icu:Preferences--blocked-users": {
     "messageformat": "بلاک کردہ یوزرز"
   },
@@ -6681,6 +6696,12 @@
   },
   "icu:Preferences--blocked--blocked-on": {
     "messageformat": "{blockedAt} کو بلاک کردہ"
+  },
+  "icu:Preferences--BlockChooser--Done": {
+    "messageformat": "ہو گیا"
+  },
+  "icu:Preferences--BlockChooser--Search--Placeholder": {
+    "messageformat": "تلا ‎ش کر یں"
   },
   "icu:Preferences--signal-backups": {
     "messageformat": "Signal کے محفوظ بیک اپس"
@@ -7097,7 +7118,7 @@
     "messageformat": "براہ کرم {duration} میں دوبارہ کوشش کریں"
   },
   "icu:StandaloneRegistration--PhoneNumber--RegionCodeSelector--Label": {
-    "messageformat": "Select region code"
+    "messageformat": "ملک کے کوڈ کا انتخاب کریں"
   },
   "icu:StandaloneRegistration--PhoneNumber--placeholder": {
     "messageformat": "فون نمبر"
@@ -8561,12 +8582,6 @@
   "icu:CallLinkPendingParticipantModal__DenyButtonLabel": {
     "messageformat": "اندراج مسترد کریں"
   },
-  "icu:CallLinkRestrictionsSelect__Option--Off": {
-    "messageformat": "بند کریں"
-  },
-  "icu:CallLinkRestrictionsSelect__Option--On": {
-    "messageformat": "آن کریں"
-  },
   "icu:CallLinkAddNameModal__Title": {
     "messageformat": "کال نیم شامل کریں"
   },
@@ -8614,6 +8629,39 @@
   },
   "icu:SaveMultiDialog__title": {
     "messageformat": "منسلکات کو محفوظ کریں"
+  },
+  "icu:EmbeddedContact__message": {
+    "messageformat": "میسج"
+  },
+  "icu:ContactDetail__message": {
+    "messageformat": "میسج"
+  },
+  "icu:ContactDetail__add-to-group": {
+    "messageformat": "کسی گروپ میں شامل کریں"
+  },
+  "icu:ContactDetail__nickname": {
+    "messageformat": "عرفی نام"
+  },
+  "icu:ContactDetail__note": {
+    "messageformat": "نوٹس"
+  },
+  "icu:email-v2": {
+    "messageformat": "ای میل"
+  },
+  "icu:home-v2": {
+    "messageformat": "ہوم"
+  },
+  "icu:mobile-v2": {
+    "messageformat": "موبائل"
+  },
+  "icu:work-v2": {
+    "messageformat": "کام"
+  },
+  "icu:phone-v2": {
+    "messageformat": "فون"
+  },
+  "icu:address-v2": {
+    "messageformat": "ایڈریس"
   },
   "icu:WhatsNew__modal-title": {
     "messageformat": "نیا کیا ہے"
@@ -8781,7 +8829,7 @@
     "messageformat": "Signal کو سپورٹ کرنے کے لیے آپ کا شکریہ۔ آپ کا تعاون اوپن سورس پرائیویسی ٹیکنالوجی کے ذریعے دنیا بھر کے لاکھوں افراد کے لیے آزاد اظہارِ رائے کے تحفظ اور محفوظ عالمی مواصلت کو فعال بنانے کے مشن کو تقویت دینے میں مدد کرتا ہے۔ اگر آپ امریکہ کے رہائشی ہیں، تو براہ کرم اس رسید کو اپنے ٹیکس ریکارڈز کے لیے محفوظ رکھیں۔ Signal Technology Foundation امریکہ میں Internal Revenue Code کے سیکشن 501c3 کے تحت ٹیکس سے مستثنیٰ غیر منفعتی تنظیم ہے۔ ہماری Federal Tax ID 82-4506840 ہے۔ Signal اس تعاون کے بدلے کوئی بھی سامان یا سروسز فراہم نہیں کرتا۔"
   },
   "icu:MessageCta__Donate": {
-    "messageformat": "Donate Now"
+    "messageformat": "ابھی عطیہ کریں"
   },
   "icu:Donations__OfflineTooltip": {
     "messageformat": "آپ آف لائن ہیں۔ براہ کرم عطیہ مکمل کرنے کے لیے انٹرنیٹ سے کنیکٹ کریں۔"
@@ -8981,6 +9029,9 @@
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__AccessibilityLabel": {
     "messageformat": "مسائل کی تفصیل"
   },
+  "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__Placeholder": {
+    "messageformat": "اپنا مسئلہ بیان کریں"
+  },
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__HelpText": {
     "messageformat": "براہ کرم مسئلے سے متعلق کوئی تفصیلات شامل کریں۔ آپ جو کچھ یہاں شیئر کرتے ہیں اسے مخفی رکھا جائے گا اور صرف Signal میں کالز کو بہتر بنانے میں استعمال کیا جائے گا۔"
   },
@@ -9095,5 +9146,14 @@
   },
   "icu:WhatsNew__8.30--1": {
     "messageformat": "ہم نے ایک آسان شارٹ کٹ بھی شامل کیا ہے تاکہ اگر آپ کسی ویڈیو کال میں شامل ہونے کی کوشش کریں اور Signal کو کیمرے تک رسائی کی اجازت نہ ہو تو آپ ونڈوز پر اپنے سسٹم کی سیٹنگز کھول سکیں۔ آپ اب یہ آسانی سے جان سکتے ہیں کہ لوگوں کو دکھانے کے لیے آپ کو کیا کرنا ہے۔"
+  },
+  "icu:WhatsNew__8.32--0": {
+    "messageformat": "اب غیر پڑھے گئے میسج کا فلٹر میسج فولڈرز اور سرچ انٹرفیس میں بھی سپورٹ کردہ ہے تاکہ آپ کو فوری پتہ چل جائے کہ آپ سے کیا چھوٹ گیا ہے۔"
+  },
+  "icu:WhatsNew__8.32--1": {
+    "messageformat": "خراب نیٹ ورک کی صورتِ حال اپ لوڈ کے عمل کو مزید قابلِ اعتماد بنایا گیا ہے۔ شکریہ، <GH3mmmbulus></GH3mmmbulus>!"
+  },
+  "icu:WhatsNew__8.32--2": {
+    "messageformat": "&quot;(N)&quot; شارٹ کٹ اب درست طور پر ناپسندیدگی کے اظہار والے ایموجی (thumbs down) پر لے جاتا ہے۔ نقص ٹھیک کرنے پر <lnicola></lnicola> کو داد۔"
   }
 }

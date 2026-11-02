@@ -2,6 +2,9 @@
   "icu:AxoAlertDialog.Cancel": {
     "messageformat": "Отказ"
   },
+  "icu:AxoAlertDialog.Ok": {
+    "messageformat": "Добре"
+  },
   "icu:AxoButton.Pending": {
     "messageformat": "В очакване"
   },
@@ -73,9 +76,6 @@
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--2": {
     "messageformat": "На основното ви устройство се управлява какво е свързано и можете да свържете до 5 устройства."
-  },
-  "icu:LinkedDevicesOnboardingDialog__bullet--3": {
-    "messageformat": "Настройките на акаунта се управляват само на основното ви устройство, включително настройките на акаунта и архивните копия."
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--3--1": {
     "messageformat": "Настройките на акаунта и резервните копия могат да се управляват само на вашето основно устройство."
@@ -673,6 +673,9 @@
   },
   "icu:KeyTransparencyOnboardingDialog__Description": {
     "messageformat": "При контактите, с които сте свързани чрез телефонен номер, Signal може автоматично да потвърди дали връзката е сигурна, като използва процес, наречен „прозрачност на ключа“. За повече сигурност все пак можете да проверявате връзките ръчно с QR код или като сравните номерата за сигурност."
+  },
+  "icu:KeyTransparencyOnboardingDialog__Description-v2": {
+    "messageformat": "<paragraph>При контактите, с които сте свързани чрез телефонен номер, Signal може автоматично да потвърди дали връзката е сигурна, като използва процес, наречен „прозрачност на ключа“.</paragraph><paragraph>За повече сигурност все пак можете да проверявате връзките ръчно с QR код или като сравните номерата за сигурност.</paragraph>"
   },
   "icu:KeyTransparencyOnboardingDialog__Continue": {
     "messageformat": "Продължаване"
@@ -1481,6 +1484,9 @@
   "icu:ConversationMerge--learn-more": {
     "messageformat": "Научете повече"
   },
+  "icu:ConversationMerge--explainer-dialog--label": {
+    "messageformat": "Историята на съобщенията ви беше слята"
+  },
   "icu:ConversationMerge--explainer-dialog--line-1": {
     "messageformat": "След размяна на съобщения с {obsoleteConversationTitle} научихте, че този номер принадлежи на {conversationTitle}. Техният телефонен номер е личен."
   },
@@ -1741,6 +1747,9 @@
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__Search__Placeholder": {
     "messageformat": "Търсене"
+  },
+  "icu:Preferences__EditChatFolderPage__SelectChatsDialog__NoChats": {
+    "messageformat": "Няма чатове"
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__ChatTypesSection__Title": {
     "messageformat": "Видове чатове"
@@ -3512,6 +3521,9 @@
   "icu:MessageRequests--unblock-group-confirm-body": {
     "messageformat": "Членове на групата ще могат да те добавят обратно в групата."
   },
+  "icu:MessageRequests--unblock-signal-confirm-body": {
+    "messageformat": "Ще получавате новини за Signal."
+  },
   "icu:MessageRequests--block-and-report-spam-success-toast": {
     "messageformat": "Потребителят е докладван за спам и блокиран."
   },
@@ -3526,6 +3538,9 @@
   },
   "icu:MessageRequests--block-group-confirm-body": {
     "messageformat": "Няма да може да получвате съобщения или известия от тази група и членовете ѝ няма да могат да ви добавят повторно."
+  },
+  "icu:MessageRequests--block-signal-confirm-body": {
+    "messageformat": "Вече няма да получавате новини за Signal."
   },
   "icu:MessageRequests--reportAndMaybeBlock": {
     "messageformat": "Докладване..."
@@ -6169,9 +6184,6 @@
   "icu:Preferences__SignalAccountKeys__Description": {
     "messageformat": "Съхранявайте на сигурно място, вашата информация за вход ще бъде необходима за възстановяване на акаунта и данните ви. Никога не споделяйте с никого."
   },
-  "icu:Preferences__SignalAccountKeys__AccountKey": {
-    "messageformat": "Ключ на акаунта"
-  },
   "icu:Preferences__SignalAccountKeys__AccountID": {
     "messageformat": "Идентификатор на акаунт"
   },
@@ -6673,6 +6685,9 @@
   "icu:Preferences--blocked-users--description": {
     "messageformat": "Блокираните потребители не могат да ви се обаждат, нито да ви изпращат съобщения"
   },
+  "icu:Preferences--add-blocked": {
+    "messageformat": "Добавяне на потребител или група в блокирани"
+  },
   "icu:Preferences--blocked-users": {
     "messageformat": "Блокирани потребители"
   },
@@ -6681,6 +6696,12 @@
   },
   "icu:Preferences--blocked--blocked-on": {
     "messageformat": "Блокиран на {blockedAt}"
+  },
+  "icu:Preferences--BlockChooser--Done": {
+    "messageformat": "Готово"
+  },
+  "icu:Preferences--BlockChooser--Search--Placeholder": {
+    "messageformat": "Търсене"
   },
   "icu:Preferences--signal-backups": {
     "messageformat": "Сигурни резервни копия на Signal"
@@ -7097,7 +7118,7 @@
     "messageformat": "Моля, опитайте отново след {duration}"
   },
   "icu:StandaloneRegistration--PhoneNumber--RegionCodeSelector--Label": {
-    "messageformat": "Select region code"
+    "messageformat": "Изберете код на държава"
   },
   "icu:StandaloneRegistration--PhoneNumber--placeholder": {
     "messageformat": "Телефонен номер"
@@ -8561,12 +8582,6 @@
   "icu:CallLinkPendingParticipantModal__DenyButtonLabel": {
     "messageformat": "Отхвърляне на вход"
   },
-  "icu:CallLinkRestrictionsSelect__Option--Off": {
-    "messageformat": "Изкл."
-  },
-  "icu:CallLinkRestrictionsSelect__Option--On": {
-    "messageformat": "Вкл."
-  },
   "icu:CallLinkAddNameModal__Title": {
     "messageformat": "Добавяне на име на обаждането"
   },
@@ -8614,6 +8629,39 @@
   },
   "icu:SaveMultiDialog__title": {
     "messageformat": "Запазване на прикачени файлове"
+  },
+  "icu:EmbeddedContact__message": {
+    "messageformat": "Съобщение"
+  },
+  "icu:ContactDetail__message": {
+    "messageformat": "Съобщение"
+  },
+  "icu:ContactDetail__add-to-group": {
+    "messageformat": "Добави към група"
+  },
+  "icu:ContactDetail__nickname": {
+    "messageformat": "Прякор"
+  },
+  "icu:ContactDetail__note": {
+    "messageformat": "Бележки"
+  },
+  "icu:email-v2": {
+    "messageformat": "Имейл"
+  },
+  "icu:home-v2": {
+    "messageformat": "Начало"
+  },
+  "icu:mobile-v2": {
+    "messageformat": "Мобилен"
+  },
+  "icu:work-v2": {
+    "messageformat": "Работен"
+  },
+  "icu:phone-v2": {
+    "messageformat": "Телефон"
+  },
+  "icu:address-v2": {
+    "messageformat": "Адрес"
   },
   "icu:WhatsNew__modal-title": {
     "messageformat": "Какво ново има"
@@ -8781,7 +8829,7 @@
     "messageformat": "Благодарим ви, че подкрепяте Signal. Вашият принос помага за изпълнението на мисията за защитаване на свободата на изразяване и позволяване на сигурна глобална комуникация на милиони хора по света чрез технология за поверителност с отворен код. Ако сте жител на Съединените щати, моля, запазете тази разписка за данъчните си документи. Фондация Signal Technology Foundation е освободена от данъци организация с нестопанска цел в САЩ съгласно член 501c3 от Данъчния кодекс на САЩ (Internal Revenue Code). Нашият федерален данъчен номер (Federal Tax ID) е 82-4506840. Нашият федерален данъчен номер е 82-4506840. Signal не предоставя стоки или услуги в замяна за този принос."
   },
   "icu:MessageCta__Donate": {
-    "messageformat": "Donate Now"
+    "messageformat": "Дарете сега"
   },
   "icu:Donations__OfflineTooltip": {
     "messageformat": "Вие сте офлайн. Моля, свържете се с интернет, за да извършите дарение."
@@ -8981,6 +9029,9 @@
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__AccessibilityLabel": {
     "messageformat": "Описание на проблемите"
   },
+  "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__Placeholder": {
+    "messageformat": "Опишете вашия проблем"
+  },
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__HelpText": {
     "messageformat": "Моля, включете всички подробности, свързани с проблема. Всичко, което споделяте тук, ще бъде запазено поверително и ще се използва единствено, за да помогне в подобряването на обажданията в Signal."
   },
@@ -9095,5 +9146,14 @@
   },
   "icu:WhatsNew__8.30--1": {
     "messageformat": "Също така добавихме удобен пряк път за отваряне на вашите системни настройки на Windows, ако се опитате да влезете във видео обаждане, но Signal няма разрешение за достъп до камерата."
+  },
+  "icu:WhatsNew__8.32--0": {
+    "messageformat": "Филтърът за непрочетени съобщения вече се поддържа и в папките със съобщения, както и в интерфейса за търсене."
+  },
+  "icu:WhatsNew__8.32--1": {
+    "messageformat": "Подобрена надеждност на качването при лоши мрежови условия. Благодарим, <GH3mmmbulus></GH3mmmbulus>!"
+  },
+  "icu:WhatsNew__8.32--2": {
+    "messageformat": "Прекият път „(N)“ правилно препраща към емоджито с палец надолу. Палец нагоре за <lnicola></lnicola> за отстраняването на бъга."
   }
 }

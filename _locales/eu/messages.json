@@ -2,6 +2,9 @@
   "icu:AxoAlertDialog.Cancel": {
     "messageformat": "Utzi"
   },
+  "icu:AxoAlertDialog.Ok": {
+    "messageformat": "Ados"
+  },
   "icu:AxoButton.Pending": {
     "messageformat": "Zain"
   },
@@ -73,9 +76,6 @@
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--2": {
     "messageformat": "Gailu nagusiarekin, zer lotzen den kudeatzen da; gehienez, 5 gailu lot ditzakezu."
-  },
-  "icu:LinkedDevicesOnboardingDialog__bullet--3": {
-    "messageformat": "Kontuaren ezarpenak gailu nagusian bakarrik kudea daitezke; besteak beste, kontuaren ezarpenak eta babeskopiak."
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--3--1": {
     "messageformat": "Kontuaren ezarpenak eta babeskopiak soilik gailu nagusitik kudea daitezke."
@@ -673,6 +673,9 @@
   },
   "icu:KeyTransparencyOnboardingDialog__Description": {
     "messageformat": "Zurekin telefono-zenbaki bidez konektatuta dauden kontakuei dagokienez, Signal-ek \"gako-gardentasuna\" izeneko prozesu baten bidez egiazta dezake konexioa seguruan den. Segurtasun gehigarria emateko, konexioak eskuz egiazta ditzakezu oraindik ere, QR kode bat erabilita edo segurtasun-zenbakiak konparatuta."
+  },
+  "icu:KeyTransparencyOnboardingDialog__Description-v2": {
+    "messageformat": "<paragraph>Zurekin telefono-zenbaki bidez konektatuta dauden kontakuei dagokienez, Signal-ek &quot;gako-gardentasuna&quot; izeneko prozesu baten bidez egiazta dezake konexioa seguruan den.</paragraph><paragraph>Segurtasun gehigarria emateko, konexioak eskuz egiazta ditzakezu oraindik ere, QR kode bat erabilita edo segurtasun-zenbakiak konparatuta.</paragraph>"
   },
   "icu:KeyTransparencyOnboardingDialog__Continue": {
     "messageformat": "Jarraitu"
@@ -1481,6 +1484,9 @@
   "icu:ConversationMerge--learn-more": {
     "messageformat": "Informazio gehiago"
   },
+  "icu:ConversationMerge--explainer-dialog--label": {
+    "messageformat": "Mezu-historia bateratu egin da"
+  },
   "icu:ConversationMerge--explainer-dialog--line-1": {
     "messageformat": "{obsoleteConversationTitle} erabiltzailearekin mezuak trukatu ondoren, zenbaki hau {conversationTitle} erabiltzailearena dela jakin duzu. Haren telefono-zenbakia pribatua da."
   },
@@ -1741,6 +1747,9 @@
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__Search__Placeholder": {
     "messageformat": "Bilatu"
+  },
+  "icu:Preferences__EditChatFolderPage__SelectChatsDialog__NoChats": {
+    "messageformat": "Txatik ez"
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__ChatTypesSection__Title": {
     "messageformat": "Txat motak"
@@ -3512,6 +3521,9 @@
   "icu:MessageRequests--unblock-group-confirm-body": {
     "messageformat": "Taldeko kideak gai izango dira zu talde honetan berriro sartzeko."
   },
+  "icu:MessageRequests--unblock-signal-confirm-body": {
+    "messageformat": "Signal-en eguneratzeak eta berriak jasoko dituzu."
+  },
   "icu:MessageRequests--block-and-report-spam-success-toast": {
     "messageformat": "Spam gisa salatu, eta blokeatu egin da."
   },
@@ -3526,6 +3538,9 @@
   },
   "icu:MessageRequests--block-group-confirm-body": {
     "messageformat": "Ez duzu talde honetatik mezu edo egunerapen gehiago jasoko, eta kideek ezingo zaituzte talde honetan berriro sartu."
+  },
+  "icu:MessageRequests--block-signal-confirm-body": {
+    "messageformat": "Ez duzu Signal-en eguneratzerik edo berririk jasoko."
   },
   "icu:MessageRequests--reportAndMaybeBlock": {
     "messageformat": "Salatu..."
@@ -6169,9 +6184,6 @@
   "icu:Preferences__SignalAccountKeys__Description": {
     "messageformat": "Gorde hau leku seguru batean, zure kontua eta datuak berreskuratzeko behar da saioa hasteko informazioa. Ez partekatu inorekin."
   },
-  "icu:Preferences__SignalAccountKeys__AccountKey": {
-    "messageformat": "Kontuaren gakoa"
-  },
   "icu:Preferences__SignalAccountKeys__AccountID": {
     "messageformat": "Kontu-identifikatzailea"
   },
@@ -6673,6 +6685,9 @@
   "icu:Preferences--blocked-users--description": {
     "messageformat": "Blokeatutako erabiltzaileek ezin izango dizute deitu, ezta mezuak bidali ere"
   },
+  "icu:Preferences--add-blocked": {
+    "messageformat": "Gehitu blokeatutako erabiltzaile edo taldea"
+  },
   "icu:Preferences--blocked-users": {
     "messageformat": "Blokeatutako erabiltzaileak"
   },
@@ -6681,6 +6696,12 @@
   },
   "icu:Preferences--blocked--blocked-on": {
     "messageformat": "Hemen blokeatuta: {blockedAt}"
+  },
+  "icu:Preferences--BlockChooser--Done": {
+    "messageformat": "Eginda"
+  },
+  "icu:Preferences--BlockChooser--Search--Placeholder": {
+    "messageformat": "Bilatu"
   },
   "icu:Preferences--signal-backups": {
     "messageformat": "Signal-en babeskopia seguruak"
@@ -7097,7 +7118,7 @@
     "messageformat": "Saiatu berriro {duration} barru"
   },
   "icu:StandaloneRegistration--PhoneNumber--RegionCodeSelector--Label": {
-    "messageformat": "Select region code"
+    "messageformat": "Herrialdearen kodea aukeratu"
   },
   "icu:StandaloneRegistration--PhoneNumber--placeholder": {
     "messageformat": "Telefono-zenbakia"
@@ -8561,12 +8582,6 @@
   "icu:CallLinkPendingParticipantModal__DenyButtonLabel": {
     "messageformat": "Ez utzi sartzen"
   },
-  "icu:CallLinkRestrictionsSelect__Option--Off": {
-    "messageformat": "Desaktibatuta"
-  },
-  "icu:CallLinkRestrictionsSelect__Option--On": {
-    "messageformat": "Aktibatuta"
-  },
   "icu:CallLinkAddNameModal__Title": {
     "messageformat": "Gehitu deiaren izena"
   },
@@ -8614,6 +8629,39 @@
   },
   "icu:SaveMultiDialog__title": {
     "messageformat": "Gorde eranskinak"
+  },
+  "icu:EmbeddedContact__message": {
+    "messageformat": "Mezua"
+  },
+  "icu:ContactDetail__message": {
+    "messageformat": "Mezua"
+  },
+  "icu:ContactDetail__add-to-group": {
+    "messageformat": "Gehitu taldera"
+  },
+  "icu:ContactDetail__nickname": {
+    "messageformat": "Ezizena"
+  },
+  "icu:ContactDetail__note": {
+    "messageformat": "Oharrak"
+  },
+  "icu:email-v2": {
+    "messageformat": "Emaila"
+  },
+  "icu:home-v2": {
+    "messageformat": "Hasiera"
+  },
+  "icu:mobile-v2": {
+    "messageformat": "Telefono mugikorra"
+  },
+  "icu:work-v2": {
+    "messageformat": "Lana"
+  },
+  "icu:phone-v2": {
+    "messageformat": "telefonoa"
+  },
+  "icu:address-v2": {
+    "messageformat": "Helbidea"
   },
   "icu:WhatsNew__modal-title": {
     "messageformat": "Zer berri"
@@ -8781,7 +8829,7 @@
     "messageformat": "Eskerrik asko Signal-i laguntzeagatik. Zure ekarpenarekin, kode irekiko pribatutasun-teknologiaren bidez adierazpen-askatasuna babesteko eta mundu osoko milioika pertsonarentzako komunikazio segurua ahalbidetzeko dugun misioa bultzatuko duzu. Ameriketako Estatu Batuetan bizi bazara, gorde ordainagiri hau, zerga-aitorpenetarako. Signal Technology Foundation zergak ordaintzetik salbuetsita dagoen AEBko erakunde bat da, Internal Revenue Code-ko 501c3 sekzioari jarraikiz. Gure IFZa federala 82-4506840 da. Signal-ek ez du inolako ondasun edo zerbitzurik eman dohaintza honen truke."
   },
   "icu:MessageCta__Donate": {
-    "messageformat": "Donate Now"
+    "messageformat": "Egin dohaintza orain"
   },
   "icu:Donations__OfflineTooltip": {
     "messageformat": "Lineaz kanpo zaude. Konketatu Internetera dohaintza osatzeko."
@@ -8981,6 +9029,9 @@
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__AccessibilityLabel": {
     "messageformat": "Arazoen azalpena"
   },
+  "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__Placeholder": {
+    "messageformat": "Azaldu arazoa"
+  },
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__HelpText": {
     "messageformat": "Adierazi arazoarekin lotutako xehetasun guztiak. Hemen partekatzen duzun guztia pribatu mantenduko da, eta Signal-eko deiak hobetzeko bakarrik erabiliko da."
   },
@@ -9095,5 +9146,14 @@
   },
   "icu:WhatsNew__8.30--1": {
     "messageformat": "Halaber, Windows-en sistemaren ezarpenak irekitzeko lasterbide eroso bat gehitu dugu, bideodei batean sartzen saiatu baina Signal-ek kamerarako sarbidea ez duenerako."
+  },
+  "icu:WhatsNew__8.32--0": {
+    "messageformat": "Irakurri gabekoen iragazkia mezu-karpetetan eta bilaketa-interfazean ere erabil daiteke orain."
+  },
+  "icu:WhatsNew__8.32--1": {
+    "messageformat": "Konexio txarretako kargen egonkortasuna hobetu da. Aupa zu, <GH3mmmbulus></GH3mmmbulus>!"
+  },
+  "icu:WhatsNew__8.32--2": {
+    "messageformat": "&quot;(N)&quot; lasterbideak beheranzko erpuruaren emojia erakusten du. Erpurua gora zuri, <lnicola></lnicola>, akatsa konpontzen laguntzeagatik."
   }
 }

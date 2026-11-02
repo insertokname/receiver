@@ -2,6 +2,9 @@
   "icu:AxoAlertDialog.Cancel": {
     "messageformat": "ਰੱਦ ਕਰੋ"
   },
+  "icu:AxoAlertDialog.Ok": {
+    "messageformat": "ਠੀਕ ਹੈ"
+  },
   "icu:AxoButton.Pending": {
     "messageformat": "ਬਾਕੀ"
   },
@@ -73,9 +76,6 @@
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--2": {
     "messageformat": "ਤੁਹਾਡਾ ਮੁੱਖ ਡਿਵਾਈਸ ਲਿੰਕ ਕੀਤੇ ਡਿਵਾਈਸਾਂ ਦਾ ਪ੍ਰਬੰਧਨ ਕਰਦਾ ਹੈ। ਤੁਸੀਂ ਵੱਧ ਤੋਂ ਵੱਧ 5 ਡਿਵਾਈਸਾਂ ਨੂੰ ਲਿੰਕ ਕਰ ਸਕਦੇ ਹੋ।"
-  },
-  "icu:LinkedDevicesOnboardingDialog__bullet--3": {
-    "messageformat": "ਖਾਤੇ ਦੀਆਂ ਸੈਟਿੰਗਾਂ ਨੂੰ ਸਿਰਫ਼ ਤੁਹਾਡੇ ਮੁੱਖ ਡਿਵਾਈਸ 'ਤੇ ਪ੍ਰਬੰਧਿਤ ਕੀਤਾ ਜਾ ਸਕਦਾ ਹੈ, ਜਿਸ ਵਿੱਚ ਖਾਤੇ ਦੀਆਂ ਸੈਟਿੰਗਾਂ ਅਤੇ ਬੈਕਅੱਪ ਸ਼ਾਮਲ ਹਨ।"
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--3--1": {
     "messageformat": "ਖਾਤੇ ਦੀਆਂ ਸੈਟਿੰਗਾਂ ਨੂੰ ਅਤੇ ਬੈਕਅੱਪ ਨੂੰ ਸਿਰਫ਼ ਤੁਹਾਡੇ ਮੁੱਖ ਡਿਵਾਈਸ 'ਤੇ ਪ੍ਰਬੰਧਿਤ ਕੀਤਾ ਜਾ ਸਕਦਾ ਹੈ।"
@@ -673,6 +673,9 @@
   },
   "icu:KeyTransparencyOnboardingDialog__Description": {
     "messageformat": "ਜਿਹਨਾਂ ਸੰਪਰਕਾਂ ਨਾਲ ਤੁਸੀਂ ਫ਼ੋਨ ਨੰਬਰ ਨਾਲ ਜੁੜੇ ਹੋ, Signal ਆਪਣੇ-ਆਪ ਕੀ ਟ੍ਰਾਂਸਪੇਰੈਂਸੀ ਪ੍ਰਕਿਰਿਆ ਦੀ ਵਰਤੋਂ ਕਰਕੇ ਪੁਸ਼ਟੀ ਕਰੇਗਾ ਕਿ ਕਨੈਕਸ਼ਨ ਸੁਰੱਖਿਅਤ ਹੈ ਜਾਂ ਨਹੀਂ। ਵਾਧੂ ਸੁਰੱਖਿਆ ਲਈ, ਤੁਸੀਂ ਅਜੇ ਵੀ QR ਕੋਡ ਜਾਂ ਸੁਰੱਖਿਆ ਨੰਬਰ ਦੀ ਵਰਤੋਂ ਕਰਕੇ ਖੁਦ ਵੀ ਕਨੈਕਸ਼ਨਾਂ ਦੀ ਤਸਦੀਕ ਕਰ ਸਕਦੇ ਹੋ।"
+  },
+  "icu:KeyTransparencyOnboardingDialog__Description-v2": {
+    "messageformat": "<paragraph>ਜਿਹਨਾਂ ਸੰਪਰਕਾਂ ਨਾਲ ਤੁਸੀਂ ਫ਼ੋਨ ਨੰਬਰ ਨਾਲ ਜੁੜੇ ਹੋ, Signal ਆਪਣੇ-ਆਪ ਕੀ ਟ੍ਰਾਂਸਪੇਰੈਂਸੀ ਪ੍ਰਕਿਰਿਆ ਦੀ ਵਰਤੋਂ ਕਰਕੇ ਪੁਸ਼ਟੀ ਕਰੇਗਾ ਕਿ ਕਨੈਕਸ਼ਨ ਸੁਰੱਖਿਅਤ ਹੈ ਜਾਂ ਨਹੀਂ।</paragraph><paragraph>ਵਾਧੂ ਸੁਰੱਖਿਆ ਲਈ, ਤੁਸੀਂ ਅਜੇ ਵੀ QR ਕੋਡ ਦੀ ਵਰਤੋਂ ਕਰਕੇ ਜਾਂ ਸੁਰੱਖਿਆ ਨੰਬਰਾਂ ਨੂੰ ਆਪਸ ਵਿੱਚ ਮਿਲਾ ਕੇ ਖੁਦ ਵੀ ਕਨੈਕਸ਼ਨਾਂ ਦੀ ਤਸਦੀਕ ਕਰ ਸਕਦੇ ਹੋ।</paragraph>"
   },
   "icu:KeyTransparencyOnboardingDialog__Continue": {
     "messageformat": "ਜਾਰੀ ਰੱਖੋ"
@@ -1481,6 +1484,9 @@
   "icu:ConversationMerge--learn-more": {
     "messageformat": "ਹੋਰ ਜਾਣੋ"
   },
+  "icu:ConversationMerge--explainer-dialog--label": {
+    "messageformat": "ਪੁਰਾਣੇ ਸੁਨੇਹਿਆਂ ਨੂੰ ਆਪਸ ਵਿੱਚ ਮਿਲਾ ਦਿੱਤਾ ਗਿਆ ਹੈ"
+  },
   "icu:ConversationMerge--explainer-dialog--line-1": {
     "messageformat": "{obsoleteConversationTitle} ਨਾਲ ਚੈਟ ਕਰਨ ਤੋਂ ਬਾਅਦ ਤੁਹਾਨੂੰ ਇਹ ਪਤਾ ਲੱਗਾ ਹੈ ਕਿ ਇਹ ਨੰਬਰ {conversationTitle} ਦਾ ਹੈ। ਉਹਨਾਂ ਦਾ ਫ਼ੋਨ ਨੰਬਰ ਪ੍ਰਾਈਵੇਟ ਹੈ।"
   },
@@ -1741,6 +1747,9 @@
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__Search__Placeholder": {
     "messageformat": "ਖੋਜੋ"
+  },
+  "icu:Preferences__EditChatFolderPage__SelectChatsDialog__NoChats": {
+    "messageformat": "ਕੋਈ ਚੈਟ ਮੌਜੂਦ ਨਹੀਂ ਹੈ"
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__ChatTypesSection__Title": {
     "messageformat": "ਚੈਟ ਦੀਆਂ ਕਿਸਮਾਂ"
@@ -3512,6 +3521,9 @@
   "icu:MessageRequests--unblock-group-confirm-body": {
     "messageformat": "ਗਰੁੱਪ ਦੇ ਮੈਂਬਰ ਤੁਹਾਨੂੰ ਇਸ ਗਰੁੱਪ ਵਿੱਚ ਦੁਬਾਰਾ ਸ਼ਾਮਲ ਕਰ ਸਕਣਗੇ।"
   },
+  "icu:MessageRequests--unblock-signal-confirm-body": {
+    "messageformat": "ਤੁਹਾਨੂੰ Signal ਤੋਂ ਅੱਪਡੇਟਾਂ ਅਤੇ ਖ਼ਬਰਾਂ ਪ੍ਰਾਪਤ ਹੋਣਗੀਆਂ।"
+  },
   "icu:MessageRequests--block-and-report-spam-success-toast": {
     "messageformat": "ਸਪੈਮ ਵਜੋਂ ਰਿਪੋਰਟ ਕੀਤਾ ਗਿਆ ਅਤੇ ਪਾਬੰਦੀ ਲਗਾਈ ਗਈ।"
   },
@@ -3526,6 +3538,9 @@
   },
   "icu:MessageRequests--block-group-confirm-body": {
     "messageformat": "ਤੁਹਾਨੂੰ ਇਸ ਗਰੁੱਪ ਤੋਂ ਹੁਣ ਹੋਰ ਸੁਨੇਹੇ ਜਾਂ ਅੱਪਡੇਟ ਨਹੀਂ ਆਉਣਗੇ ਅਤੇ ਮੈਂਬਰ ਤੁਹਾਨੂੰ ਦੁਬਾਰਾ ਇਸ ਗਰੁੱਪ ਵਿੱਚ ਸ਼ਾਮਲ ਨਹੀਂ ਕਰ ਸਕਣਗੇ ।"
+  },
+  "icu:MessageRequests--block-signal-confirm-body": {
+    "messageformat": "ਹੁਣ ਤੁਹਾਨੂੰ Signal ਤੋਂ ਅੱਪਡੇਟਾਂ ਅਤੇ ਖ਼ਬਰਾਂ ਪ੍ਰਾਪਤ ਨਹੀਂ ਹੋਣਗੀਆਂ।"
   },
   "icu:MessageRequests--reportAndMaybeBlock": {
     "messageformat": "ਰਿਪੋਰਟ ਕਰੋ..."
@@ -6169,9 +6184,6 @@
   "icu:Preferences__SignalAccountKeys__Description": {
     "messageformat": "ਇਸ ਨੂੰ ਸੁਰੱਖਿਅਤ ਥਾਂ ਤੇ ਸਟੋਰ ਕਰੋ, ਤੁਹਾਡੇ ਖਾਤੇ ਅਤੇ ਡੇਟਾ ਨੂੰ ਰਿਕਵਰ ਕਰਨ ਲਈ ਤੁਹਾਡੀ ਲੌਗਇਨ ਜਾਣਕਾਰੀ ਲੋੜੀਂਦੀ ਹੈ। ਇਸ ਨੂੰ ਕਦੇ ਵੀ ਕਿਸੇ ਨਾਲ ਵੀ ਸਾਂਝਾ ਨਾ ਕਰੋ।"
   },
-  "icu:Preferences__SignalAccountKeys__AccountKey": {
-    "messageformat": "ਖਾਤੇ ਦੀ ਕੁੰਜੀ"
-  },
   "icu:Preferences__SignalAccountKeys__AccountID": {
     "messageformat": "ਖਾਤਾ ID"
   },
@@ -6673,6 +6685,9 @@
   "icu:Preferences--blocked-users--description": {
     "messageformat": "ਪਾਬੰਦੀਸ਼ੁਦਾ ਵਰਤੋਂਕਾਰ ਨਾ ਹੀ ਤੁਹਾਨੂੰ ਕਾਲ ਕਰ ਸਕਣਗੇ ਅਤੇ ਨਾ ਹੀ ਸੁਨੇਹੇ ਭੇਜ ਸਕਣਗੇ"
   },
+  "icu:Preferences--add-blocked": {
+    "messageformat": "ਪਾਬੰਦੀਸ਼ੁਦਾ ਵਰਤੋਂਕਾਰ ਜਾਂ ਗਰੁੱਪ ਨੂੰ ਸ਼ਾਮਲ ਕਰੋ"
+  },
   "icu:Preferences--blocked-users": {
     "messageformat": "ਪਾਬੰਦੀਸ਼ੁਦਾ ਵਰਤੋਂਕਾਰ"
   },
@@ -6681,6 +6696,12 @@
   },
   "icu:Preferences--blocked--blocked-on": {
     "messageformat": "{blockedAt} ਨੂੰ ਪਾਬੰਦੀ ਲਗਾਈ ਗਈ"
+  },
+  "icu:Preferences--BlockChooser--Done": {
+    "messageformat": "ਮੁਕੰਮਲ"
+  },
+  "icu:Preferences--BlockChooser--Search--Placeholder": {
+    "messageformat": "ਖੋਜੋ"
   },
   "icu:Preferences--signal-backups": {
     "messageformat": "Signal ਸਿਕਿਓਰ ਬੈਕਅੱਪ"
@@ -7097,7 +7118,7 @@
     "messageformat": "ਕਿਰਪਾ ਕਰਕੇ {duration} ਬਾਅਦ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ"
   },
   "icu:StandaloneRegistration--PhoneNumber--RegionCodeSelector--Label": {
-    "messageformat": "Select region code"
+    "messageformat": "ਦੇਸ਼ ਦਾ ਕੋਡ ਚੁਣੋ"
   },
   "icu:StandaloneRegistration--PhoneNumber--placeholder": {
     "messageformat": "ਫ਼ੋਨ ਨੰਬਰ"
@@ -8561,12 +8582,6 @@
   "icu:CallLinkPendingParticipantModal__DenyButtonLabel": {
     "messageformat": "ਦਾਖ਼ਲਾ ਨਾਮਨਜ਼ੂਰ ਕਰੋ"
   },
-  "icu:CallLinkRestrictionsSelect__Option--Off": {
-    "messageformat": "ਬੰਦ"
-  },
-  "icu:CallLinkRestrictionsSelect__Option--On": {
-    "messageformat": "ਚਾਲੂ"
-  },
   "icu:CallLinkAddNameModal__Title": {
     "messageformat": "ਕਾਲ ਦਾ ਨਾਮ ਸ਼ਾਮਲ ਕਰੋ"
   },
@@ -8614,6 +8629,39 @@
   },
   "icu:SaveMultiDialog__title": {
     "messageformat": "ਅਟੈਚਮੈਂਟ ਸੇਵ ਕਰੋ"
+  },
+  "icu:EmbeddedContact__message": {
+    "messageformat": "ਸੁਨੇਹਾ"
+  },
+  "icu:ContactDetail__message": {
+    "messageformat": "ਸੁਨੇਹਾ"
+  },
+  "icu:ContactDetail__add-to-group": {
+    "messageformat": "ਕਿਸੇ ਗਰੁੱਪ ਵਿੱਚ ਸ਼ਾਮਲ ਕਰੋ"
+  },
+  "icu:ContactDetail__nickname": {
+    "messageformat": "ਨਿੱਕਾ ਨਾਂ"
+  },
+  "icu:ContactDetail__note": {
+    "messageformat": "ਨੋਟਸ"
+  },
+  "icu:email-v2": {
+    "messageformat": "ਈਮੇਲ"
+  },
+  "icu:home-v2": {
+    "messageformat": "ਹੋਮ"
+  },
+  "icu:mobile-v2": {
+    "messageformat": "ਮੋਬਾਈਲ"
+  },
+  "icu:work-v2": {
+    "messageformat": "ਕੰਮ"
+  },
+  "icu:phone-v2": {
+    "messageformat": "ਫ਼ੋਨ"
+  },
+  "icu:address-v2": {
+    "messageformat": "ਪਤਾ"
   },
   "icu:WhatsNew__modal-title": {
     "messageformat": "ਨਵਾਂ ਕੀ ਹੈ"
@@ -8781,7 +8829,7 @@
     "messageformat": "Signal ਨੂੰ ਸਹਿਯੋਗ ਦੇਣ ਲਈ ਤੁਹਾਡਾ ਧੰਨਵਾਦ। ਤੁਹਾਡਾ ਯੋਗਦਾਨ ਓਪਨ ਸੋਰਸ ਪ੍ਰਾਈਵੇਸੀ ਤਕਨਾਲੋਜੀ ਵਿਕਸਤ ਕਰਨ ਦੇ ਉਦੇਸ਼ ਨੂੰ ਪੂਰਾ ਕਰਨ ਵਿੱਚ ਮਦਦ ਕਰਦਾ ਹੈ। ਇਹ ਤਕਨਾਲੋਜੀ ਆਜ਼ਾਦੀ ਨਾਲ ਆਪਣੇ ਵਿਚਾਰ ਪੇਸ਼ ਕਰਨ ਦੇ ਅਧਿਕਾਰ ਦੀ ਰਾਖੀ ਕਰਦੀ ਹੈ ਅਤੇ ਪੂਰੀ ਦੁਨੀਆਂ ਵਿੱਚ ਸੰਚਾਰ ਨੂੰ ਸੁਰੱਖਿਅਤ ਬਣਾਉਂਦੀ ਹੈ। ਜੇਕਰ ਤੁਸੀਂ ਸੰਯੁਕਤ ਰਾਜ ਅਮਰੀਕਾ ਦੇ ਨਿਵਾਸੀ ਹੋ, ਤਾਂ ਕਿਰਪਾ ਕਰਕੇ ਆਪਣੇ ਟੈਕਸ ਰਿਕਾਰਡਾਂ ਲਈ ਇਸ ਰਸੀਦ ਨੂੰ ਆਪਣੇ ਕੋਲ ਸਾਂਭ ਕੇ ਰੱਖੋ। Signal ਟੈਕਨਾਲੋਜੀ ਫਾਊਂਡੇਸ਼ਨ, ਸੰਯੁਕਤ ਰਾਜ ਅਮਰੀਕਾ ਵਿੱਚ ਇੰਟਰਨਲ ਰਿਵੈਨਿਊ ਕੋਡ ਦੀ ਧਾਰਾ 501c3 ਦੇ ਤਹਿਤ ਇੱਕ ਟੈਕਸ-ਮੁਕਤ ਗੈਰ-ਲਾਭਕਾਰੀ ਸੰਸਥਾ ਹੈ। ਸਾਡੀ ਫੈਡਰਲ ਟੈਕਸ ID 82-4506840 ਹੈ। Signal ਨੇ ਇਸ ਯੋਗਦਾਨ ਦੇ ਮੱਦੇਨਜ਼ਰ ਕੋਈ ਸਾਮਾਨ ਜਾਂ ਸੇਵਾਵਾਂ ਪ੍ਰਦਾਨ ਨਹੀਂ ਕੀਤੀਆਂ ਹਨ।"
   },
   "icu:MessageCta__Donate": {
-    "messageformat": "Donate Now"
+    "messageformat": "ਹੁਣੇ ਦਾਨ ਦਿਓ"
   },
   "icu:Donations__OfflineTooltip": {
     "messageformat": "ਤੁਸੀਂ ਆਫਲਾਈਨ ਹੋ। ਦਾਨ ਪੂਰਾ ਕਰਨ ਲਈ ਕਿਰਪਾ ਕਰਕੇ ਇੰਟਰਨੈੱਟ ਨਾਲ ਕਨੈਕਟ ਕਰੋ।"
@@ -8981,6 +9029,9 @@
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__AccessibilityLabel": {
     "messageformat": "ਸਮੱਸਿਆਵਾਂ ਦਾ ਵਰਣਨ"
   },
+  "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__Placeholder": {
+    "messageformat": "ਆਪਣੀ ਸਮੱਸਿਆ ਦਾ ਵਰਣਨ ਕਰੋ"
+  },
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__HelpText": {
     "messageformat": "ਕਿਰਪਾ ਕਰਕੇ ਸਮੱਸਿਆ ਨਾਲ ਸੰਬੰਧਿਤ ਵੇਰਵੇ ਸ਼ਾਮਲ ਕਰੋ। ਤੁਸੀਂ ਇੱਥੇ ਜੋ ਕੁਝ ਵੀ ਸਾਂਝਾ ਕਰਦੇ ਹੋ, ਉਸਨੂੰ ਨਿੱਜੀ ਰੱਖਿਆ ਜਾਵੇਗਾ ਅਤੇ ਸਿਰਫ਼ Signal ਵਿੱਚ ਕਾਲਾਂ ਨੂੰ ਬਿਹਤਰ ਬਣਾਉਣ ਲਈ ਵਰਤਿਆ ਜਾਵੇਗਾ।"
   },
@@ -9095,5 +9146,14 @@
   },
   "icu:WhatsNew__8.30--1": {
     "messageformat": "ਜੇਕਰ ਤੁਸੀਂ ਕਿਸੇ ਵੀਡੀਓ ਕਾਲ ਵਿੱਚ ਸ਼ਾਮਲ ਹੋਣ ਦੀ ਕੋਸ਼ਿਸ਼ ਕਰਦੇ ਹੋ ਅਤੇ Signal ਕੋਲ ਕੈਮਰੇ ਦੀ ਵਰਤੋਂ ਕਰਨ ਦੀ ਇਜਾਜ਼ਤ ਨਹੀਂ ਹੈ, ਤਾਂ ਅਸੀਂ Windows 'ਤੇ ਤੁਹਾਡੀਆਂ ਸਿਸਟਮ ਸੈਟਿੰਗਾਂ ਖੋਲ੍ਹਣ ਲਈ ਇੱਕ ਸੁਵਿਧਾਜਨਕ ਸ਼ਾਰਟਕੱਟ ਜੋੜਿਆ ਹੈ।"
+  },
+  "icu:WhatsNew__8.32--0": {
+    "messageformat": "ਹੁਣ ਸੁਨੇਹਾ ਫੋਲਡਰਾਂ ਅਤੇ ਖੋਜ ਇੰਟਰਫੇਸ ਵਿੱਚ ਵੀ 'ਨਹੀਂ ਪੜ੍ਹੇ' ਸੁਨੇਹਿਆਂ ਵਾਲੇ ਫਿਲਟਰ ਦਾ ਸਮਰਥਨ ਮਿਲਦਾ ਹੈ।"
+  },
+  "icu:WhatsNew__8.32--1": {
+    "messageformat": "ਮਾੜੀਆਂ ਨੈੱਟਵਰਕ ਸਥਿਤੀਆਂ ਵਿੱਚ ਅੱਪਲੋਡ ਕਰਨ ਦੀ ਸਹੂਲਤ ਵਿੱਚ ਸੁਧਾਰ ਕੀਤਾ ਗਿਆ ਹੈ। ਧੰਨਵਾਦ, <GH3mmmbulus></GH3mmmbulus>!"
+  },
+  "icu:WhatsNew__8.32--2": {
+    "messageformat": "&quot;(N)&quot; ਸ਼ਾਰਟਕੱਟ ਸਹੀ ਢੰਗ ਨਾਲ 'ਥੰਬਸ ਡਾਊਨ' ਇਮੋਜੀ ਵੱਲ ਇਸ਼ਾਰਾ ਕਰਦਾ ਹੈ। ਖ਼ਰਾਬੀ ਦਾ ਹੱਲ ਕਰਨ ਲਈ <lnicola></lnicola> ਨੂੰ ਸ਼ਬਾਸ਼ੀ।"
   }
 }

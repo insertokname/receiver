@@ -174,9 +174,10 @@ export type RegressionSample = Readonly<{
 
 export type StandaloneLinkData = Readonly<{
   aci: AciString;
+  profileKey: Buffer<ArrayBuffer>;
+  recordIkm: Buffer<ArrayBuffer> | undefined;
   startingStorageServiceVersion: bigint;
   storageKey: Buffer<ArrayBuffer>;
-  recordIkm: Buffer<ArrayBuffer> | undefined;
 }>;
 
 function sanitizePathComponent(component: string): string {
@@ -566,12 +567,20 @@ export class Bootstrap {
 
     const { version, storageKey, recordIkm } =
       await app.waitForUploadManifest();
+    const { profileKey, reason } = await app.waitForSetProfileKey();
+
+    assert.strictEqual(
+      reason,
+      'AccountManager.doCreateAccount',
+      'Expect to get profileKey from account create'
+    );
 
     return {
       aci,
+      profileKey,
+      recordIkm: recordIkm ? Buffer.from(recordIkm) : undefined,
       startingStorageServiceVersion: BigInt(version),
       storageKey: Buffer.from(storageKey),
-      recordIkm: recordIkm ? Buffer.from(recordIkm) : undefined,
     };
   }
 
@@ -837,7 +846,7 @@ export class Bootstrap {
       debug('creating screenshot');
       snapshots.push({
         name,
-        data: await window.screenshot(),
+        data: await window.screenshot({ animations: 'disabled' }),
       });
     });
 
@@ -852,7 +861,9 @@ export class Bootstrap {
         assert(before != null, 'No previous snapshot');
         assert.strictEqual(before.name, name, 'Wrong snapshot order');
         await anotherWindow.setViewportSize(viewportSize);
-        const after = await anotherWindow.screenshot();
+        const after = await anotherWindow.screenshot({
+          animations: 'disabled',
+        });
 
         const beforePng = PNG.sync.read(before.data);
         const afterPng = PNG.sync.read(after);

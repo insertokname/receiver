@@ -2,6 +2,9 @@
   "icu:AxoAlertDialog.Cancel": {
     "messageformat": "取消"
   },
+  "icu:AxoAlertDialog.Ok": {
+    "messageformat": "確定"
+  },
   "icu:AxoButton.Pending": {
     "messageformat": "等緊處理"
   },
@@ -73,9 +76,6 @@
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--2": {
     "messageformat": "你部主要裝置負責管理連結咗嘅機，最多可連結 5 部裝置。"
-  },
-  "icu:LinkedDevicesOnboardingDialog__bullet--3": {
-    "messageformat": "帳戶設定只可以喺主要裝置度管理，包括帳戶設定同備份。"
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--3--1": {
     "messageformat": "帳戶設定同備份淨係可以喺你部主機上面管理。"
@@ -673,6 +673,9 @@
   },
   "icu:KeyTransparencyOnboardingDialog__Description": {
     "messageformat": "對於用電話冧把聯絡嘅聯絡人，Signal 會進行一個叫「金鑰透明度」嘅程序，自動確認聯絡對象係咪安全。如果想更加保險，你可以繼續用返二維碼或者比較安全碼人手驗證聯絡人。"
+  },
+  "icu:KeyTransparencyOnboardingDialog__Description-v2": {
+    "messageformat": "<paragraph>對於用電話冧把聯絡嘅聯絡人，Signal 會進行一個叫「金鑰透明度」嘅程序，自動確認聯絡對象係咪安全。</paragraph><paragraph>如果想更加保險，你可以繼續用返二維碼或者人手比較安全碼嚟驗證聯絡人。</paragraph>"
   },
   "icu:KeyTransparencyOnboardingDialog__Continue": {
     "messageformat": "繼續"
@@ -1481,6 +1484,9 @@
   "icu:ConversationMerge--learn-more": {
     "messageformat": "了解多啲"
   },
+  "icu:ConversationMerge--explainer-dialog--label": {
+    "messageformat": "訊息紀錄已經合併"
+  },
   "icu:ConversationMerge--explainer-dialog--line-1": {
     "messageformat": "同 {obsoleteConversationTitle} 通訊之後，你知道咗呢個號碼係屬於 {conversationTitle} 嘅。對方嘅電話冧把係保密嘅。"
   },
@@ -1741,6 +1747,9 @@
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__Search__Placeholder": {
     "messageformat": "搜尋"
+  },
+  "icu:Preferences__EditChatFolderPage__SelectChatsDialog__NoChats": {
+    "messageformat": "唔見有聊天"
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__ChatTypesSection__Title": {
     "messageformat": "聊天類型"
@@ -3512,6 +3521,9 @@
   "icu:MessageRequests--unblock-group-confirm-body": {
     "messageformat": "群組成員就可以再將你加入呢個群組。"
   },
+  "icu:MessageRequests--unblock-signal-confirm-body": {
+    "messageformat": "你會收到 Signal 嘅最新消息同資訊。"
+  },
   "icu:MessageRequests--block-and-report-spam-success-toast": {
     "messageformat": "已經舉報咗垃圾訊息同埋封鎖咗。"
   },
@@ -3526,6 +3538,9 @@
   },
   "icu:MessageRequests--block-group-confirm-body": {
     "messageformat": "你唔會再收到呢個群組嘅訊息同最新消息，而群組成員都冇得再將你加入呢個群組㗎喇。"
+  },
+  "icu:MessageRequests--block-signal-confirm-body": {
+    "messageformat": "你會再收到 Signal 嘅最新消息同資訊。"
   },
   "icu:MessageRequests--reportAndMaybeBlock": {
     "messageformat": "舉報..."
@@ -6169,9 +6184,6 @@
   "icu:Preferences__SignalAccountKeys__Description": {
     "messageformat": "請將你嘅登入資訊存放喺安全嘅地方，你需要呢個資訊先可以恢復帳戶同資料。千祈唔好同任何人分享呢個資訊。"
   },
-  "icu:Preferences__SignalAccountKeys__AccountKey": {
-    "messageformat": "帳戶金鑰"
-  },
   "icu:Preferences__SignalAccountKeys__AccountID": {
     "messageformat": "帳戶 ID"
   },
@@ -6673,6 +6685,9 @@
   "icu:Preferences--blocked-users--description": {
     "messageformat": "被封鎖咗嘅用戶唔可以打俾你或者傳送訊息俾你"
   },
+  "icu:Preferences--add-blocked": {
+    "messageformat": "加封鎖咗嘅用戶或者谷"
+  },
   "icu:Preferences--blocked-users": {
     "messageformat": "被封鎖嘅用戶"
   },
@@ -6681,6 +6696,12 @@
   },
   "icu:Preferences--blocked--blocked-on": {
     "messageformat": "喺 {blockedAt} 封鎖咗"
+  },
+  "icu:Preferences--BlockChooser--Done": {
+    "messageformat": "完成"
+  },
+  "icu:Preferences--BlockChooser--Search--Placeholder": {
+    "messageformat": "搜尋"
   },
   "icu:Preferences--signal-backups": {
     "messageformat": "Signal 安全備份"
@@ -7097,7 +7118,7 @@
     "messageformat": "請你喺 {duration} 後再試"
   },
   "icu:StandaloneRegistration--PhoneNumber--RegionCodeSelector--Label": {
-    "messageformat": "Select region code"
+    "messageformat": "揀選國家編碼"
   },
   "icu:StandaloneRegistration--PhoneNumber--placeholder": {
     "messageformat": "電話冧把"
@@ -8561,12 +8582,6 @@
   "icu:CallLinkPendingParticipantModal__DenyButtonLabel": {
     "messageformat": "拒絕加入"
   },
-  "icu:CallLinkRestrictionsSelect__Option--Off": {
-    "messageformat": "閂"
-  },
-  "icu:CallLinkRestrictionsSelect__Option--On": {
-    "messageformat": "開"
-  },
   "icu:CallLinkAddNameModal__Title": {
     "messageformat": "加入通話名稱"
   },
@@ -8614,6 +8629,39 @@
   },
   "icu:SaveMultiDialog__title": {
     "messageformat": "儲存附件"
+  },
+  "icu:EmbeddedContact__message": {
+    "messageformat": "訊息"
+  },
+  "icu:ContactDetail__message": {
+    "messageformat": "訊息"
+  },
+  "icu:ContactDetail__add-to-group": {
+    "messageformat": "加入去一個谷度"
+  },
+  "icu:ContactDetail__nickname": {
+    "messageformat": "綽號"
+  },
+  "icu:ContactDetail__note": {
+    "messageformat": "筆記"
+  },
+  "icu:email-v2": {
+    "messageformat": "電郵"
+  },
+  "icu:home-v2": {
+    "messageformat": "屋企"
+  },
+  "icu:mobile-v2": {
+    "messageformat": "手提"
+  },
+  "icu:work-v2": {
+    "messageformat": "公司"
+  },
+  "icu:phone-v2": {
+    "messageformat": "電話"
+  },
+  "icu:address-v2": {
+    "messageformat": "地址"
   },
   "icu:WhatsNew__modal-title": {
     "messageformat": "最新消息"
@@ -8781,7 +8829,7 @@
     "messageformat": "多謝你撐 Signal。你嘅捐款係我哋嘅原動力，推動我哋透過開放原始碼嘅私隱技術，保護言論自由，俾世界各地數以百萬計嘅 Signal 用戶可以安全通訊。如果你係美國居民，請保留呢張收據作為你嘅稅務記錄。Signal Technology Foundation 係根據美國《國稅法規》(IRC) 第 501c3 條所成立嘅免稅非牟利機構。聯邦稅識別號碼係 82-4506840。Signal 冇因為呢筆捐款而提供任何商品或服務。"
   },
   "icu:MessageCta__Donate": {
-    "messageformat": "Donate Now"
+    "messageformat": "立即捐款"
   },
   "icu:Donations__OfflineTooltip": {
     "messageformat": "你而家離咗線。請你連線上網去攪掂埋個捐款。"
@@ -8981,6 +9029,9 @@
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__AccessibilityLabel": {
     "messageformat": "問題描述"
   },
+  "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__Placeholder": {
+    "messageformat": "講下你遇到嘅問題"
+  },
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__HelpText": {
     "messageformat": "請提供任何同問題有關嘅詳細資料。你喺度分享嘅所有內容都會保密，同埋只會用喺協助改善 Signal 嘅通話。"
   },
@@ -9095,5 +9146,14 @@
   },
   "icu:WhatsNew__8.30--1": {
     "messageformat": "我哋亦都加入咗一個捷徑，方便你喺嘗試加入視像通話嗰陣，如果 Signal 未有權存取相機，就可以用呢個捷徑打開 Windows 嘅系統設定。想俾人睇到你，而家就更加容易做得到。"
+  },
+  "icu:WhatsNew__8.32--0": {
+    "messageformat": "而家訊息資料夾同搜尋介面亦都支援未睇嘅篩選器，咁你就可以輕鬆睇到你錯過咗啲咩。"
+  },
+  "icu:WhatsNew__8.32--1": {
+    "messageformat": "喺網絡接收差嘅情況下，提升咗上載可靠性。唔該晒，<GH3mmmbulus></GH3mmmbulus>！"
+  },
+  "icu:WhatsNew__8.32--2": {
+    "messageformat": "「(N)」捷徑對應好手指公向下嘅表情符號。為<lnicola></lnicola>修復錯誤俾個 LIKE。"
   }
 }

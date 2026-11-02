@@ -11,38 +11,29 @@ import { Time } from '../Time.dom.tsx';
 import { useNowThatUpdatesEveryMinute } from '../../hooks/useNowThatUpdatesEveryMinute.std.ts';
 
 export type Props = {
-  direction?: 'incoming' | 'outgoing';
   i18n: LocalizerType;
-  isOutlineOnlyBubble?: boolean;
   isRelativeTime?: boolean;
-  module?: string;
+  /** @deprecated */
+  className?: string;
   timestamp: number;
-  withImageNoCaption?: boolean;
   withSticker?: boolean;
   withTapToViewExpired?: boolean;
 };
 
 export function MessageTimestamp({
-  direction,
   i18n,
   isRelativeTime,
-  isOutlineOnlyBubble,
-  module,
+  className,
   timestamp,
-  withImageNoCaption,
   withSticker,
 }: Readonly<Props>): ReactElement {
   const now = useNowThatUpdatesEveryMinute();
-  const moduleName = module || 'module-timestamp';
 
   return (
     <Time
       className={classNames(
-        moduleName,
-        direction ? `${moduleName}--${direction}` : null,
-        withImageNoCaption ? `${moduleName}--with-image-no-caption` : null,
-        withSticker ? `${moduleName}--with-sticker` : null,
-        isOutlineOnlyBubble ? `${moduleName}--outline-only-bubble` : null
+        withSticker ? 'module-timestamp--with-sticker' : null,
+        className
       )}
       timestamp={timestamp}
     >

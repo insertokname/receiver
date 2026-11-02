@@ -2,6 +2,9 @@
   "icu:AxoAlertDialog.Cancel": {
     "messageformat": "कैंसिल करें"
   },
+  "icu:AxoAlertDialog.Ok": {
+    "messageformat": "ठीक है"
+  },
   "icu:AxoButton.Pending": {
     "messageformat": "पेंडिंग है"
   },
@@ -73,9 +76,6 @@
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--2": {
     "messageformat": "आपका प्राइमरी डिवाइस ही लिंक किए गए डिवाइस को मैनेज करता है। ज़्यादा से ज़्यादा 5 डिवाइस लिंक किए जा सकते हैं।"
-  },
-  "icu:LinkedDevicesOnboardingDialog__bullet--3": {
-    "messageformat": "अकाउंट सेटिंग और बैकअप सिर्फ़ आपके प्राइमरी डिवाइस पर ही मैनेज किए जा सकते हैं।"
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--3--1": {
     "messageformat": "अकाउंट सेटिंग और बैकअप को सिर्फ़ आपके प्राइमरी डिवाइस पर ही मैनेज किया जा सकता है।"
@@ -673,6 +673,9 @@
   },
   "icu:KeyTransparencyOnboardingDialog__Description": {
     "messageformat": "जिन कॉन्टैक्ट से आप फ़ोन नंबर के ज़रिए कनेक्ट हैं, उनके लिए 'की ट्रांसपेरेंसी' प्रोसेस के ज़रिए Signal अपने-आप यह पुष्टि कर लेता है कि कनेक्शन सिक्योर है या नहीं। अतिरिक्त सुरक्षा के लिए, आपके पास भी QR कोड या सेफ़्टी नंबर के ज़रिए कनेक्शन को वेरिफ़ाई करने का विकल्प मौजूद है।"
+  },
+  "icu:KeyTransparencyOnboardingDialog__Description-v2": {
+    "messageformat": "<paragraph>जिन कॉन्टैक्ट से आप फ़ोन नंबर के ज़रिए कनेक्ट हैं, उनके लिए 'की ट्रांसपेरेंसी' प्रोसेस के ज़रिए Signal अपने-आप यह पुष्टि कर लेता है कि कनेक्शन सिक्योर है या नहीं।</paragraph><paragraph>अतिरिक्त सुरक्षा के लिए, आपके पास भी QR कोड या सेफ़्टी नंबर के ज़रिए कनेक्शन को वेरिफ़ाई करने का विकल्प मौजूद है।</paragraph>"
   },
   "icu:KeyTransparencyOnboardingDialog__Continue": {
     "messageformat": "जारी रखें"
@@ -1481,6 +1484,9 @@
   "icu:ConversationMerge--learn-more": {
     "messageformat": "और जानें"
   },
+  "icu:ConversationMerge--explainer-dialog--label": {
+    "messageformat": "पुराने मैसेज मर्ज कर दिए गए हैं"
+  },
   "icu:ConversationMerge--explainer-dialog--line-1": {
     "messageformat": "{obsoleteConversationTitle} को मैसेज भेजने के बाद आपको पता चला कि यह नंबर {conversationTitle} का है। उनका फ़ोन नंबर प्राइवेट है।"
   },
@@ -1741,6 +1747,9 @@
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__Search__Placeholder": {
     "messageformat": "खोजें"
+  },
+  "icu:Preferences__EditChatFolderPage__SelectChatsDialog__NoChats": {
+    "messageformat": "कोई चैट नहीं है"
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__ChatTypesSection__Title": {
     "messageformat": "चैट के प्रकार"
@@ -3512,6 +3521,9 @@
   "icu:MessageRequests--unblock-group-confirm-body": {
     "messageformat": "ग्रुप के सदस्य आपको फिर से इस ग्रुप में जोड़ पाएंगे।"
   },
+  "icu:MessageRequests--unblock-signal-confirm-body": {
+    "messageformat": "आपको Signal अपडेट और न्यूज़ मिलती रहेंगी।"
+  },
   "icu:MessageRequests--block-and-report-spam-success-toast": {
     "messageformat": "स्पैम के तौर पर रिपोर्ट किया गया और ब्लॉक किया गया।"
   },
@@ -3526,6 +3538,9 @@
   },
   "icu:MessageRequests--block-group-confirm-body": {
     "messageformat": "इसके बाद आपको इस ग्रुप से कोई मैसेज या अपडेट नहीं मिल पाएगा। साथ ही, इसके सदस्य आपको दोबारा इस ग्रुप में नहीं जोड़ पाएंगे।"
+  },
+  "icu:MessageRequests--block-signal-confirm-body": {
+    "messageformat": "अब आपको Signal अपडेट और न्यूज़ नहीं मिलेंगी।"
   },
   "icu:MessageRequests--reportAndMaybeBlock": {
     "messageformat": "रिपोर्ट करें..."
@@ -6169,9 +6184,6 @@
   "icu:Preferences__SignalAccountKeys__Description": {
     "messageformat": "इसे सुरक्षित जगह पर रखें, अपना अकाउंट और डेटा रिकवर करने के लिए आपको अपनी लॉगिन जानकारी की ज़रूरत होती है। इसे कभी किसी को न बताएं।"
   },
-  "icu:Preferences__SignalAccountKeys__AccountKey": {
-    "messageformat": "अकाउंट की"
-  },
   "icu:Preferences__SignalAccountKeys__AccountID": {
     "messageformat": "अकाउंट ID"
   },
@@ -6673,6 +6685,9 @@
   "icu:Preferences--blocked-users--description": {
     "messageformat": "ब्लॉक किए गए यूज़र अब आपको न तो मैसेज भेज पाएंगे और न ही कॉल कर पाएंगे"
   },
+  "icu:Preferences--add-blocked": {
+    "messageformat": "ब्लॉक किया गया यूज़र या ग्रुप जोड़ें"
+  },
   "icu:Preferences--blocked-users": {
     "messageformat": "ब्लॉक किए गए यूज़र"
   },
@@ -6681,6 +6696,12 @@
   },
   "icu:Preferences--blocked--blocked-on": {
     "messageformat": "{blockedAt} को ब्लॉक किया गया"
+  },
+  "icu:Preferences--BlockChooser--Done": {
+    "messageformat": "हो गया"
+  },
+  "icu:Preferences--BlockChooser--Search--Placeholder": {
+    "messageformat": "खोजें"
   },
   "icu:Preferences--signal-backups": {
     "messageformat": "Signal सिक्योर बैकअप"
@@ -7097,7 +7118,7 @@
     "messageformat": "कृपया {duration} बाद फिर से कोशिश करें"
   },
   "icu:StandaloneRegistration--PhoneNumber--RegionCodeSelector--Label": {
-    "messageformat": "Select region code"
+    "messageformat": "देश का कोड चुनें"
   },
   "icu:StandaloneRegistration--PhoneNumber--placeholder": {
     "messageformat": "फ़ोन नंबर"
@@ -8561,12 +8582,6 @@
   "icu:CallLinkPendingParticipantModal__DenyButtonLabel": {
     "messageformat": "एंट्री नामंज़ूर करें"
   },
-  "icu:CallLinkRestrictionsSelect__Option--Off": {
-    "messageformat": "बंद करें"
-  },
-  "icu:CallLinkRestrictionsSelect__Option--On": {
-    "messageformat": "चालू करें"
-  },
   "icu:CallLinkAddNameModal__Title": {
     "messageformat": "कॉल का नाम जोड़ें"
   },
@@ -8614,6 +8629,39 @@
   },
   "icu:SaveMultiDialog__title": {
     "messageformat": "अटैचमेंट सेव करें"
+  },
+  "icu:EmbeddedContact__message": {
+    "messageformat": "मैसेज"
+  },
+  "icu:ContactDetail__message": {
+    "messageformat": "मैसेज"
+  },
+  "icu:ContactDetail__add-to-group": {
+    "messageformat": "ग्रुप में जोड़ें"
+  },
+  "icu:ContactDetail__nickname": {
+    "messageformat": "निकनेम"
+  },
+  "icu:ContactDetail__note": {
+    "messageformat": "नोट"
+  },
+  "icu:email-v2": {
+    "messageformat": "ईमेल"
+  },
+  "icu:home-v2": {
+    "messageformat": "आवास"
+  },
+  "icu:mobile-v2": {
+    "messageformat": "मोबाइल"
+  },
+  "icu:work-v2": {
+    "messageformat": "ऑफ़िस"
+  },
+  "icu:phone-v2": {
+    "messageformat": "फ़ोन"
+  },
+  "icu:address-v2": {
+    "messageformat": "पता"
   },
   "icu:WhatsNew__modal-title": {
     "messageformat": "नया क्या है"
@@ -8781,7 +8829,7 @@
     "messageformat": "Signal को सहयोग करने के लिए आपका धन्यवाद। आपका यह योगदान, ओपन सोर्स प्राइवेसी वाली टेक्नोलॉजी के ज़रिए हमारे मिशन को आगे बढ़ाने में मदद करता है। यह टेक्नोलॉजी अभिव्यक्ति की आज़ादी की रक्षा करती है और दुनिया भर के लाखों-करोड़ों लोगों को सुरक्षित तरीके से आपस में जुड़ने और बातचीत करने की सुविधा देती है। अगर आप अमेरिका से हैं, तो कृपया इस रसीद को अपने टैक्स रिकॉर्ड के लिए संभालकर रखें। Signal Technology Foundation, अमेरिका में रजिस्टर एक गैर-लाभकारी संस्था है। इसे डोनेशन देने से इंटरनल रेवेन्यू कोड की धारा 501c3 के तहत टैक्स में छूट मिलती है। हमारी फ़ेडरल टैक्स ID है: 82-4506840. Signal ने इस योगदान के बदले कोई वस्तु या सेवा प्रदान नहीं की है।"
   },
   "icu:MessageCta__Donate": {
-    "messageformat": "Donate Now"
+    "messageformat": "अभी डोनेट करें"
   },
   "icu:Donations__OfflineTooltip": {
     "messageformat": "आप ऑफ़लाइन हैं। डोनेशन पूरा करने के लिए इंटरनेट से कनेक्ट करें।"
@@ -8981,6 +9029,9 @@
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__AccessibilityLabel": {
     "messageformat": "समस्याओं का विवरण"
   },
+  "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__Placeholder": {
+    "messageformat": "अपनी समस्या बताएं"
+  },
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__HelpText": {
     "messageformat": "कृपया समस्या से जुड़ी हर एक जानकारी दें। यहां जो भी जानकारी शेयर की जाती है उसे गोपनीय रखा जाता है। इस जानकारी का इस्तेमाल सिर्फ़ Signal में कॉल की क्वालिटी को बेहतर बनाने के लिए किया जाता है।"
   },
@@ -9095,5 +9146,14 @@
   },
   "icu:WhatsNew__8.30--1": {
     "messageformat": "हमने Windows पर आपकी सिस्टम सेटिंग खोलने का एक आसान शॉर्टकट भी जोड़ा है, ताकि अगर आप वीडियो कॉल में शामिल होने की कोशिश करें और Signal के पास कैमरे का ऐक्सेस न हो, तो आप आसानी से सेटिंग बदल सकें। अब यह जानना आसान हो गया है कि आपको क्या करना होगा ताकि लोग आपको देख सकें।"
+  },
+  "icu:WhatsNew__8.32--0": {
+    "messageformat": "अब मैसेज फ़ोल्डर और सर्च इंटरफ़ेस में भी 'अनरीड' फ़िल्टर की सुविधा उपलब्ध है, जिससे आसानी से पता चल जाए कि आपसे क्या छूट गया है।"
+  },
+  "icu:WhatsNew__8.32--1": {
+    "messageformat": "खराब नेटवर्क में भी अपलोड करने की सुविधा बेहतर की गई है। सादर, <GH3mmmbulus></GH3mmmbulus>!"
+  },
+  "icu:WhatsNew__8.32--2": {
+    "messageformat": "'(N)' शॉर्टकट अब 'थम्स डाउन' इमोजी को सही ढंग से दर्शा रहा है। बग ठीक करने के लिए <lnicola></lnicola> का शुक्रिया।"
   }
 }

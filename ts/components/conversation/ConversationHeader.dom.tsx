@@ -478,6 +478,7 @@ export const ConversationHeader = memo(function ConversationHeader({
           addedByName={addedByName}
           conversationName={conversationName}
           isBlocked={conversation.isBlocked ?? false}
+          isSignalConversation={isSignalConversation ?? false}
           isReported={conversation.isReported ?? false}
           state={messageRequestState}
           acceptConversation={onConversationAccept}
@@ -1163,7 +1164,7 @@ export function CannotLeaveGroupBecauseYouAreLastAdminAlert(props: {
         'icu:ConversationHeader__CannotLeaveGroupBecauseYouAreLastAdminAlert__description'
       )}
     >
-      <AxoConfirmDialog.Cancel>{i18n('icu:ok')}</AxoConfirmDialog.Cancel>
+      <AxoConfirmDialog.Ok />
     </AxoConfirmDialog.Root>
   );
 }

@@ -38,25 +38,16 @@ export default {
   title: 'Components/Conversation/MessageTimestamp',
   argTypes: {
     timestamp: { control: { type: 'number' } },
-    module: { control: { type: 'text' } },
-    withImageNoCaption: { control: { type: 'boolean' } },
+    // oxlint-disable-next-line signal-desktop/enforce-class-name-has-styles
+    className: { control: { type: 'text' } },
     withSticker: { control: { type: 'boolean' } },
     withTapToViewExpired: { control: { type: 'boolean' } },
-    direction: {
-      control: {
-        type: 'select',
-        options: ['', 'incoming', 'outgoing'],
-      },
-    },
   },
   args: {
     i18n,
     timestamp: Date.now(),
-    module: '',
-    withImageNoCaption: false,
     withSticker: false,
     withTapToViewExpired: false,
-    direction: undefined,
   },
 } satisfies Meta<Props>;
 

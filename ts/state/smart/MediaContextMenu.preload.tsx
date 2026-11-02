@@ -1,6 +1,6 @@
 // Copyright 2026 Signal Messenger, LLC
 // SPDX-License-Identifier: AGPL-3.0-only
-import { useCallback, type ReactNode, type JSX } from 'react';
+import { useCallback, useMemo, type ReactNode, type JSX } from 'react';
 import { useSelector } from 'react-redux';
 import { MediaContextMenu } from '../../components/conversation/media-gallery/MediaContextMenu.dom.tsx';
 import { ForwardMessagesModalType } from '../../components/ForwardMessagesModal.dom.tsx';
@@ -13,7 +13,7 @@ import type {
 import type { LocalizerType } from '../../types/Util.std.ts';
 import { missingCaseError } from '../../util/missingCaseError.std.ts';
 import { strictAssert } from '../../util/assert.std.ts';
-import { startConversation } from '../../util/startConversation.dom.ts';
+import { canMessageSharedContact } from '../../util/sharedContact.std.ts';
 import { drop } from '../../util/drop.std.ts';
 import {
   applyDeleteMessage,
@@ -23,14 +23,15 @@ import {
   getConversationIdentifier,
   getAddressableMessage,
 } from '../../util/syncIdentifiers.preload.ts';
+import { isSignalConversation } from '../../util/isSignalConversation.dom.ts';
 import { getMessageById } from '../../messages/getMessageById.preload.ts';
 import { createLogger } from '../../logging/log.std.ts';
 import { singleProtoJobQueue } from '../../jobs/singleProtoJobQueue.preload.ts';
 import { MessageSender } from '../../textsecure/SendMessage.preload.ts';
 import { getIntl } from '../selectors/user.std.ts';
+import { getResolveSharedContactSelector } from '../selectors/sharedContact.dom.ts';
 import { useConversationsActions } from '../ducks/conversations.preload.ts';
 import { useGlobalModalActions } from '../ducks/globalModals.preload.ts';
-import { useLookupContact } from './ContactDetail.preload.tsx';
 
 const log = createLogger('MediaContextMenu');
 
@@ -76,13 +77,17 @@ async function doRemoveAttachment(
     return;
   }
 
+  const shouldSync =
+    window.ConversationController.doWeHaveOtherDevices() &&
+    !isSignalConversation(convo.attributes);
+
   const { attachment } = mediaItem;
 
   if (message.get('attachments')?.length === 1) {
     log.info(`Deleting whole message ${mediaItem.message.id}`);
     await applyDeleteMessage(message.attributes);
 
-    if (window.ConversationController.doWeHaveOtherDevices()) {
+    if (shouldSync) {
       await singleProtoJobQueue.add(
         MessageSender.getDeleteForMeSyncMessage([
           {
@@ -116,7 +121,7 @@ async function doRemoveAttachment(
       return;
     }
 
-    if (window.ConversationController.doWeHaveOtherDevices()) {
+    if (shouldSync) {
       await singleProtoJobQueue.add(
         MessageSender.getDeleteForMeSyncMessage([
           {
@@ -151,11 +156,11 @@ function AttachmentContextMenu({
   const saveAttachment = useCallback(() => {
     strictAssert(mediaItem.attachment.path, 'Attachment must be downloaded');
 
-    doSaveAttachment(mediaItem.attachment, mediaItem.message.sentAt);
+    void doSaveAttachment(mediaItem.attachment, mediaItem.message.sentAt);
   }, [doSaveAttachment, mediaItem.attachment, mediaItem.message.sentAt]);
 
   const forwardAttachment = useCallback(() => {
-    toggleForwardMessagesModal({
+    void toggleForwardMessagesModal({
       type: ForwardMessagesModalType.ForwardAttachment,
       draft: {
         originalMessageId: mediaItem.message.id,
@@ -193,7 +198,7 @@ function LinkPreviewContextMenu({
   const { toggleForwardMessagesModal } = useGlobalModalActions();
 
   const forwardAttachment = useCallback(() => {
-    toggleForwardMessagesModal({
+    void toggleForwardMessagesModal({
       type: ForwardMessagesModalType.ForwardAttachment,
       draft: {
         originalMessageId: mediaItem.message.id,
@@ -226,11 +231,19 @@ function ContactContextMenu({
   ...rest
 }: SpecificMenuPropsType<ContactMediaItemType>) {
   const { toggleForwardMessagesModal } = useGlobalModalActions();
+  const { startConversationWithSharedContact } = useConversationsActions();
+  const resolveSharedContact = useSelector(getResolveSharedContactSelector);
 
-  const contact = useLookupContact(mediaItem.contact);
+  const contact = useMemo(
+    () => ({
+      ...mediaItem.contact,
+      resolution: resolveSharedContact(mediaItem.contact),
+    }),
+    [mediaItem.contact, resolveSharedContact]
+  );
 
   const forwardAttachment = useCallback(() => {
-    toggleForwardMessagesModal({
+    void toggleForwardMessagesModal({
       type: ForwardMessagesModalType.ForwardAttachment,
       draft: {
         originalMessageId: mediaItem.message.id,
@@ -242,20 +255,14 @@ function ContactContextMenu({
   }, [mediaItem.message.id, toggleForwardMessagesModal]);
 
   const messageContact = useCallback(() => {
-    strictAssert(
-      contact.firstNumber != null && contact.serviceId != null,
-      'Expected service id for contact'
-    );
-    startConversation(contact.firstNumber, contact.serviceId);
-  }, [contact]);
+    startConversationWithSharedContact(contact);
+  }, [contact, startConversationWithSharedContact]);
 
   return (
     <MediaContextMenu
       {...rest}
       messageContact={
-        contact.firstNumber != null && contact.serviceId != null
-          ? messageContact
-          : undefined
+        canMessageSharedContact(contact) ? messageContact : undefined
       }
       forwardAttachment={forwardAttachment}
     >
@@ -275,7 +282,7 @@ export function SmartMediaContextMenu({
   const { message } = mediaItem;
 
   const showMessage = useCallback(() => {
-    showConversation({
+    void showConversation({
       conversationId: message.conversationId,
       messageId: message.id,
     });

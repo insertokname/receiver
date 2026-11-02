@@ -63,6 +63,7 @@ import {
   toUntaggedPni,
 } from '../types/ServiceId.std.ts';
 import { isAciString } from '../util/isAciString.std.ts';
+import { isSignalServiceId } from '../types/SignalConversation.std.ts';
 import * as Stickers from '../types/Stickers.preload.ts';
 import type {
   StoryDistributionWithMembersType,
@@ -351,6 +352,8 @@ export async function toContactRecord(
   const verified = conversation.get('verified');
   const nicknameGivenName = conversation.get('nicknameGivenName');
   const nicknameFamilyName = conversation.get('nicknameFamilyName');
+  const sharedGivenName = conversation.get('sharedGivenName');
+  const sharedFamilyName = conversation.get('sharedFamilyName');
   const hideStory = conversation.get('hideStory');
 
   const blockedServiceId = serviceId
@@ -384,6 +387,10 @@ export async function toContactRecord(
     profileKey: profileKey ? Bytes.fromBase64(profileKey) : null,
     givenName: conversation.get('profileName') || null,
     familyName: conversation.get('profileFamilyName') || null,
+    sharedName:
+      sharedGivenName || sharedFamilyName
+        ? { given: sharedGivenName || null, family: sharedFamilyName || null }
+        : null,
     nickname:
       nicknameGivenName || nicknameFamilyName
         ? {
@@ -825,9 +832,9 @@ export function toStoryDistributionListRecord(
   };
 }
 
-export function toStickerPackRecord(
+export function toInstalledStickerPackRecord(
   stickerPack: StickerPackInfoType
-): Proto.StickerPackRecord.Params {
+): Proto.InstalledStickerPackRecord.Params {
   const $unknown = fromStorageUnknownFields(stickerPack.storageUnknownFields);
 
   if (stickerPack.uninstalledAt !== undefined) {
@@ -1109,7 +1116,7 @@ type RecordClassObject = {
   [key: string]: any;
 };
 
-function areNicknamesEqual(
+function areNamesEqual(
   local: Proto.ContactRecord.Name.Params | undefined | null,
   remote: Proto.ContactRecord.Name.Params | undefined | null
 ): boolean {
@@ -1170,10 +1177,10 @@ function logRecordChanges(
       continue;
     }
 
-    if (key === 'nickname') {
-      const areEqual = areNicknamesEqual(localValue, remoteValue);
+    if (key === 'nickname' || key === 'sharedName') {
+      const areEqual = areNamesEqual(localValue, remoteValue);
       if (!areEqual) {
-        details.push('nickname');
+        details.push(key);
       }
       continue;
     }
@@ -1528,6 +1535,11 @@ export async function mergeContactRecord(
     return { shouldDrop: true, details: ['our own uuid'] };
   }
 
+  // Release notes chat state is synced via AccountRecord, not ContactRecord
+  if (isSignalServiceId(serviceId)) {
+    return { shouldDrop: true, details: ['signal release notes aci'] };
+  }
+
   const { conversation } = window.ConversationController.maybeMergeContacts({
     aci,
     e164,
@@ -1645,6 +1657,8 @@ export async function mergeContactRecord(
   conversation.set({
     nicknameGivenName: dropNull(contactRecord.nickname?.given || null),
     nicknameFamilyName: dropNull(contactRecord.nickname?.family || null),
+    sharedGivenName: dropNull(contactRecord.sharedName?.given || null),
+    sharedFamilyName: dropNull(contactRecord.sharedName?.family || null),
     note: dropNull(contactRecord.note),
   });
 
@@ -2297,19 +2311,23 @@ export async function mergeAccountRecord(
   });
 
   let needsProfileFetch = false;
-  if (profileKey && profileKey.byteLength > 0) {
+  if (
+    !window.ConversationController.areWePrimaryDevice() &&
+    profileKey &&
+    profileKey.byteLength > 0
+  ) {
     needsProfileFetch = await ourConversation.setProfileKey(
       Bytes.toBase64(profileKey),
       { viaStorageServiceSync: true, reason: 'mergeAccountRecord' }
     );
-
-    const avatarUrl = dropNull(accountRecord.avatarUrlPath || null);
-    await ourConversation.setAndMaybeFetchProfileAvatar({
-      avatarUrl,
-      decryptionKey: profileKey,
-    });
-    await itemStorage.put('avatarUrl', avatarUrl);
   }
+
+  const avatarUrl = dropNull(accountRecord.avatarUrlPath || null);
+  await ourConversation.setAndMaybeFetchProfileAvatar({
+    avatarUrl,
+    decryptionKey: profileKey,
+  });
+  await itemStorage.put('avatarUrl', avatarUrl);
 
   applyAvatarColor(ourConversation, accountRecord.avatarColor);
 
@@ -2524,17 +2542,19 @@ export async function mergeStoryDistributionListRecord(
   };
 }
 
-export async function mergeStickerPackRecord(
+export async function mergeInstalledStickerPackRecord(
   storageID: string,
   storageVersion: number,
-  stickerPackRecord: Proto.StickerPackRecord
+  stickerPackRecord: Proto.InstalledStickerPackRecord
 ): Promise<MergeResultType> {
   const redactedStorageID = redactExtendedStorageID({
     storageID,
     storageVersion,
   });
   if (!stickerPackRecord.packId || Bytes.isEmpty(stickerPackRecord.packId)) {
-    throw new Error(`No stickerPackRecord identifier for ${redactedStorageID}`);
+    throw new Error(
+      `No installedStickerPackRecord identifier for ${redactedStorageID}`
+    );
   }
 
   const id = Bytes.toHex(stickerPackRecord.packId);
@@ -2544,7 +2564,7 @@ export async function mergeStickerPackRecord(
   const details = logRecordChanges(
     localStickerPack == null
       ? undefined
-      : toStickerPackRecord(localStickerPack),
+      : toInstalledStickerPackRecord(localStickerPack),
     stickerPackRecord
   );
 
@@ -2574,7 +2594,9 @@ export async function mergeStickerPackRecord(
       !stickerPackRecord.packKey ||
       Bytes.isEmpty(stickerPackRecord.packKey)
     ) {
-      throw new Error(`No stickerPackRecord key for ${redactedStorageID}`);
+      throw new Error(
+        `No installedStickerPackRecord key for ${redactedStorageID}`
+      );
     }
 
     stickerPack = {

@@ -2,6 +2,9 @@
   "icu:AxoAlertDialog.Cancel": {
     "messageformat": "Cancel·la"
   },
+  "icu:AxoAlertDialog.Ok": {
+    "messageformat": "D'acord"
+  },
   "icu:AxoButton.Pending": {
     "messageformat": "Pendent"
   },
@@ -73,9 +76,6 @@
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--2": {
     "messageformat": "El teu dispositiu principal gestiona què està vinculat, i pots connectar fins a 5 dispositius."
-  },
-  "icu:LinkedDevicesOnboardingDialog__bullet--3": {
-    "messageformat": "Els ajustos del compte només es poden editar des del teu dispositiu principal, com els ajustos del compte i les còpies de seguretat."
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--3--1": {
     "messageformat": "Els ajustos del compte i les còpies de seguretat només es poden administrar des del teu dispositiu principal."
@@ -673,6 +673,9 @@
   },
   "icu:KeyTransparencyOnboardingDialog__Description": {
     "messageformat": "Pels contactes amb qui hagis connectat a través d'un número de telèfon, Signal pot confirmar automàticament si la connexió és segura mitjançant un procés anomenat transparència de claus. Per a més seguretat, pots continuar verificant manualment les teves connexions mitjançant un codi QR o comparant els números de seguretat."
+  },
+  "icu:KeyTransparencyOnboardingDialog__Description-v2": {
+    "messageformat": "<paragraph>Pels contactes amb qui hagis connectat a través d'un número de telèfon, Signal pot confirmar automàticament si la connexió és segura mitjançant un procés anomenat transparència de claus. </paragraph><paragraph>Per a més seguretat, pots continuar verificant manualment les teves connexions mitjançant un codi QR o comparant els números de seguretat.</paragraph>"
   },
   "icu:KeyTransparencyOnboardingDialog__Continue": {
     "messageformat": "Continua"
@@ -1481,6 +1484,9 @@
   "icu:ConversationMerge--learn-more": {
     "messageformat": "Més informació"
   },
+  "icu:ConversationMerge--explainer-dialog--label": {
+    "messageformat": "Historial dels missatges combinat"
+  },
   "icu:ConversationMerge--explainer-dialog--line-1": {
     "messageformat": "Després d'enviar un missatge a{obsoleteConversationTitle}, has sabut que aquest número pertany a {conversationTitle}. El seu número de telèfon és privat."
   },
@@ -1741,6 +1747,9 @@
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__Search__Placeholder": {
     "messageformat": "Cerca"
+  },
+  "icu:Preferences__EditChatFolderPage__SelectChatsDialog__NoChats": {
+    "messageformat": "No hi ha xats"
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__ChatTypesSection__Title": {
     "messageformat": "Tipus de xat"
@@ -3512,6 +3521,9 @@
   "icu:MessageRequests--unblock-group-confirm-body": {
     "messageformat": "Els membres del grup us podran afegir a aquest grup un altre cop."
   },
+  "icu:MessageRequests--unblock-signal-confirm-body": {
+    "messageformat": "Rebràs actualitzacions i notícies de Signal."
+  },
   "icu:MessageRequests--block-and-report-spam-success-toast": {
     "messageformat": "Se n'ha informat com a spam i s'ha bloquejat."
   },
@@ -3526,6 +3538,9 @@
   },
   "icu:MessageRequests--block-group-confirm-body": {
     "messageformat": "Ja no rebreu cap més missatge ni novetat d'aquest grup i els membres no us hi podran tornar a afegir."
+  },
+  "icu:MessageRequests--block-signal-confirm-body": {
+    "messageformat": "Ja no rebràs actualitzacions i notícies de Signal."
   },
   "icu:MessageRequests--reportAndMaybeBlock": {
     "messageformat": "Denunciar…"
@@ -6169,9 +6184,6 @@
   "icu:Preferences__SignalAccountKeys__Description": {
     "messageformat": "Guarda-ho en un lloc segur, la teva informació d'inici de sessió és necessària per recuperar el teu compte i les teves dades. No ho comparteixis amb ningú."
   },
-  "icu:Preferences__SignalAccountKeys__AccountKey": {
-    "messageformat": "Clau del compte"
-  },
   "icu:Preferences__SignalAccountKeys__AccountID": {
     "messageformat": "ID del compte"
   },
@@ -6673,6 +6685,9 @@
   "icu:Preferences--blocked-users--description": {
     "messageformat": "Les persones bloquejades no podran trucar-te ni enviar-te missatges"
   },
+  "icu:Preferences--add-blocked": {
+    "messageformat": "Afegir usuari o grup a la llista de bloquejats"
+  },
   "icu:Preferences--blocked-users": {
     "messageformat": "Usuaris bloquejats"
   },
@@ -6681,6 +6696,12 @@
   },
   "icu:Preferences--blocked--blocked-on": {
     "messageformat": "Bloquejat el {blockedAt}"
+  },
+  "icu:Preferences--BlockChooser--Done": {
+    "messageformat": "Fet"
+  },
+  "icu:Preferences--BlockChooser--Search--Placeholder": {
+    "messageformat": "Cerca"
   },
   "icu:Preferences--signal-backups": {
     "messageformat": "Còpies de seguretat segures de Signal"
@@ -7097,7 +7118,7 @@
     "messageformat": "Si us plau, torna-ho a provar en {duration}"
   },
   "icu:StandaloneRegistration--PhoneNumber--RegionCodeSelector--Label": {
-    "messageformat": "Select region code"
+    "messageformat": "Trieu un codi internacional"
   },
   "icu:StandaloneRegistration--PhoneNumber--placeholder": {
     "messageformat": "Número de telèfon"
@@ -8561,12 +8582,6 @@
   "icu:CallLinkPendingParticipantModal__DenyButtonLabel": {
     "messageformat": "Denegar l'entrada"
   },
-  "icu:CallLinkRestrictionsSelect__Option--Off": {
-    "messageformat": "Inactiu"
-  },
-  "icu:CallLinkRestrictionsSelect__Option--On": {
-    "messageformat": "Actiu"
-  },
   "icu:CallLinkAddNameModal__Title": {
     "messageformat": "Afegir nom de trucada"
   },
@@ -8614,6 +8629,39 @@
   },
   "icu:SaveMultiDialog__title": {
     "messageformat": "Guardar fitxers adjunts"
+  },
+  "icu:EmbeddedContact__message": {
+    "messageformat": "Missatge"
+  },
+  "icu:ContactDetail__message": {
+    "messageformat": "Missatge"
+  },
+  "icu:ContactDetail__add-to-group": {
+    "messageformat": "Afegeix-lo a un grup"
+  },
+  "icu:ContactDetail__nickname": {
+    "messageformat": "Sobrenom"
+  },
+  "icu:ContactDetail__note": {
+    "messageformat": "Notes"
+  },
+  "icu:email-v2": {
+    "messageformat": "Correu electrònic"
+  },
+  "icu:home-v2": {
+    "messageformat": "Casa"
+  },
+  "icu:mobile-v2": {
+    "messageformat": "Mòbil"
+  },
+  "icu:work-v2": {
+    "messageformat": "Feina"
+  },
+  "icu:phone-v2": {
+    "messageformat": "Telèfon"
+  },
+  "icu:address-v2": {
+    "messageformat": "Adreça"
   },
   "icu:WhatsNew__modal-title": {
     "messageformat": "Què hi ha de nou"
@@ -8781,7 +8829,7 @@
     "messageformat": "Gràcies per donar suport a Signal. Amb la teva contribució, ens ajudes a complir la nostra missió de protegir la llibertat d'expressió i fer possible una comunicació segura per a milions de persones arreu del món mitjançant una tecnologia de codi obert centrada en la privacitat. Si vius als Estats Units, conserva aquest rebut per als teus registres fiscals. Signal Technology Foundation és una organització sense ànim de lucre exempta d'impostos als Estats Units segons la secció 501c3 del codi tributari dels Estats Units (Internal Revenue Code). El nostre número d'identificació fiscal federal és el 82–4506840. Signal no ha proporcionat cap bé o servei a canvi d'aquesta contribució."
   },
   "icu:MessageCta__Donate": {
-    "messageformat": "Donate Now"
+    "messageformat": "Fer donació ara"
   },
   "icu:Donations__OfflineTooltip": {
     "messageformat": "No tens connexió. Connecta't a Internet per completar una donació."
@@ -8981,6 +9029,9 @@
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__AccessibilityLabel": {
     "messageformat": "Descripció del problema"
   },
+  "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__Placeholder": {
+    "messageformat": "Descriu el problema"
+  },
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__HelpText": {
     "messageformat": "Inclou qualsevol detall rellevant sobre el problema. Tot el que comparteixis per aquí es mantindrà privat i només s'utilitzarà per ajudar-nos a millorar les trucades a Signal."
   },
@@ -9095,5 +9146,14 @@
   },
   "icu:WhatsNew__8.30--1": {
     "messageformat": "També hem afegit una drecera d'allò més pràctica per obrir els ajustos del sistema a Windows si, en intentar unir-te a una videotrucada, Signal no té permís per accedir a la teva càmera."
+  },
+  "icu:WhatsNew__8.32--0": {
+    "messageformat": "Ara també pots filtrar els teus missatges per llegir a les carpetes de missatges i la interfície de cerca."
+  },
+  "icu:WhatsNew__8.32--1": {
+    "messageformat": "Millores en la càrrega d'arxius amb mala connexió a la xarxa. Gràcies, <GH3mmmbulus></GH3mmmbulus>!"
+  },
+  "icu:WhatsNew__8.32--2": {
+    "messageformat": "La drecera &quot;(N)&quot; correspon a l'emoji del polze cap avall. Moltes gràcies a <lnicola></lnicola> per solucionar l'error!"
   }
 }

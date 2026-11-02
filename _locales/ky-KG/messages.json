@@ -2,6 +2,9 @@
   "icu:AxoAlertDialog.Cancel": {
     "messageformat": "Жок"
   },
+  "icu:AxoAlertDialog.Ok": {
+    "messageformat": "OK"
+  },
   "icu:AxoButton.Pending": {
     "messageformat": "Күтүүдө"
   },
@@ -73,9 +76,6 @@
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--2": {
     "messageformat": "Негизги түзмөгүңүз кайсы түзмөктөрдү байлоо керектигин чечет. 5 түзмөккө чейин байлай аласыз."
-  },
-  "icu:LinkedDevicesOnboardingDialog__bullet--3": {
-    "messageformat": "Аккаунттун айрым параметрлерин жана камдык көчүрмөлөрдү негизги түзмөгүңүздө гана тескей аласыз."
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--3--1": {
     "messageformat": "Аккаунттун параметрлерин жана камдык көчүрмөлөрдү негизги түзмөгүңүздө гана башкара аласыз."
@@ -673,6 +673,9 @@
   },
   "icu:KeyTransparencyOnboardingDialog__Description": {
     "messageformat": "Телефон номери аркылуу байланышкан адамдар үчүн Signal байланыштын коопсуздугун \"ачкычтын ачык-айкындыгы\" деген процесс менен текшерет. Кошумча коопсуздук үчүн, туташууларды QR кодун колдонуп же коопсуздук номерлерин салыштырып кол менен текшере аласыз."
+  },
+  "icu:KeyTransparencyOnboardingDialog__Description-v2": {
+    "messageformat": "<paragraph>Телефон номери аркылуу байланышкан адамдар үчүн Signal байланыштын коопсуздугун &quot;ачкычтын ачык-айкындыгы&quot; деген процесс менен текшерет.</paragraph><paragraph>Кошумча коопсуздук үчүн, туташууларды QR кодун колдонуп же коопсуздук номерлерин салыштырып кол менен текшере аласыз.</paragraph>"
   },
   "icu:KeyTransparencyOnboardingDialog__Continue": {
     "messageformat": "Улантуу"
@@ -1481,6 +1484,9 @@
   "icu:ConversationMerge--learn-more": {
     "messageformat": "Кененирээк маалымат"
   },
+  "icu:ConversationMerge--explainer-dialog--label": {
+    "messageformat": "Билдирүүлөр таржымалы бириктирилди"
+  },
   "icu:ConversationMerge--explainer-dialog--line-1": {
     "messageformat": "{obsoleteConversationTitle} менен жазышкандан кийин, бул номердин ээси {conversationTitle} экенин билдиңиз. Бул телефон номери купуя."
   },
@@ -1741,6 +1747,9 @@
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__Search__Placeholder": {
     "messageformat": "Издөө"
+  },
+  "icu:Preferences__EditChatFolderPage__SelectChatsDialog__NoChats": {
+    "messageformat": "Эч нерсе жок"
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__ChatTypesSection__Title": {
     "messageformat": "Маектин түрлөрү"
@@ -3512,6 +3521,9 @@
   "icu:MessageRequests--unblock-group-confirm-body": {
     "messageformat": "Топтун мүчөлөрү сизди кайра ушул топко кошо алышат."
   },
+  "icu:MessageRequests--unblock-signal-confirm-body": {
+    "messageformat": "Signal жаңыртууларын жана жаңылыктарын аласыз."
+  },
   "icu:MessageRequests--block-and-report-spam-success-toast": {
     "messageformat": "Спам деп кабарланып, колдонуучу бөгөттөлдү."
   },
@@ -3526,6 +3538,9 @@
   },
   "icu:MessageRequests--block-group-confirm-body": {
     "messageformat": "Сиз мындан ары бул топтон билдирүүлөрдү же жаңыртууларды албайсыз жана мүчөлөр сизди кайра бул топко кошо алышпайт."
+  },
+  "icu:MessageRequests--block-signal-confirm-body": {
+    "messageformat": "Мындан ары Signal жаңыртууларын жана жаңылыктарын албайсыз."
   },
   "icu:MessageRequests--reportAndMaybeBlock": {
     "messageformat": "Кабарлоо..."
@@ -6169,9 +6184,6 @@
   "icu:Preferences__SignalAccountKeys__Description": {
     "messageformat": "Бул маалыматты коопсуз жерге сактап коюңуз. Аккаунтуңузду жана андагы нерселерди калыбына келтирүү үчүн керек болот. Эч ким менен бөлүшпөңүз."
   },
-  "icu:Preferences__SignalAccountKeys__AccountKey": {
-    "messageformat": "Аккаунттун ачкычы"
-  },
   "icu:Preferences__SignalAccountKeys__AccountID": {
     "messageformat": "Аккаунттун идентификатору"
   },
@@ -6673,6 +6685,9 @@
   "icu:Preferences--blocked-users--description": {
     "messageformat": "Бөгөттөлгөн колдонуучулар сизге чала да алышпайт, билдирүү да жөнөтө алышпайт"
   },
+  "icu:Preferences--add-blocked": {
+    "messageformat": "Бөгөттөлгөн колдонуучуну же топту кошуу"
+  },
   "icu:Preferences--blocked-users": {
     "messageformat": "Бөгөттөлгөн колдонуучулар"
   },
@@ -6681,6 +6696,12 @@
   },
   "icu:Preferences--blocked--blocked-on": {
     "messageformat": "Качан бөгөттөлгөн: {blockedAt}"
+  },
+  "icu:Preferences--BlockChooser--Done": {
+    "messageformat": "Бүттү"
+  },
+  "icu:Preferences--BlockChooser--Search--Placeholder": {
+    "messageformat": "Издөө"
   },
   "icu:Preferences--signal-backups": {
     "messageformat": "Signal'дын Коопсуз камдык көчүрмөлөрү"
@@ -7097,7 +7118,7 @@
     "messageformat": "{duration} кийин кайталап көрүңүз"
   },
   "icu:StandaloneRegistration--PhoneNumber--RegionCodeSelector--Label": {
-    "messageformat": "Select region code"
+    "messageformat": "Өлкөнүн кодун көрсөтүңүз"
   },
   "icu:StandaloneRegistration--PhoneNumber--placeholder": {
     "messageformat": "Телефон номериңиз"
@@ -8561,12 +8582,6 @@
   "icu:CallLinkPendingParticipantModal__DenyButtonLabel": {
     "messageformat": "Четке кагуу"
   },
-  "icu:CallLinkRestrictionsSelect__Option--Off": {
-    "messageformat": "Өчүк"
-  },
-  "icu:CallLinkRestrictionsSelect__Option--On": {
-    "messageformat": "Күйүк"
-  },
   "icu:CallLinkAddNameModal__Title": {
     "messageformat": "Чалуунун аталышын кошуу"
   },
@@ -8614,6 +8629,39 @@
   },
   "icu:SaveMultiDialog__title": {
     "messageformat": "Тиркемелерди сактоо"
+  },
+  "icu:EmbeddedContact__message": {
+    "messageformat": "Билдирүү"
+  },
+  "icu:ContactDetail__message": {
+    "messageformat": "Билдирүү"
+  },
+  "icu:ContactDetail__add-to-group": {
+    "messageformat": "Топко кошуу"
+  },
+  "icu:ContactDetail__nickname": {
+    "messageformat": "Ылакап ат"
+  },
+  "icu:ContactDetail__note": {
+    "messageformat": "Эскертүүлөр"
+  },
+  "icu:email-v2": {
+    "messageformat": "электрондук почта"
+  },
+  "icu:home-v2": {
+    "messageformat": "Башкы бет"
+  },
+  "icu:mobile-v2": {
+    "messageformat": "Мобилдик"
+  },
+  "icu:work-v2": {
+    "messageformat": "Жумуш"
+  },
+  "icu:phone-v2": {
+    "messageformat": "телефон"
+  },
+  "icu:address-v2": {
+    "messageformat": "Дарек"
   },
   "icu:WhatsNew__modal-title": {
     "messageformat": "Жаңылыктар"
@@ -8781,7 +8829,7 @@
     "messageformat": "Signal'ды колдогонуңуз үчүн чоң рахмат! Салым кошуу менен, баштапкы коду ачык купуялык технологиялары аркылуу дүйнө жүзүндөгү миллиондогон адамдарга өз оюн эркин билдирип, коопсуз шарттарда баарлашуу мүмкүнчүлүгүн берүү миссиябызды жайылтканга жардам бересиз. Эгер Америка Кошмо Штаттарынын тургуну болсоңуз, бул дүмүрчөктү салык органдарына көрсөтүү үчүн сактап коюңуз. Signal Technology фонду Ички кирешелер кодексинин 501(c)(3) бөлүмү боюнча салыктан бошотулган коммерциялык эмес уюм. Федералдык салык идентификаторубуз 82-4506840. Signal бул кайрымдуулук үчүн эч кандай товар же кызмат көрсөткөн жок."
   },
   "icu:MessageCta__Donate": {
-    "messageformat": "Donate Now"
+    "messageformat": "Колдоо көрсөтүү"
   },
   "icu:Donations__OfflineTooltip": {
     "messageformat": "Интернет жок. Интернетке туташып, салымыңызды аягына чыгарыңыз."
@@ -8981,6 +9029,9 @@
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__AccessibilityLabel": {
     "messageformat": "Маселелер тууралуу учкай маалымат"
   },
+  "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__Placeholder": {
+    "messageformat": "Маселе тууралуу айтып бериңиз"
+  },
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__HelpText": {
     "messageformat": "Маселеге байланыштуу нерселерди жазыңыз. Ушул жерде бөлүшкөн нерселериңиздин баары купуя сакталып, Signal'дагы чалуулардын сапатын жакшыртуу үчүн колдонулат."
   },
@@ -9095,5 +9146,14 @@
   },
   "icu:WhatsNew__8.30--1": {
     "messageformat": "Ошондой эле, видеочалууга кошулайын деп жатканда Signal колдонмосунун камерага уруксаты жок болсо, Windows параметрлерин дароо ачуучу ыңгайлуу баскыч кошуп койдук. Эми башкалар сизди көрө алышы үчүн эмне кылуу керектигин оңой эле түшүнөсүз."
+  },
+  "icu:WhatsNew__8.32--0": {
+    "messageformat": "Окула элек билдирүүлөр чыпкасы эми билдирүүлөр папкаларында жана издөө интерфейсинде да иштейт. Эми өткөрүп жиберген нерселерди оңой көрө аласыз."
+  },
+  "icu:WhatsNew__8.32--1": {
+    "messageformat": "Интернет начар болгон учурларда да файлдар жүктөлө берет. Чоң рахмат, <GH3mmmbulus></GH3mmmbulus>!"
+  },
+  "icu:WhatsNew__8.32--2": {
+    "messageformat": "&quot;(N)&quot; деген ыкчам баскыч эми ылдый карап турган бармакты билдирет. Мүчүлүштүктү оңдогон <lnicola></lnicola> ыраазычылык билдирип, бармакты өйдө көтөрөбүз."
   }
 }

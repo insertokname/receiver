@@ -2,6 +2,9 @@
   "icu:AxoAlertDialog.Cancel": {
     "messageformat": "ยกเลิก"
   },
+  "icu:AxoAlertDialog.Ok": {
+    "messageformat": "ตกลง"
+  },
   "icu:AxoButton.Pending": {
     "messageformat": "รอดำเนินการ"
   },
@@ -73,9 +76,6 @@
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--2": {
     "messageformat": "ใช้อุปกรณ์หลักจัดการอุปกรณ์ที่เชื่อมโยงอยู่ทั้งหมด โดยสามารถเชื่อมโยงอุปกรณ์ได้สูงสุด 5 เครื่อง"
-  },
-  "icu:LinkedDevicesOnboardingDialog__bullet--3": {
-    "messageformat": "การตั้งค่าเกี่ยวกับบัญชี (ซึ่งรวมถึงการตั้งค่าบัญชีและการสำรองข้อมูล) จะต้องใช้อุปกรณ์หลักในการจัดการเท่านั้น"
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--3--1": {
     "messageformat": "สามารถจัดการการตั้งค่าบัญชีและการสำรองข้อมูลได้บนอุปกรณ์หลักเท่านั้น"
@@ -673,6 +673,9 @@
   },
   "icu:KeyTransparencyOnboardingDialog__Description": {
     "messageformat": "หากคุณและผู้ติดต่อเชื่อมโยงกันผ่านทางหมายเลขโทรศัพท์ Signal จะสามารถใช้ขั้นตอนที่เรียกว่า Key Transparency ในการยืนยันความปลอดภัยของเครือข่ายโดยอัตโนมัติ เพื่อความปลอดภัยยิ่งขึ้น คุณยังคงสามารถตรวจยืนยันเครือข่ายด้วยตนเองผ่านทางคิวอาร์โค้ดหรือโดยการเทียบหมายเลขความปลอดภัย"
+  },
+  "icu:KeyTransparencyOnboardingDialog__Description-v2": {
+    "messageformat": "<paragraph>หากคุณและผู้ติดต่อเชื่อมโยงกันผ่านทางหมายเลขโทรศัพท์ Signal จะสามารถใช้ขั้นตอนที่เรียกว่า Key Transparency ในการยืนยันความปลอดภัยของเครือข่ายโดยอัตโนมัติ</paragraph><paragraph>เพื่อความปลอดภัยยิ่งขึ้น คุณยังคงสามารถตรวจยืนยันเครือข่ายด้วยตนเองผ่านทางคิวอาร์โค้ดหรือโดยการเทียบหมายเลขความปลอดภัย</paragraph>"
   },
   "icu:KeyTransparencyOnboardingDialog__Continue": {
     "messageformat": "ดำเนินการต่อ"
@@ -1481,6 +1484,9 @@
   "icu:ConversationMerge--learn-more": {
     "messageformat": "เรียนรู้เพิ่มเติม"
   },
+  "icu:ConversationMerge--explainer-dialog--label": {
+    "messageformat": "รวมประวัติการส่งข้อความเข้าด้วยกันแล้ว"
+  },
   "icu:ConversationMerge--explainer-dialog--line-1": {
     "messageformat": "หลังจากที่ส่งข้อความกับ {obsoleteConversationTitle} คุณได้ทราบว่าหมายเลขนี้เป็นของ {conversationTitle} หมายเลขโทรศัพท์นี้เป็นข้อมูลส่วนตัว"
   },
@@ -1741,6 +1747,9 @@
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__Search__Placeholder": {
     "messageformat": "ค้นหา"
+  },
+  "icu:Preferences__EditChatFolderPage__SelectChatsDialog__NoChats": {
+    "messageformat": "ไม่มีแชท"
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__ChatTypesSection__Title": {
     "messageformat": "ประเภทของแชท"
@@ -3512,6 +3521,9 @@
   "icu:MessageRequests--unblock-group-confirm-body": {
     "messageformat": "สมาชิกกลุ่มจะสามารถเพิ่มคุณเข้ากลุ่มนี้อีก"
   },
+  "icu:MessageRequests--unblock-signal-confirm-body": {
+    "messageformat": "คุณจะได้รับข้อมูลอัปเดตและข่าวสารจาก Signal"
+  },
   "icu:MessageRequests--block-and-report-spam-success-toast": {
     "messageformat": "รายงานว่าเป็นสแปมและบล็อกแล้ว"
   },
@@ -3526,6 +3538,9 @@
   },
   "icu:MessageRequests--block-group-confirm-body": {
     "messageformat": "คุณจะไม่ได้รับข้อความหรือข่าวสารจากกลุ่มนี้อีกต่อไป และสมาชิกจะไม่สามารถเพิ่มคุณกลับเข้ามาในกลุ่มนี้ได้อีก"
+  },
+  "icu:MessageRequests--block-signal-confirm-body": {
+    "messageformat": "คุณจะไม่ได้รับข้อมูลอัปเดตและข่าวสารจาก Signal อีกต่อไป"
   },
   "icu:MessageRequests--reportAndMaybeBlock": {
     "messageformat": "รายงาน..."
@@ -6169,9 +6184,6 @@
   "icu:Preferences__SignalAccountKeys__Description": {
     "messageformat": "คุณจำเป็นต้องใช้ข้อมูลลงชื่อเข้าใช้นี้ในการกู้คืนบัญชีและข้อมูล โปรดเก็บไว้ในที่ปลอดภัยและอย่าเปิดเผยกับใคร"
   },
-  "icu:Preferences__SignalAccountKeys__AccountKey": {
-    "messageformat": "กุญแจเข้าบัญชี"
-  },
   "icu:Preferences__SignalAccountKeys__AccountID": {
     "messageformat": "ไอดีบัญชี"
   },
@@ -6673,6 +6685,9 @@
   "icu:Preferences--blocked-users--description": {
     "messageformat": "ผู้ใช้ที่ถูกบล็อกจะไม่สามารถโทรหรือส่งข้อความหาคุณได้"
   },
+  "icu:Preferences--add-blocked": {
+    "messageformat": "เพิ่มผู้ใช้หรือกลุ่มที่ต้องการบล็อก"
+  },
   "icu:Preferences--blocked-users": {
     "messageformat": "ผู้ใช้ที่ถูกบล็อก"
   },
@@ -6681,6 +6696,12 @@
   },
   "icu:Preferences--blocked--blocked-on": {
     "messageformat": "บล็อกเมื่อ {blockedAt}"
+  },
+  "icu:Preferences--BlockChooser--Done": {
+    "messageformat": "เสร็จสิ้น"
+  },
+  "icu:Preferences--BlockChooser--Search--Placeholder": {
+    "messageformat": "ค้นหา"
   },
   "icu:Preferences--signal-backups": {
     "messageformat": "การสำรองข้อมูลที่ปลอดภัยของ Signal"
@@ -7097,7 +7118,7 @@
     "messageformat": "โปรดลองอีกครั้งใน {duration}"
   },
   "icu:StandaloneRegistration--PhoneNumber--RegionCodeSelector--Label": {
-    "messageformat": "Select region code"
+    "messageformat": "เลือกรหัสประเทศ"
   },
   "icu:StandaloneRegistration--PhoneNumber--placeholder": {
     "messageformat": "หมายเลขโทรศัพท์"
@@ -8561,12 +8582,6 @@
   "icu:CallLinkPendingParticipantModal__DenyButtonLabel": {
     "messageformat": "ปฏิเสธการเข้าร่วม"
   },
-  "icu:CallLinkRestrictionsSelect__Option--Off": {
-    "messageformat": "ปิด"
-  },
-  "icu:CallLinkRestrictionsSelect__Option--On": {
-    "messageformat": "เปิด"
-  },
   "icu:CallLinkAddNameModal__Title": {
     "messageformat": "เพิ่มชื่อการโทร"
   },
@@ -8614,6 +8629,39 @@
   },
   "icu:SaveMultiDialog__title": {
     "messageformat": "บันทึกไฟล์แนบ"
+  },
+  "icu:EmbeddedContact__message": {
+    "messageformat": "ข้อความ"
+  },
+  "icu:ContactDetail__message": {
+    "messageformat": "ข้อความ"
+  },
+  "icu:ContactDetail__add-to-group": {
+    "messageformat": "เพิ่มเข้ากลุ่ม"
+  },
+  "icu:ContactDetail__nickname": {
+    "messageformat": "ชื่อเล่น"
+  },
+  "icu:ContactDetail__note": {
+    "messageformat": "บันทึก"
+  },
+  "icu:email-v2": {
+    "messageformat": "อีเมล"
+  },
+  "icu:home-v2": {
+    "messageformat": "บ้าน"
+  },
+  "icu:mobile-v2": {
+    "messageformat": "มือถือ"
+  },
+  "icu:work-v2": {
+    "messageformat": "ที่ทำงาน"
+  },
+  "icu:phone-v2": {
+    "messageformat": "โทรศัพท์"
+  },
+  "icu:address-v2": {
+    "messageformat": "ที่อยู่"
   },
   "icu:WhatsNew__modal-title": {
     "messageformat": "ฟีเจอร์และบริการใหม่ๆ"
@@ -8781,7 +8829,7 @@
     "messageformat": "ขอบคุณที่ร่วมสนับสนุน Signal การบริจาคของคุณจะช่วยเป็นพลังให้กับภารกิจในการปกป้องการแสดงออกอย่างอิสระ พร้อมมอบการสื่อสารที่ปลอดภัยและไร้พรมแดนให้แก่ผู้คนหลายล้านทั่วโลกผ่านเทคโนโลยีความเป็นส่วนตัวแบบโอเพนซอร์ส หากคุณเป็นผู้พำนักอาศัยในสหรัฐอเมริกา โปรดเก็บใบเสร็จนี้ไว้เพื่อเป็นหลักฐานในการชำระภาษี โดย Signal Technology Foundation เป็นองค์กรที่ไม่แสวงหากำไรและได้รับการยกเว้นภาษีภายใต้มาตรา 501c3 ของประมวลกฎหมายภาษีอากรของสหรัฐอเมริกา หมายเลขประจำตัวผู้เสียภาษีให้แก่รัฐบาลกลางของเราคือ 82-4506840 ทั้งนี้ Signal ไม่มีสินค้าหรือบริการเป็นการตอบแทนสำหรับการบริจาคนี้"
   },
   "icu:MessageCta__Donate": {
-    "messageformat": "Donate Now"
+    "messageformat": "บริจาคเลย"
   },
   "icu:Donations__OfflineTooltip": {
     "messageformat": "คุณออฟไลน์อยู่ โปรดเชื่อมต่ออินเทอร์เน็ตเพื่อดำเนินการบริจาค"
@@ -8981,6 +9029,9 @@
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__AccessibilityLabel": {
     "messageformat": "คำอธิบายเกี่ยวกับปัญหา"
   },
+  "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__Placeholder": {
+    "messageformat": "อธิบายถึงปัญหาที่คุณพบ"
+  },
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__HelpText": {
     "messageformat": "โปรดแจ้งรายละเอียดต่างๆ ที่เกี่ยวข้องกับปัญหาที่คุณพบ ข้อมูลทั้งหมดของคุณจะถูกรวบรวมอย่างเป็นส่วนตัว รวมถึงจะถูกนำไปใช้เพื่อจุดประสงค์ในการปรับปรุงและพัฒนาการโทรของ Signal เท่านั้น"
   },
@@ -9095,5 +9146,14 @@
   },
   "icu:WhatsNew__8.30--1": {
     "messageformat": "พร้อมเพิ่มทางลัดใหม่ที่ให้คุณเปิดหน้าการตั้งค่าระบบบน Windows ได้สะดวกยิ่งขึ้นเมื่อคุณต้องการเข้าร่วมวิดีโอคอลแต่ Signal ยังไม่ได้รับสิทธิ์เข้าถึงกล้อง"
+  },
+  "icu:WhatsNew__8.32--0": {
+    "messageformat": "เพิ่มการรองรับให้คุณสามารถใช้ตัวกรองข้อความที่ยังไม่ได้อ่านได้ในโฟลเดอร์ข้อความและระบบค้นหาด้วยเช่นกัน"
+  },
+  "icu:WhatsNew__8.32--1": {
+    "messageformat": "ปรับปรุงความเสถียรในการอัปโหลดแม้เครือข่ายจะมีสัญญาณไม่ดี ขอขอบคุณ <GH3mmmbulus></GH3mmmbulus>!"
+  },
+  "icu:WhatsNew__8.32--2": {
+    "messageformat": "แก้ไขให้ปุ่มลัด (N) กลายเป็นอีโมจิ &quot;ไม่ชอบ&quot; (thumbs down) ได้อย่างถูกต้องแล้ว ขอยกนิ้วให้ <lnicola></lnicola> ที่ช่วยจัดการบั๊กในครั้งนี้"
   }
 }

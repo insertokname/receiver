@@ -298,11 +298,10 @@ export function CallingLobby({
 
         <div
           className={classNames(
-            'module-calling__camera-is-off module-CallingLobby__camera-is-off',
-            `module-CallingLobby__camera-is-off--${
-              // oxlint-disable-next-line signal-desktop/enforce-tw
-              shouldShowLocalVideo ? 'invisible' : 'visible'
-            }`
+            'module-calling__camera-is-off',
+            shouldShowLocalVideo
+              ? 'module-CallingLobby__camera-is-off--invisible'
+              : 'module-CallingLobby__camera-is-off--visible'
           )}
         >
           {i18n('icu:calling__your-video-is-off')}

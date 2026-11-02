@@ -190,7 +190,12 @@ git commit -m "libsignal v<new>"
 ```
 
 `git describe` in the submodule names the tag it is on
-(`v0.103.0-3-g...`: three commits on top of v0.103.0).
+(`v0.105.4-3-g...`: three commits on top of v0.105.4). The rebase can
+conflict where upstream added networking code next to code the fork leaves
+out of the WebAssembly build (`#[cfg(not(target_family = "wasm"))]`), and
+new networking code may need that attribute too: `bash web/libsignal/build.sh`
+says where. Dependencies that libsignal's TypeScript gains
+(`node/package.json`) go into `web/package.json`.
 
 **webtor-rs**, whenever upstream has something new: *Web upstream* also
 fails, once a week, when upstream `main` has commits the pinned revision

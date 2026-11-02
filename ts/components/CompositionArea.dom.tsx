@@ -1046,6 +1046,7 @@ export const CompositionArea = memo(function CompositionArea({
         isBlocked={isBlocked}
         isHidden={isHidden}
         isReported={isReported}
+        isSignalConversation={isSignalConversation}
         acceptConversation={acceptConversation}
         reportSpam={reportSpam}
         blockAndReportSpam={blockAndReportSpam}
@@ -1058,17 +1059,12 @@ export const CompositionArea = memo(function CompositionArea({
   if (conversationType === 'direct' && isSmsOnlyOrUnregistered) {
     return (
       <div
-        className={classNames([
-          'CompositionArea',
-          'CompositionArea--sms-only',
-          isFetchingUUID ? 'CompositionArea--pending' : null,
-        ])}
+        className={classNames(['CompositionArea', 'CompositionArea--sms-only'])}
       >
         {isFetchingUUID ? (
           <Spinner
             ariaLabel={i18n('icu:CompositionArea--sms-only__spinner-label')}
             role="presentation"
-            moduleClassName="module-image-spinner"
             svgSize="small"
           />
         ) : (
@@ -1101,6 +1097,7 @@ export const CompositionArea = memo(function CompositionArea({
         i18n={i18n}
         isBlocked={isBlocked}
         isReported={isReported}
+        isSignalConversation={isSignalConversation}
         acceptConversation={acceptConversation}
         reportSpam={reportSpam}
         blockAndReportSpam={blockAndReportSpam}
@@ -1303,11 +1300,7 @@ export const CompositionArea = memo(function CompositionArea({
         })}
       >
         {!large ? leftHandSideButtonsFragment : null}
-        <div
-          className={classNames('CompositionArea__input', {
-            'CompositionArea__input--padded': !isViewOnceActive && large,
-          })}
-        >
+        <div className="CompositionArea__input">
           <CompositionInput
             conversationId={conversationId}
             disabled={isDisabled}

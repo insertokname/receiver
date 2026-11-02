@@ -185,7 +185,7 @@ export function GroupMemberLabelEditor({
             }
             maxLengthCount={STRING_GRAPHEME_LIMIT}
             maxByteCount={STRING_BYTE_LIMIT}
-            moduleClassName="GroupMemberLabelEditor"
+            className="GroupMemberLabelEditor"
             onChange={value => {
               if (!value) {
                 setLabelEmoji(undefined);
@@ -261,8 +261,7 @@ export function GroupMemberLabelEditor({
                   renderAudioAttachment={() => <div />}
                   doubleCheckMissingQuoteReference={noop}
                   messageExpanded={noop}
-                  checkForAccount={noop}
-                  startConversation={noop}
+                  startConversationWithSharedContact={noop}
                   showConversation={noop}
                   openGiftBadge={noop}
                   pushPanelForConversation={noop}

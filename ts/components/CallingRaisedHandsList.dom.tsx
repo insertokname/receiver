@@ -72,7 +72,7 @@ export function CallingRaisedHandsList({
   return (
     <ModalHost
       modalName="CallingRaisedHandsList"
-      moduleClassName="CallingRaisedHandsList"
+      className="CallingRaisedHandsList__modal"
       onClose={onClose}
     >
       <div className="CallingRaisedHandsList module-calling-participants-list">
@@ -102,7 +102,7 @@ export function CallingRaisedHandsList({
                 className="module-calling-participants-list__contact"
                 key={conversation.serviceId ?? index}
               >
-                <div className="CallingRaisedHandsList__AvatarAndName module-calling-participants-list__avatar-and-name">
+                <div className="module-calling-participants-list__avatar-and-name">
                   <Avatar
                     avatarPlaceholderGradient={
                       conversation.avatarPlaceholderGradient
@@ -123,7 +123,7 @@ export function CallingRaisedHandsList({
                     </span>
                   ) : (
                     <ContactName
-                      module="module-calling-participants-list__name"
+                      className="module-calling-participants-list__name"
                       title={conversation.title}
                     />
                   )}

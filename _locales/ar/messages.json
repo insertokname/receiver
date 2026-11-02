@@ -2,6 +2,9 @@
   "icu:AxoAlertDialog.Cancel": {
     "messageformat": "إلغاء"
   },
+  "icu:AxoAlertDialog.Ok": {
+    "messageformat": "موافق"
+  },
   "icu:AxoButton.Pending": {
     "messageformat": "مُعلَّق"
   },
@@ -73,9 +76,6 @@
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--2": {
     "messageformat": "جهازك الأساسي هو المسؤول عن إدارة الأجهزة المُرتبِطة، ويمكنك ربط حتى 5 أجهزة."
-  },
-  "icu:LinkedDevicesOnboardingDialog__bullet--3": {
-    "messageformat": "تُدَار بعض إعدادات الحساب على جهازك الأساسي فقط، بما في ذلك إعدادات الحساب والنسخ الاحتياطية."
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--3--1": {
     "messageformat": "يمكن إدارة إعدادات الحساب والنسخ الاحتياطية من جهازك الرئيسي فقط."
@@ -673,6 +673,9 @@
   },
   "icu:KeyTransparencyOnboardingDialog__Description": {
     "messageformat": "بالنسبة لجهات الاتصال المُرتبطين بك عبر رقم الهاتف، يُمكن لتطبيق سيجنال التحقُّق تلقائيًا من أمان الاتصال باستخدام عملية تُسمّى شفافية المفاتيح. لِتعزيز الأمان، يُمكنك التحقُّق من الاتصالات يدويًا باستخدام كود الـ QR أو من خلال مقارنة أرقام الأمان."
+  },
+  "icu:KeyTransparencyOnboardingDialog__Description-v2": {
+    "messageformat": "<paragraph>بالنسبة لِجهات الاتصال المُرتبطة بك عبر رقم الهاتف، يُمكن لتطبيق سيجنال التحقُّق تلقائيًا من أمان الاتصال باستخدام عملية تُسمّى شفافية المفاتيح.</paragraph><paragraph>لِتعزيز الأمان، يُمكنك التحقُّق من الاتصالات يدويًا باستخدام كود الـ QR أو من خلال مقارنة أرقام الأمان.</paragraph>"
   },
   "icu:KeyTransparencyOnboardingDialog__Continue": {
     "messageformat": "متابعة"
@@ -1481,6 +1484,9 @@
   "icu:ConversationMerge--learn-more": {
     "messageformat": "اعرف المزيد"
   },
+  "icu:ConversationMerge--explainer-dialog--label": {
+    "messageformat": "تمَّ دمج سِجل الرسائل"
+  },
   "icu:ConversationMerge--explainer-dialog--line-1": {
     "messageformat": "بعد تبادل الرسائل مع {obsoleteConversationTitle}، أدركتَ أن هذا الرقم يعود إلى {conversationTitle}. رقم هاتفه خاص."
   },
@@ -1741,6 +1747,9 @@
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__Search__Placeholder": {
     "messageformat": "بحث"
+  },
+  "icu:Preferences__EditChatFolderPage__SelectChatsDialog__NoChats": {
+    "messageformat": "لا توجد دردشات"
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__ChatTypesSection__Title": {
     "messageformat": "أنواع الدردشات"
@@ -3512,6 +3521,9 @@
   "icu:MessageRequests--unblock-group-confirm-body": {
     "messageformat": "سيتمكن أعضاء المجموعة من إضافتك لهذه المجموعة مرّة أخرى."
   },
+  "icu:MessageRequests--unblock-signal-confirm-body": {
+    "messageformat": "ستتلقى تحديثات وآخر أخبار سيجنال."
+  },
   "icu:MessageRequests--block-and-report-spam-success-toast": {
     "messageformat": "تمَّ الإبلاغ والحظر."
   },
@@ -3526,6 +3538,9 @@
   },
   "icu:MessageRequests--block-group-confirm-body": {
     "messageformat": "لن تصلك بعد الآن رسائل أو تحديثات من هذه المجموعة، ولن يتمكن الأعضاء من إضافتك مرّة أخرى إليها."
+  },
+  "icu:MessageRequests--block-signal-confirm-body": {
+    "messageformat": "لن تتلقى تحديثات وآخر أخبار سيجنال."
   },
   "icu:MessageRequests--reportAndMaybeBlock": {
     "messageformat": "الإبلاغ…"
@@ -6169,9 +6184,6 @@
   "icu:Preferences__SignalAccountKeys__Description": {
     "messageformat": "احفظ هذا في مكانٍ آمن، فبيانات تسجيل الدخول مطلوبة لاستعادة حسابك وبياناتك. لا تشاركه مع أي أحد."
   },
-  "icu:Preferences__SignalAccountKeys__AccountKey": {
-    "messageformat": "مفتاح الحساب"
-  },
   "icu:Preferences__SignalAccountKeys__AccountID": {
     "messageformat": "مُعرِّف الحساب"
   },
@@ -6673,6 +6685,9 @@
   "icu:Preferences--blocked-users--description": {
     "messageformat": "لن يتمكّن المُستخدِمون المحظورون من مكالمتك أو مراستك"
   },
+  "icu:Preferences--add-blocked": {
+    "messageformat": "إضافة المُستخدِم المحظور أو المجموعة المحظورة"
+  },
   "icu:Preferences--blocked-users": {
     "messageformat": "المُستخدمون المحظورون"
   },
@@ -6681,6 +6696,12 @@
   },
   "icu:Preferences--blocked--blocked-on": {
     "messageformat": "محظور في {blockedAt}"
+  },
+  "icu:Preferences--BlockChooser--Done": {
+    "messageformat": "تمّ"
+  },
+  "icu:Preferences--BlockChooser--Search--Placeholder": {
+    "messageformat": "بحث"
   },
   "icu:Preferences--signal-backups": {
     "messageformat": "النسخ الاحتياطية الآمنة على سيجنال"
@@ -7097,7 +7118,7 @@
     "messageformat": "يُرجى المحاولة لاحقًا {duration}"
   },
   "icu:StandaloneRegistration--PhoneNumber--RegionCodeSelector--Label": {
-    "messageformat": "Select region code"
+    "messageformat": "اختر كود الدولة"
   },
   "icu:StandaloneRegistration--PhoneNumber--placeholder": {
     "messageformat": "رقم الهاتف"
@@ -8561,12 +8582,6 @@
   "icu:CallLinkPendingParticipantModal__DenyButtonLabel": {
     "messageformat": "رفض الإدخال"
   },
-  "icu:CallLinkRestrictionsSelect__Option--Off": {
-    "messageformat": "في حالة إيقاف"
-  },
-  "icu:CallLinkRestrictionsSelect__Option--On": {
-    "messageformat": "في حالة تشغيل"
-  },
   "icu:CallLinkAddNameModal__Title": {
     "messageformat": "إضافة اسم المكالمة"
   },
@@ -8614,6 +8629,39 @@
   },
   "icu:SaveMultiDialog__title": {
     "messageformat": "حفظ الملفات المُرفَقة"
+  },
+  "icu:EmbeddedContact__message": {
+    "messageformat": "ابدأ المراسلة"
+  },
+  "icu:ContactDetail__message": {
+    "messageformat": "ابدأ المراسلة"
+  },
+  "icu:ContactDetail__add-to-group": {
+    "messageformat": "إضافة إلى مجموعة"
+  },
+  "icu:ContactDetail__nickname": {
+    "messageformat": "اسم مستعار"
+  },
+  "icu:ContactDetail__note": {
+    "messageformat": "ملاحظات"
+  },
+  "icu:email-v2": {
+    "messageformat": "البريد الإلكتروني"
+  },
+  "icu:home-v2": {
+    "messageformat": "العنوان"
+  },
+  "icu:mobile-v2": {
+    "messageformat": "الهاتف المحمول"
+  },
+  "icu:work-v2": {
+    "messageformat": "العمل"
+  },
+  "icu:phone-v2": {
+    "messageformat": "رقم الهاتف"
+  },
+  "icu:address-v2": {
+    "messageformat": "العنوان"
   },
   "icu:WhatsNew__modal-title": {
     "messageformat": "ما هو جديد"
@@ -8781,7 +8829,7 @@
     "messageformat": "شكرًا لك على دعم سيجنال. تساعدنا مساهمتكم على دعم مهمة حماية حرية التعبير وتمكين التواصل العالمي الآمن لملايين الأشخاص حول العالم، وذلك من خلال تقنية الخصوصية مفتوحة المصدر. إذا كُنتَ من المقيمين بالولايات المتحدة الأمريكية، يُرجى الاحتفاظ بهذا الإيصال لتقديمه إلى مصلحة الضرائب. مؤسسة سيجنال‬ للتكنولوجيا هي منظمة غير ربحية معفاة من الضرائب ومُسجَّلة في الولايات المتحدة ضمن البند 501c3 من قانون الإيرادات الداخلية. مُعرِّفنا الضريبي هو 4506840-82. لا يُقدِّم سيجنال أي بضائع أو خدمات مقابل هذه المساهمة."
   },
   "icu:MessageCta__Donate": {
-    "messageformat": "Donate Now"
+    "messageformat": "تبرَّع الآن"
   },
   "icu:Donations__OfflineTooltip": {
     "messageformat": "أنت غير متصل بالإنترنت. يُرجى الاتصال بالإنترنت لإكمال التبرُّع."
@@ -8981,6 +9029,9 @@
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__AccessibilityLabel": {
     "messageformat": "وصف المشكلات"
   },
+  "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__Placeholder": {
+    "messageformat": "صِف مشكلتك"
+  },
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__HelpText": {
     "messageformat": "يُرجى مشاركة كافة التفاصيل المتعلقة بالمشكلة. ستظل جميع المعلومات التي تشاركها هنا سرية، وسَتُستخدَم لتحسين مكالمات سيجنال فقط."
   },
@@ -9095,5 +9146,14 @@
   },
   "icu:WhatsNew__8.30--1": {
     "messageformat": "أضفنا أيضًا اختصارًا ملائمًا لفتح إعدادات النظام على ويندوز إذا حاولت الانضمام إلى مكالمة فيديو وسيجنال لا يملك إذن الوصول إلى الكاميرا. أصبح الآن من السهل رؤية ما يجب عليك فعله ليراك الناس."
+  },
+  "icu:WhatsNew__8.32--0": {
+    "messageformat": "أصبح فلتر الرسائل غير المقروءة مدعومًا الآن في مجلدات الرسائل وقائمة البحث، لكي تطّلع على ما فاتك بسهولة."
+  },
+  "icu:WhatsNew__8.32--1": {
+    "messageformat": "استقرار أفضل للتحميل حتى في ظروف الاتصال الضعيفة بالإنترنت. شكرًا، <GH3mmmbulus></GH3mmmbulus>!"
+  },
+  "icu:WhatsNew__8.32--2": {
+    "messageformat": "اختصار &quot;(N)&quot; أصبح يشير للرمز التعبيري &quot;الإبهام لأسفل&quot;. يشير إبهام لفوق لـ <lnicola></lnicola> على إصلاح الخطأ."
   }
 }

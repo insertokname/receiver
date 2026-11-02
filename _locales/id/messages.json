@@ -2,6 +2,9 @@
   "icu:AxoAlertDialog.Cancel": {
     "messageformat": "Batal"
   },
+  "icu:AxoAlertDialog.Ok": {
+    "messageformat": "OK"
+  },
   "icu:AxoButton.Pending": {
     "messageformat": "Tertunda"
   },
@@ -73,9 +76,6 @@
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--2": {
     "messageformat": "Anda bisa menghubungkan hingga 5 perangkat dan mengelolanya dari perangkat utama."
-  },
-  "icu:LinkedDevicesOnboardingDialog__bullet--3": {
-    "messageformat": "Pengaturan akun, termasuk cadangan, hanya dapat dikelola di perangkat utama Anda."
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--3--1": {
     "messageformat": "Pengaturan akun dan cadangan hanya dapat dikelola di perangkat utama Anda."
@@ -673,6 +673,9 @@
   },
   "icu:KeyTransparencyOnboardingDialog__Description": {
     "messageformat": "Untuk kontak yang terhubung dengan Anda melalui nomor telepon, Signal dapat mengonfirmasi otomatis apakah koneksinya aman lewat suatu proses yang disebut transparansi kunci. Untuk tambahan keamanan, koneksi masih dapat diverifikasi manual menggunakan kode QR atau dengan cara membandingkan nomor keamanan."
+  },
+  "icu:KeyTransparencyOnboardingDialog__Description-v2": {
+    "messageformat": "<paragraph>Untuk kontak yang terhubung dengan Anda melalui nomor telepon, Signal dapat otomatis mengonfirmasi apakah koneksinya aman lewat suatu proses yang disebut transparansi kunci.</paragraph><paragraph>Untuk tambahan keamanan, koneksi masih dapat diverifikasi manual menggunakan kode QR atau dengan cara membandingkan nomor keamanan.</paragraph>"
   },
   "icu:KeyTransparencyOnboardingDialog__Continue": {
     "messageformat": "Lanjutkan"
@@ -1481,6 +1484,9 @@
   "icu:ConversationMerge--learn-more": {
     "messageformat": "Pelajari Lebih Lanjut"
   },
+  "icu:ConversationMerge--explainer-dialog--label": {
+    "messageformat": "Riwayat pesan digabungkan"
+  },
   "icu:ConversationMerge--explainer-dialog--line-1": {
     "messageformat": "Setelah berkirim pesan dengan {obsoleteConversationTitle}, Anda mengetahui nomor ini milik {conversationTitle}. Nomor telepon mereka bersifat pribadi."
   },
@@ -1741,6 +1747,9 @@
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__Search__Placeholder": {
     "messageformat": "Cari"
+  },
+  "icu:Preferences__EditChatFolderPage__SelectChatsDialog__NoChats": {
+    "messageformat": "Tidak ada chat"
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__ChatTypesSection__Title": {
     "messageformat": "Jenis chat"
@@ -3512,6 +3521,9 @@
   "icu:MessageRequests--unblock-group-confirm-body": {
     "messageformat": "Anggota grup dapat mengundang Anda kembali ke dalam grup."
   },
+  "icu:MessageRequests--unblock-signal-confirm-body": {
+    "messageformat": "Anda akan menerima info terbaru dan berita dari Signal."
+  },
   "icu:MessageRequests--block-and-report-spam-success-toast": {
     "messageformat": "Dilaporkan sebagai spam dan diblokir."
   },
@@ -3526,6 +3538,9 @@
   },
   "icu:MessageRequests--block-group-confirm-body": {
     "messageformat": "Anda tidak lagi dapat menerima pesan atau pembaruan dari grup ini dan anggota tidak akan dapat menambahkan Anda ke grup ini lagi."
+  },
+  "icu:MessageRequests--block-signal-confirm-body": {
+    "messageformat": "Anda tidak akan menerima lagi info terbaru dan berita dari Signal."
   },
   "icu:MessageRequests--reportAndMaybeBlock": {
     "messageformat": "Laporkan …"
@@ -6169,9 +6184,6 @@
   "icu:Preferences__SignalAccountKeys__Description": {
     "messageformat": "Simpan di tempat aman. Info login ini diperlukan untuk memulihkan akun dan data Anda. Jangan bagikan kepada siapa pun."
   },
-  "icu:Preferences__SignalAccountKeys__AccountKey": {
-    "messageformat": "Kunci akun"
-  },
   "icu:Preferences__SignalAccountKeys__AccountID": {
     "messageformat": "ID Akun"
   },
@@ -6673,6 +6685,9 @@
   "icu:Preferences--blocked-users--description": {
     "messageformat": "Pengguna yang diblokir tidak akan bisa menelepon atau mengirimi Anda pesan"
   },
+  "icu:Preferences--add-blocked": {
+    "messageformat": "Tambahkan Pengguna atau Grup yang Diblokir"
+  },
   "icu:Preferences--blocked-users": {
     "messageformat": "Pengguna Diblokir"
   },
@@ -6681,6 +6696,12 @@
   },
   "icu:Preferences--blocked--blocked-on": {
     "messageformat": "Diblokir pada {blockedAt}"
+  },
+  "icu:Preferences--BlockChooser--Done": {
+    "messageformat": "Selesai"
+  },
+  "icu:Preferences--BlockChooser--Search--Placeholder": {
+    "messageformat": "Cari"
   },
   "icu:Preferences--signal-backups": {
     "messageformat": "Signal Secure Backups"
@@ -7097,7 +7118,7 @@
     "messageformat": "Coba lagi dalam {duration}"
   },
   "icu:StandaloneRegistration--PhoneNumber--RegionCodeSelector--Label": {
-    "messageformat": "Select region code"
+    "messageformat": "Pilih kode negara"
   },
   "icu:StandaloneRegistration--PhoneNumber--placeholder": {
     "messageformat": "Nomor telepon"
@@ -8561,12 +8582,6 @@
   "icu:CallLinkPendingParticipantModal__DenyButtonLabel": {
     "messageformat": "Tolak entri"
   },
-  "icu:CallLinkRestrictionsSelect__Option--Off": {
-    "messageformat": "Nonaktif"
-  },
-  "icu:CallLinkRestrictionsSelect__Option--On": {
-    "messageformat": "Aktif"
-  },
   "icu:CallLinkAddNameModal__Title": {
     "messageformat": "Tambahkan nama panggilan"
   },
@@ -8614,6 +8629,39 @@
   },
   "icu:SaveMultiDialog__title": {
     "messageformat": "Simpan lampiran"
+  },
+  "icu:EmbeddedContact__message": {
+    "messageformat": "Pesan"
+  },
+  "icu:ContactDetail__message": {
+    "messageformat": "Pesan"
+  },
+  "icu:ContactDetail__add-to-group": {
+    "messageformat": "Tambahkan ke grup"
+  },
+  "icu:ContactDetail__nickname": {
+    "messageformat": "Nama panggilan"
+  },
+  "icu:ContactDetail__note": {
+    "messageformat": "Catatan"
+  },
+  "icu:email-v2": {
+    "messageformat": "Email"
+  },
+  "icu:home-v2": {
+    "messageformat": "Rumah"
+  },
+  "icu:mobile-v2": {
+    "messageformat": "Seluler"
+  },
+  "icu:work-v2": {
+    "messageformat": "Kerja"
+  },
+  "icu:phone-v2": {
+    "messageformat": "Telepon"
+  },
+  "icu:address-v2": {
+    "messageformat": "Alamat"
   },
   "icu:WhatsNew__modal-title": {
     "messageformat": "Yang Baru"
@@ -8781,7 +8829,7 @@
     "messageformat": "Terima kasih telah mendukung Signal. Kontribusi Anda membantu misi kami untuk melindungi kebebasan berekspresi dan memungkinkan komunikasi yang aman bagi jutaan pengguna di seluruh dunia, lewat dukungan teknologi privasi sumber terbuka. Jika Anda warga Amerika Serikat, harap simpan resi ini untuk pencatatan pajak. Signal Technology Foundation adalah organisasi nirlaba bebas pajak di Amerika Serikat menurut pasal 501c3 Internal Revenue Code (IRC). Federal Tax ID kami 82-4506840. Signal tidak menyediakan barang atau layanan apa pun sebagai kompensasi atas kontribusi ini."
   },
   "icu:MessageCta__Donate": {
-    "messageformat": "Donate Now"
+    "messageformat": "Donasi Sekarang"
   },
   "icu:Donations__OfflineTooltip": {
     "messageformat": "Anda sedang offline. Hubungkan perangkat ke internet untuk menyelesaikan donasi."
@@ -8981,6 +9029,9 @@
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__AccessibilityLabel": {
     "messageformat": "Deskripsi masalah"
   },
+  "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__Placeholder": {
+    "messageformat": "Jelaskan masalah yang Anda alami"
+  },
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__HelpText": {
     "messageformat": "Harap sertakan detail apa pun yang terkait dengan masalah ini. Semua informasi yang Anda bagikan akan dijaga kerahasiaannya dan hanya akan digunakan untuk meningkatkan kualitas panggilan di Signal."
   },
@@ -9095,5 +9146,14 @@
   },
   "icu:WhatsNew__8.30--1": {
     "messageformat": "Kami juga menambahkan pintasan praktis ke pengaturan sistem di Windows, jadi Anda dapat dengan mudah memberikan akses kamera ke Signal saat mencoba bergabung ke video call."
+  },
+  "icu:WhatsNew__8.32--0": {
+    "messageformat": "Filter belum dibaca kini juga didukung di folder pesan dan antarmuka pencarian."
+  },
+  "icu:WhatsNew__8.32--1": {
+    "messageformat": "Pengunggahan kini tetap andal meski koneksi jaringan buruk. Terima kasih, <GH3mmmbulus></GH3mmmbulus>!"
+  },
+  "icu:WhatsNew__8.32--2": {
+    "messageformat": "Pintasan &quot;(N)&quot; kini mengarah dengan benar ke emoji jempol ke bawah. Apresiasi untuk <lnicola></lnicola> atas perbaikan bug ini."
   }
 }

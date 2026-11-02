@@ -67,7 +67,7 @@ export function ContactSpoofingReviewDialogPerson({
 
   const name = (
     <ContactName
-      module="module-ContactSpoofingReviewDialogPerson__info__contact-name"
+      className="module-ContactSpoofingReviewDialogPerson__info__contact-name"
       title={conversation.title}
     />
   );
@@ -79,7 +79,6 @@ export function ContactSpoofingReviewDialogPerson({
         badge={getPreferredBadge(conversation.badges)}
         conversationType={conversation.type}
         size={AvatarSize.FORTY_EIGHT}
-        className="module-ContactSpoofingReviewDialogPerson__avatar"
         i18n={i18n}
         theme={theme}
         onClick={onClick}

@@ -158,7 +158,7 @@ export type PropsType = {
   hangUpActiveCall: (reason: string) => void;
   togglePip: () => void;
   toggleCallLinkPendingParticipantModal: (contactId: string) => void;
-  toggleScreenRecordingPermissionsDialog: () => unknown;
+  toggleScreenRecordingPermissionsDialog: (open: boolean) => void;
   toggleSelfViewExpanded: () => unknown;
   toggleSettings: () => void;
   pauseVoiceNotePlayer: () => void;
@@ -512,14 +512,15 @@ function ActiveCallManager({
         toggleSelfViewExpanded={toggleSelfViewExpanded}
         toggleSettings={toggleSettings}
       />
-      {presentingSourcesAvailable && presentingSourcesAvailable.length ? (
-        <CallingSelectPresentingSourcesModal
-          i18n={i18n}
-          presentingSourcesAvailable={presentingSourcesAvailable}
-          selectPresentingSource={selectPresentingSource}
-          cancelPresenting={cancelPresenting}
-        />
-      ) : null}
+      {presentingSourcesAvailable &&
+        presentingSourcesAvailable.length !== 0 && (
+          <CallingSelectPresentingSourcesModal
+            i18n={i18n}
+            sources={presentingSourcesAvailable}
+            onSourceSelect={selectPresentingSource}
+            onCancel={cancelPresenting}
+          />
+        )}
       {settingsDialogOpen && renderDeviceSelection()}
       {showParticipantsList &&
         (activeCall.callMode === CallMode.Adhoc && callLink ? (

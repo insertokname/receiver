@@ -2,6 +2,9 @@
   "icu:AxoAlertDialog.Cancel": {
     "messageformat": "Zrušiť"
   },
+  "icu:AxoAlertDialog.Ok": {
+    "messageformat": "OK"
+  },
   "icu:AxoButton.Pending": {
     "messageformat": "Čaká na spracovanie"
   },
@@ -73,9 +76,6 @@
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--2": {
     "messageformat": "Vaše hlavné zariadenie určuje, ktoré ďalšie zariadenia sú s ním prepojené, pričom môžete prepojiť až 5 ďalších zariadení."
-  },
-  "icu:LinkedDevicesOnboardingDialog__bullet--3": {
-    "messageformat": "Nastavenia účtu sa spravujú iba na vašom hlavnom zariadení, vrátane nastavení účtu a záloh."
   },
   "icu:LinkedDevicesOnboardingDialog__bullet--3--1": {
     "messageformat": "Nastavenia účtu a zálohy je možné spravovať iba na vašom hlavnom zariadení."
@@ -673,6 +673,9 @@
   },
   "icu:KeyTransparencyOnboardingDialog__Description": {
     "messageformat": "V prípade kontaktov, s ktorými ste prepojení prostredníctvom telefónneho čísla, dokáže Signal automaticky overiť, či je pripojenie bezpečné, prostredníctvom procesu nazývaného transparentnosť kľúča. Pre vyššiu bezpečnosť môžete pripojenie overiť aj manuálne pomocou QR kódu alebo porovnaním bezpečnostných čísel."
+  },
+  "icu:KeyTransparencyOnboardingDialog__Description-v2": {
+    "messageformat": "<paragraph>V prípade kontaktov, s ktorými ste prepojení pomocou telefónneho čísla, môže Signal automaticky potvrdiť, či je pripojenie zabezpečené pomocou procesu nazývaného transparentnosť kľúča.</paragraph><paragraph>Pre zvýšenie bezpečnosti môžete pripojenia aj naďalej overovať manuálne pomocou QR kódu alebo porovnaním bezpečnostných čísel.</paragraph>"
   },
   "icu:KeyTransparencyOnboardingDialog__Continue": {
     "messageformat": "Pokračovať"
@@ -1481,6 +1484,9 @@
   "icu:ConversationMerge--learn-more": {
     "messageformat": "Zistiť viac"
   },
+  "icu:ConversationMerge--explainer-dialog--label": {
+    "messageformat": "História správ bola zlúčená"
+  },
   "icu:ConversationMerge--explainer-dialog--line-1": {
     "messageformat": "Po odoslaní správy používateľovi {obsoleteConversationTitle} ste zistili, že toto číslo patrí používateľovi {conversationTitle}. Ich telefónne číslo je súkromné."
   },
@@ -1741,6 +1747,9 @@
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__Search__Placeholder": {
     "messageformat": "Hľadať"
+  },
+  "icu:Preferences__EditChatFolderPage__SelectChatsDialog__NoChats": {
+    "messageformat": "Žiadne čety"
   },
   "icu:Preferences__EditChatFolderPage__SelectChatsDialog__ChatTypesSection__Title": {
     "messageformat": "Typy četu"
@@ -3512,6 +3521,9 @@
   "icu:MessageRequests--unblock-group-confirm-body": {
     "messageformat": "Členovia skupiny vás budú môcť do tejto skupiny znovu pridať."
   },
+  "icu:MessageRequests--unblock-signal-confirm-body": {
+    "messageformat": "Budete dostávať aktualizácie a novinky Signal."
+  },
   "icu:MessageRequests--block-and-report-spam-success-toast": {
     "messageformat": "Nahlásené ako spam a blokované."
   },
@@ -3526,6 +3538,9 @@
   },
   "icu:MessageRequests--block-group-confirm-body": {
     "messageformat": "Od tejto skupiny už nebudete dostávať správy ani aktualizácie a členovia vás nebudú môcť znovu pridať."
+  },
+  "icu:MessageRequests--block-signal-confirm-body": {
+    "messageformat": "Už nebudete dostávať aktualizácie a novinky Signal."
   },
   "icu:MessageRequests--reportAndMaybeBlock": {
     "messageformat": "Nahlásiť…"
@@ -6169,9 +6184,6 @@
   "icu:Preferences__SignalAccountKeys__Description": {
     "messageformat": "Uložte si ho na bezpečnom mieste, vaše prihlasovacie údaje sú potrebné na obnovenie vášho účtu a údajov. Nikdy ho s nikým nezdieľajte."
   },
-  "icu:Preferences__SignalAccountKeys__AccountKey": {
-    "messageformat": "Kľúč účtu"
-  },
   "icu:Preferences__SignalAccountKeys__AccountID": {
     "messageformat": "ID účtu"
   },
@@ -6673,6 +6685,9 @@
   "icu:Preferences--blocked-users--description": {
     "messageformat": "Blokovaní používatelia vám nebudú môcť volať ani posielať správy"
   },
+  "icu:Preferences--add-blocked": {
+    "messageformat": "Pridať blokovaného používateľa alebo skupinu"
+  },
   "icu:Preferences--blocked-users": {
     "messageformat": "Blokovaní používatelia"
   },
@@ -6681,6 +6696,12 @@
   },
   "icu:Preferences--blocked--blocked-on": {
     "messageformat": "Zablokovaný {blockedAt}"
+  },
+  "icu:Preferences--BlockChooser--Done": {
+    "messageformat": "Hotovo"
+  },
+  "icu:Preferences--BlockChooser--Search--Placeholder": {
+    "messageformat": "Hľadať"
   },
   "icu:Preferences--signal-backups": {
     "messageformat": "Bezpečné Zálohy Signal"
@@ -7097,7 +7118,7 @@
     "messageformat": "Skúste to znova o {duration}"
   },
   "icu:StandaloneRegistration--PhoneNumber--RegionCodeSelector--Label": {
-    "messageformat": "Select region code"
+    "messageformat": "Vybrať kód krajiny"
   },
   "icu:StandaloneRegistration--PhoneNumber--placeholder": {
     "messageformat": "Telefónne číslo"
@@ -8561,12 +8582,6 @@
   "icu:CallLinkPendingParticipantModal__DenyButtonLabel": {
     "messageformat": "Zakázať vstup"
   },
-  "icu:CallLinkRestrictionsSelect__Option--Off": {
-    "messageformat": "Vyp."
-  },
-  "icu:CallLinkRestrictionsSelect__Option--On": {
-    "messageformat": "Zap."
-  },
   "icu:CallLinkAddNameModal__Title": {
     "messageformat": "Pridať názov hovoru"
   },
@@ -8614,6 +8629,39 @@
   },
   "icu:SaveMultiDialog__title": {
     "messageformat": "Uložiť prílohy"
+  },
+  "icu:EmbeddedContact__message": {
+    "messageformat": "Správa"
+  },
+  "icu:ContactDetail__message": {
+    "messageformat": "Správa"
+  },
+  "icu:ContactDetail__add-to-group": {
+    "messageformat": "Pridať do skupiny"
+  },
+  "icu:ContactDetail__nickname": {
+    "messageformat": "Prezývka"
+  },
+  "icu:ContactDetail__note": {
+    "messageformat": "Poznámky"
+  },
+  "icu:email-v2": {
+    "messageformat": "Email"
+  },
+  "icu:home-v2": {
+    "messageformat": "Domov"
+  },
+  "icu:mobile-v2": {
+    "messageformat": "Mobil"
+  },
+  "icu:work-v2": {
+    "messageformat": "Práca"
+  },
+  "icu:phone-v2": {
+    "messageformat": "Telefón"
+  },
+  "icu:address-v2": {
+    "messageformat": "Adresa"
   },
   "icu:WhatsNew__modal-title": {
     "messageformat": "Čo je nové"
@@ -8781,7 +8829,7 @@
     "messageformat": "Ďakujeme, že podporujete Signal. Váš príspevok pomáha napĺňať naše poslanie chrániť slobodu prejavu a umožňovať bezpečnú globálnu komunikáciu pre milióny ľudí na celom svete prostredníctvom technológie ochrany súkromia s otvoreným zdrojovým kódom. Ak ste občanom Spojených štátov, uchovajte si toto potvrdenie pre svoju daňovú evidenciu. Signal Technology Foundation je nezisková organizácia oslobodená od platenia daní v Spojených štátoch, podľa sekcie 501c3 zákona Internal Revenue Code (IRC, zákon o vnútroštátnych výnosoch). Naše federálne daňové ID je 82-4506840. Signal vám za tento príspevok neposkytol žiadny tovar ani služby."
   },
   "icu:MessageCta__Donate": {
-    "messageformat": "Donate Now"
+    "messageformat": "Prispieť teraz"
   },
   "icu:Donations__OfflineTooltip": {
     "messageformat": "Ste offline. Ak chcete odoslať príspevok, pripojte sa na internet."
@@ -8981,6 +9029,9 @@
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__AccessibilityLabel": {
     "messageformat": "Popis problémov"
   },
+  "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__Placeholder": {
+    "messageformat": "Popíšte problém"
+  },
   "icu:CallQualitySurvey__WhatIssuesDidYouHave__SomethingElse__TextArea__HelpText": {
     "messageformat": "Popíšte svoj problém čo najdetailnejšie. Všetky vami poskytnuté informácie zostanú súkromné a budú použité len na účely zlepšenia kvality hovorov v Signale."
   },
@@ -9095,5 +9146,14 @@
   },
   "icu:WhatsNew__8.30--1": {
     "messageformat": "Pridali sme aj praktickú skratku na otvorenie systémových nastavení vo Windowse, ak sa pokúsite pripojiť k videohovoru a Signal nemá povolenie na prístup ku kamere."
+  },
+  "icu:WhatsNew__8.32--0": {
+    "messageformat": "Filter neprečítaných správ je teraz podporovaný aj v priečinkoch správ a vyhľadávacom rozhraní."
+  },
+  "icu:WhatsNew__8.32--1": {
+    "messageformat": "Vylepšená spoľahlivosť nahrávania pri zlých podmienkach siete. Ďakujeme, <GH3mmmbulus></GH3mmmbulus>!"
+  },
+  "icu:WhatsNew__8.32--2": {
+    "messageformat": "Skratka „(N)“ správne ukazuje na emoji s palcom dole. Palec hore pre <lnicola></lnicola> za opravu chyby."
   }
 }
