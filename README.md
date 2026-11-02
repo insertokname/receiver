@@ -1,5 +1,9 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-only -->
 
+# VIBECODED BULLSHIT AHEAD!
+
+This was built for personal purposes and if you plan on using it too keep in mind it's pure unfiltered slop
+
 # receiver
 
 **receiver is Signal Desktop running in your browser, as a static website.**
