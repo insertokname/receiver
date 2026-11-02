@@ -58,6 +58,8 @@
 //
 //   node e2e/run.mjs              (needs web/dist/app-e2e and $CHROMIUM)
 //   ONLY=a,b,c node e2e/run.mjs   only these scenarios ((b)-(g) need (a))
+//   SKIP=c,d node e2e/run.mjs     all but these (CI runs the scenarios in
+//                                 two halves: ONLY=a,b,<first> and SKIP=<first>)
 //   BROWSER=firefox FIREFOX=<firefox> ONLY=... node e2e/run.mjs
 //                                 in Firefox (WebDriver BiDi); scenarios that
 //                                 need Chromium's DevTools protocol are not
@@ -79,6 +81,7 @@ const WEB = fileURLToPath(new URL('..', import.meta.url));
 const REPO = join(WEB, '..');
 const APP_DIR = join(WEB, 'dist/app-e2e/');
 const ONLY = process.env.ONLY ? new Set(process.env.ONLY.split(',')) : undefined;
+const SKIP = new Set(process.env.SKIP ? process.env.SKIP.split(',') : []);
 
 const QR = '.module-InstallScreenQrCodeNotScannedStep__qr-code--loaded svg';
 const SECRET_PATTERNS = [/\b[0-9a-f]{64}\b/i, /PRAGMA key/i];
@@ -126,7 +129,7 @@ const problems = [];
 let current;
 
 async function scenario(id, name, fn) {
-  if (ONLY && !ONLY.has(id)) return false;
+  if ((ONLY && !ONLY.has(id)) || SKIP.has(id)) return false;
   const started = Date.now();
   current = id;
   console.log(`\n=== (${id}) ${name}`);

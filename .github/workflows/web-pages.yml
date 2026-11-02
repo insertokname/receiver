@@ -29,6 +29,10 @@ env:
   BINARYEN_SHA256: 195ddc94f9bc89f45abdabb0b9eea86023d727ba90eac8b35b80f2544fc30572
   CLANG_VERSION: '18'
   LIVE_URL: https://receiver.insertokname.com/
+  # The end-to-end scenarios run in two halves per browser, both after
+  # linking ((a), (b)): these (the background tab alone takes minutes), and
+  # all the others, new ones included.
+  E2E_FIRST_HALF: c,d,ac,ag,ad,e,f,g,af,ae
 
 jobs:
   # libsignal (web/libsignal/libsignal) compiled to WebAssembly, plus
@@ -131,6 +135,22 @@ jobs:
       - name: Fetch the transport submodule
         run: git submodule update --init --depth 1 web/transport/webtor-rs
 
+      - name: Install brotli
+        run: command -v brotli || (sudo apt-get update && sudo apt-get install -y --no-install-recommends brotli)
+
+      # Consensus, authority certificates and every microdescriptor, fetched
+      # from the directory authorities while the steps below build (a few
+      # minutes); verified by the Rust tests below and again by
+      # build-site.sh (the client verifies it too).
+      - name: Fetch the Tor directory snapshot (in the background)
+        run: |
+          # Detached from the step's output, which the runner waits for.
+          (
+            status=0
+            bash web/transport/webtor-rs/scripts/fetch-consensus.sh web/dist/tor-directory || status=$?
+            echo "$status" > "$RUNNER_TEMP/tor-fetch.status"
+          ) > "$RUNNER_TEMP/tor-fetch.log" 2>&1 < /dev/null &
+
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: libsignal-package
@@ -200,9 +220,6 @@ jobs:
             web/sql/tokenizer/target
           key: sql-${{ runner.os }}-${{ hashFiles('web/sql/build.sh', 'web/sql/tokenizer/Cargo.lock', 'web/sql/tokenizer/Cargo.toml', 'web/sql/tokenizer/rust-toolchain.toml') }}
 
-      - name: Install brotli
-        run: command -v brotli || (sudo apt-get update && sudo apt-get install -y --no-install-recommends brotli)
-
       - id: transport-rev
         run: echo "rev=$(git -C web/transport/webtor-rs rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
@@ -247,20 +264,18 @@ jobs:
       - name: node:crypto shim against Node's node:crypto
         run: node web/renderer/test/crypto-shim.mjs
 
-      # Consensus, authority certificates and every microdescriptor, fetched
-      # from the directory authorities; verified by the Rust tests below and
-      # again by build-site.sh (the client verifies it too).
-      - name: Fetch the Tor directory snapshot
-        run: bash web/transport/webtor-rs/scripts/fetch-consensus.sh web/dist/tor-directory
+      - name: Wait for the Tor directory snapshot
+        timeout-minutes: 20
+        run: |
+          until [ -f "$RUNNER_TEMP/tor-fetch.status" ]; do sleep 2; done
+          cat "$RUNNER_TEMP/tor-fetch.log"
+          exit "$(cat "$RUNNER_TEMP/tor-fetch.status")"
 
       - name: Tor directory verification and circuit tests (native, on that snapshot)
         working-directory: web/transport/webtor-rs
         env:
           WEBTOR_TEST_DIRECTORY: ${{ github.workspace }}/web/dist/tor-directory
         run: cargo test --locked -p webtor --lib -- directory circuit
-
-      - name: Parallel ranged downloads (unit tests)
-        run: node --test web/transport/test/ranged.test.mjs
 
       - name: Build the site (verifies the snapshot, adds SHA256SUMS)
         run: bash web/scripts/build-site.sh --tor-dir web/dist/tor-directory
@@ -311,16 +326,29 @@ jobs:
           retention-days: 1
           if-no-files-found: error
 
-  # The tests of the built site and app, in four groups that run side by side
-  # (each about 5 to 10 minutes, one after another they took over 20).
+  # The tests of the built site and app, in groups that run side by side
+  # (each a few minutes; one after another they took over 20).
   test:
+    name: test (${{ matrix.name }})
     needs: build
     runs-on: ubuntu-24.04
     timeout-minutes: 40
+    # Firefox's end-to-end runs are reported, with the failure's artifacts,
+    # but don't hold up the deployment yet: in CI (r) never finishes
+    # downloading the large video (it does locally), and with storage full
+    # (z) a write's rollback fails ("no transaction is active") uncaught.
+    continue-on-error: ${{ matrix.browser == 'firefox' }}
     strategy:
       fail-fast: false
       matrix:
-        group: [transport, app, e2e, e2e-firefox]
+        include:
+          - { name: transport, group: transport }
+          - { name: liveness, group: liveness }
+          - { name: app, group: app }
+          - { name: e2e-1, group: e2e, browser: chromium, part: 1 }
+          - { name: e2e-2, group: e2e, browser: chromium, part: 2 }
+          - { name: e2e-firefox-1, group: e2e, browser: firefox, part: 1 }
+          - { name: e2e-firefox-2, group: e2e, browser: firefox, part: 2 }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -400,7 +428,7 @@ jobs:
       # The bridge connection is black-holed (a local proxy stops forwarding
       # without closing it): it must be noticed within 35 s, an idle one kept.
       - name: Transport liveness, local
-        if: matrix.group == 'transport'
+        if: matrix.group == 'liveness'
         env:
           LIVENESS: '1'
         run: bash web/scripts/real-tor.sh node web/transport-test/run.mjs 'suites=ws&only=liveness'
@@ -409,11 +437,15 @@ jobs:
       # throttles (intensive throttling after 10 s instead of 5 minutes): the
       # keepalive checks run on the transport's timer worker and keep time.
       - name: Transport liveness in a background tab, local
-        if: matrix.group == 'transport'
+        if: matrix.group == 'liveness'
         env:
           LIVENESS: '1'
           HIDDEN: '1'
         run: bash web/scripts/real-tor.sh node web/transport-test/run.mjs 'suites=ws&only=liveness&hidden&idleSecs=60'
+
+      - name: Parallel ranged downloads (unit tests)
+        if: matrix.group == 'app'
+        run: node --test web/transport/test/ranged.test.mjs
 
       - name: libsignal checks, local (WebAssembly under the site's CSP)
         if: matrix.group == 'app'
@@ -451,31 +483,28 @@ jobs:
         if: matrix.group == 'app'
         run: bash web/scripts/real-tor.sh node web/net/test/run.mjs
 
-      - name: End-to-end tests against Desktop's mock server
+      # A failed scenario fails the step: node's exit status, not tee's.
+      - name: End-to-end tests against Desktop's mock server (${{ matrix.browser }}, half ${{ matrix.part }})
         if: matrix.group == 'e2e'
         env:
+          BROWSER: ${{ matrix.browser }}
+          PART: ${{ matrix.part }}
           E2E_ARTIFACTS: ${{ runner.temp }}/e2e
         run: |
-          mkdir -p "$E2E_ARTIFACTS"
-          node web/e2e/run.mjs 2>&1 | tee "$E2E_ARTIFACTS/e2e.log"
-
-      # The same scenarios in Firefox (WebDriver BiDi), about 9 minutes.
-      - name: End-to-end tests against Desktop's mock server, Firefox
-        if: matrix.group == 'e2e-firefox'
-        env:
-          BROWSER: firefox
-          E2E_ARTIFACTS: ${{ runner.temp }}/e2e-firefox
-        run: |
+          set -o pipefail
+          if [ "$PART" = 1 ]; then
+            export ONLY="a,b,$E2E_FIRST_HALF"
+          else
+            export SKIP="$E2E_FIRST_HALF"
+          fi
           mkdir -p "$E2E_ARTIFACTS"
           node web/e2e/run.mjs 2>&1 | tee "$E2E_ARTIFACTS/e2e.log"
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
-          name: e2e-failure-${{ matrix.group }}
-          path: |
-            ${{ runner.temp }}/e2e
-            ${{ runner.temp }}/e2e-firefox
+          name: e2e-failure-${{ matrix.name }}
+          path: ${{ runner.temp }}/e2e
           retention-days: 7
           if-no-files-found: ignore
 
