@@ -154,15 +154,63 @@ then `merge-upstream.sh --finish`. Merge the pull request once the checks
 pass. `.github/` is receiver's own; Signal's workflows and templates are
 left out of every merge.
 
-When the release changes the libsignal version Desktop pins
-(`@signalapp/libsignal-client` in `package.json`; the pull request says so),
-update the libsignal fork too:
-[insertokname/libsignal](https://github.com/insertokname/libsignal), branch
-`web-wasm`, rebased onto the new libsignal tag, then the submodule
-`web/libsignal/libsignal` on the same branch. The Tor client is the
-submodule `web/transport/webtor-rs`
-([insertokname/webtor-rs](https://github.com/insertokname/webtor-rs), branch
-`signal-web-transport`), which merges upstream webtor-rs the same way.
+Two forks are git submodules and follow their own upstreams:
+
+| Submodule | Fork, branch | Upstream | How it follows |
+| --- | --- | --- | --- |
+| `web/libsignal/libsignal` | [insertokname/libsignal](https://github.com/insertokname/libsignal), `web-wasm` | [signalapp/libsignal](https://github.com/signalapp/libsignal) | rebased onto the tag Desktop pins |
+| `web/transport/webtor-rs` | [insertokname/webtor-rs](https://github.com/insertokname/webtor-rs), `signal-web-transport` | [ethereum/webtor-rs](https://github.com/ethereum/webtor-rs) | merges upstream `main` |
+
+`.gitmodules` clones them shallow, which is enough to build but not to
+rebase or merge. Once per checkout (`--unshallow` refuses a clone that is
+already complete; that is fine):
+
+```bash
+git submodule update --init web/libsignal/libsignal web/transport/webtor-rs
+git -C web/libsignal/libsignal fetch --unshallow origin
+git -C web/libsignal/libsignal remote add upstream https://github.com/signalapp/libsignal.git
+git -C web/transport/webtor-rs fetch --unshallow origin
+git -C web/transport/webtor-rs remote add upstream https://github.com/ethereum/webtor-rs.git
+```
+
+**libsignal**, when the release changes the version Desktop pins
+(`@signalapp/libsignal-client` in `package.json`; the pull request says so,
+and the build fails until it is done). On the `upstream/v<version>` branch,
+with `<new>` the new version:
+
+```bash
+cd web/libsignal/libsignal
+git switch web-wasm
+git fetch --no-tags upstream tag v<new>
+git rebase --onto v<new> v<old> web-wasm   # <old>: the version it was on
+git push --force-with-lease origin web-wasm
+cd ../../..
+git add web/libsignal/libsignal
+git commit -m "libsignal v<new>"
+```
+
+`git describe` in the submodule names the tag it is on
+(`v0.103.0-3-g...`: three commits on top of v0.103.0).
+
+**webtor-rs**, whenever upstream has something new (nothing checks this on
+a schedule; `git rev-list --count HEAD..upstream/main` in the submodule after
+a fetch says how far behind it is). On a branch of receiver:
+
+```bash
+cd web/transport/webtor-rs
+git switch signal-web-transport
+git fetch upstream main
+git merge upstream/main
+git push origin signal-web-transport
+cd ../..
+git add web/transport/webtor-rs
+git commit -m "webtor-rs: merge upstream"
+```
+
+Then push the branch and let *Web (GitHub Pages)* build and test it
+(`gh workflow run web-pages.yml --ref <branch>`) before merging into `main`.
+Push the fork's branch before the receiver commit that points at it: the
+build fetches the submodule revision from the fork.
 
 ## License
 
