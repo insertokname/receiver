@@ -21,6 +21,7 @@
     "check:app": "node renderer/run.mjs",
     "test:storage": "node sql/test/run.mjs",
     "test:crypto-shim": "node renderer/test/crypto-shim.mjs",
+    "test:buffer-shim": "node renderer/test/buffer-shim.mjs",
     "build:e2e": "bash transport/build.sh --test-relay && node renderer/build.mjs --e2e",
     "test:e2e": "node e2e/run.mjs"
   },

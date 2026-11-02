@@ -137,7 +137,9 @@ export class GumVideoCapturer {
 
   async enumerateDevices(): Promise<Array<MediaDeviceInfo>> {
     const devices = await window.navigator.mediaDevices.enumerateDevices();
-    const cameras = devices.filter(d => d.kind === 'videoinput');
+    // WEB-FORK: before camera permission browsers list a camera with an empty
+    // deviceId, which Settings > Calls cannot show as an option (it crashed)
+    const cameras = devices.filter(d => d.kind === 'videoinput' && d.deviceId);
     return cameras;
   }
 

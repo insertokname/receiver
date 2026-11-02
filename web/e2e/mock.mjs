@@ -252,6 +252,13 @@ export async function startMockServer({ onDeviceLink, onEvent = () => undefined,
         return [200, { ...form, signedUploadLocation: `${MOCK_URL}/cdn3/attachments/${form.key}` }];
       });
       connection.router.routes.unshift(connection.router.routes.pop());
+      // Settings loads the donation configuration (Settings > Donate to
+      // Signal); the mock has none. One currency, no badge levels.
+      connection.router.get('/v1/subscription/configuration', async () => [
+        200,
+        { currencies: { usd: { minimum: 3, oneTime: { 1: [5, 10, 20, 30, 50, 100] }, supportedPaymentMethods: ['CARD'] } }, levels: {} },
+      ]);
+      connection.router.routes.unshift(connection.router.routes.pop());
       for (const route of connection.router.routes) {
         const isProfile = ['/v1/profile/a', '/v1/profile/a/b', '/v1/profile/a/b/c'].some(path => route.pattern.match(path));
         if (route.method === 'GET' && isProfile) {

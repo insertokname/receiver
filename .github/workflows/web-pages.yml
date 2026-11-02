@@ -264,6 +264,9 @@ jobs:
       - name: node:crypto shim against Node's node:crypto
         run: node web/renderer/test/crypto-shim.mjs
 
+      - name: node:buffer shim against Node's Buffer (base64url)
+        run: node web/renderer/test/buffer-shim.mjs
+
       - name: Wait for the Tor directory snapshot
         timeout-minutes: 20
         run: |

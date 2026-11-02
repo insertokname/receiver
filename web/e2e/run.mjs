@@ -46,6 +46,8 @@
 //   (ad)         unread badge: the count in the tab title and on its icon
 //   (ag)         keyboard: Escape closes the conversation (the welcome
 //                screen) once nothing else in it has a use for it
+//   (ah)         settings: the Settings tab is not covered and takes one
+//                click; every page of Settings opens, with a username link
 //   (ae)         background tab: the app's tab hidden behind another one,
 //                with the browser's throttling of hidden pages (Chromium's
 //                intensive throttling after 10 s instead of 5 minutes):
@@ -812,6 +814,44 @@ try {
     return `closed to "${welcome}"; suggestions, the details panel and the search field kept it open; the draft stayed`;
   });
 
+  await scenario('ah', 'settings: the Settings tab takes the first click, every page of Settings opens, with a username link', async () => {
+    const errorsBefore = pageErrors.length;
+    const tab = () => page.evaluate(() => window.reduxStore.getState().nav.selectedLocation.tab);
+    // A username link, as an account with a username has: the profile page
+    // (Settings opens on it) shows it, encoded as base64url, which the
+    // `buffer` package did not know. Bytes that give '-' and '_'.
+    await page.evaluate(() =>
+      window.reduxActions.items.putItem('usernameLink', { entropy: new Uint8Array(32).fill(0xfb), serverId: new Uint8Array(16).fill(0xff) })
+    );
+    // Nothing of the app shell (the notifications banner) over the tab.
+    const covered = await page.evaluate(() => {
+      const item = document.querySelector('[data-testid="NavTabsItem--Settings"]');
+      const r = item.getBoundingClientRect();
+      const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+      return item.contains(hit) ? null : String(hit?.className);
+    });
+    if (covered) throw new Error(`the Settings tab is covered by ${covered}`);
+    await openConversation(alice);
+    await page.click('[data-testid="NavTabsItem--Settings"]');
+    await waitForSelector('.Preferences__scroll-area', 'Settings after one click on its tab');
+    const labels = await page.$$eval('.Preferences__scroll-area button', buttons => buttons.map(b => b.textContent.trim()).filter(Boolean));
+    const pages = [];
+    for (const label of labels) {
+      const button = await page.$(`::-p-xpath(//*[contains(@class, "Preferences__scroll-area")]//button[normalize-space(.)=${JSON.stringify(label)}])`);
+      if (!button) throw new Error(`the Settings button "${label}" went away`);
+      await button.click();
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      const text = await page.evaluate(() => (document.querySelector('.Preferences__content, .Preferences__settings-pane, main')?.textContent ?? '').trim());
+      if (!text) throw new Error(`Settings > ${label} is empty`);
+      pages.push(label);
+    }
+    await page.click('[data-testid="NavTabsItem--Chats"]');
+    const errors = pageErrors.slice(errorsBefore);
+    if (errors.length) throw new Error(`uncaught: ${errors.join(' | ').slice(0, 500)}`);
+    if ((await tab()) !== 'Chats') throw new Error('Chats did not open again');
+    return `${pages.length} pages: ${pages.join(', ')}`;
+  });
+
   await scenario('ad', 'unread badge: the count in the tab title and on its icon, cleared once read', async () => {
     const state = () =>
       page.evaluate(() => ({ title: document.title, icon: document.querySelector('link[rel="icon"]')?.getAttribute('href') ?? '' }));
@@ -1465,7 +1505,10 @@ try {
   }
 } finally {
   const secrets = logLines.filter(l => SECRET_PATTERNS.some(p => p.test(l)));
-  const unhandled = logLines.filter(l => /Top-level unhandled/.test(l));
+  // "ResizeObserver loop completed with undelivered notifications" is the
+  // browser noting that a resize callback (Settings' layout) changed the size
+  // again in the same frame; it is delivered next frame, nothing is lost.
+  const unhandled = logLines.filter(l => /Top-level unhandled/.test(l) && !/ResizeObserver loop completed with undelivered notifications/.test(l));
   for (const watcher of watchers) problems.push(...(await watcher.report()));
   // Firefox reports a local URL whose answer failed (a video's preview
   // while it downloads: STATUS.md, open issues) as a page error; counted,

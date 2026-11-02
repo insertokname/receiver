@@ -210,15 +210,17 @@ body.dark-theme {
 }
 
 /* Banners (update available, notifications, install). */
+/* Over the bottom of the chat list, right of Desktop's nav tabs
+   ($NavTabs__width, 80px): not over the Settings tab at the bottom of them. */
 .web-shell-banner {
   position: fixed;
   z-index: 99500;
-  left: 16px;
+  left: 96px;
   bottom: 16px;
   display: flex;
   align-items: center;
   gap: 12px;
-  max-width: min(420px, calc(100vw - 32px));
+  max-width: min(420px, calc(100vw - 112px));
   padding: 12px 12px 12px 16px;
   border-radius: 12px;
   background: var(--web-shell-banner);
