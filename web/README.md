@@ -225,7 +225,8 @@ deletes (migrations) are deleted by the page on the worker's request.
 `dist/site/` under `/receiver/` from `http://pages.example:8080` (mapped to
 127.0.0.1), like GitHub Pages. `BROWSER=firefox FIREFOX=<path>` runs the
 transport checks, the boot test and the end-to-end tests in Firefox
-(WebDriver BiDi) instead.
+(WebDriver BiDi) instead. Firefox on Linux plays H.264 video (the
+end-to-end tests' videos) only with the system's FFmpeg (libavcodec).
 
 ```bash
 node transport-test/run.mjs 'only=directory'          # Tor directory verification: the snapshot and tampered copies (no network)
@@ -245,6 +246,7 @@ node renderer/test/fs-shim.mjs                        # node:fs on the origin pr
 node net/test/run.mjs                                 # WebNet + HTTPS through Tor against Signal (bogus credentials only)
 node e2e/run.mjs                                      # end-to-end against Desktop's mock server (see below)
 node net/test/run.mjs background                      # one chat connection kept for 30 min in a hidden, throttled tab (real Tor)
+node net/test/run.mjs upload-drop                     # 2 MB of chat uploads, the bridge connection black-holed half way: Desktop's retry completes them (real Tor)
 HIDDEN=1 LIVENESS=1 node transport-test/run.mjs 'suites=ws&only=liveness&hidden&idleSecs=60'   # the same black hole in a hidden, throttled tab
 node sw/test/run.mjs                                  # service worker: cache, offline, updates only with consent, manifest
 node shell/test/run.mjs                               # app shell: database error screens, wiped data, a hung second window, Mac shortcuts

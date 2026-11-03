@@ -72,6 +72,63 @@ async function setUp() {
     return { status: response.status, ms: now() - started };
   }
 
+  type ChatConnection = { fetch: (r: unknown) => Promise<{ status: number }>; disconnect(): Promise<void> };
+
+  /**
+   * Unauthenticated chat requests sent the way Desktop sends them: WebAPI's
+   * _retry (3 attempts, 1 s apart, when libsignal reports IoError or
+   * ChatServiceInactive) around SocketManager.fetch, which uses the current
+   * connection, or connects a new one once it was interrupted.
+   */
+  function desktopChat() {
+    const interruptions: Array<Interruption> = [];
+    const failures: Array<{ atMs: number; error: ReturnType<typeof describe> }> = [];
+    let connections = 0;
+    let current: Promise<ChatConnection> | undefined;
+    const resource = () => {
+      if (!current) {
+        const watch = interruptionListener();
+        const opening = net.connectUnauthenticatedChat(watch.listener as never) as unknown as Promise<ChatConnection>;
+        current = opening;
+        connections += 1;
+        void watch.next().then(entry => {
+          interruptions.push(entry);
+          if (current === opening) current = undefined;
+        });
+        opening.catch(() => {
+          if (current === opening) current = undefined;
+        });
+      }
+      return current;
+    };
+    const noNetwork = (error: unknown) => {
+      const { code } = describe(error);
+      return code === 'IoError' || code === 'ChatServiceInactive';
+    };
+    return {
+      interruptions,
+      failures,
+      get connections() {
+        return connections;
+      },
+      resource,
+      async fetch(request: unknown): Promise<{ status: number }> {
+        for (let count = 1; ; count += 1) {
+          try {
+            return await (await resource()).fetch(request);
+          } catch (error) {
+            failures.push({ atMs: now(), error: describe(error) });
+            if (count >= 3 || !noNetwork(error)) throw error;
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        }
+      },
+      async disconnect() {
+        await (await current?.catch(() => undefined))?.disconnect().catch(() => undefined);
+      },
+    };
+  }
+
   let dropConnection: { fetch: (r: unknown) => Promise<{ status: number }>; disconnect(): Promise<void> } | undefined;
   let dropWatch: ReturnType<typeof interruptionListener> | undefined;
   let dropInterrupted: Promise<Interruption> | undefined;
@@ -173,14 +230,12 @@ async function setUp() {
      * Desktop uploads ~230 KB of prekeys per request right after linking
      * (PUT /v2/keys for ACI and PNI at once). Sends requests of that shape
      * (fake keys, no credentials, so the server reads the body and answers 401)
-     * plus 1 MB more, then checks that the connection is still healthy.
+     * plus 1 MB more, as Desktop sends them (desktopChat: a request whose
+     * connection was interrupted is sent again on a new one), then checks
+     * that the connection is still healthy.
      */
     async largeUploads() {
-      const { listener, interruptions } = interruptionListener();
-      const connection = (await net.connectUnauthenticatedChat(listener as never)) as unknown as {
-        fetch: (r: unknown) => Promise<{ status: number }>;
-        disconnect(): Promise<void>;
-      };
+      const chat = desktopChat();
       const randomBase64 = (n: number) => btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(n))));
       const preKeys = (identity: string) =>
         new TextEncoder().encode(
@@ -195,13 +250,14 @@ async function setUp() {
           })
         );
       const put = (identity: string, body: Uint8Array) =>
-        connection.fetch({
+        chat.fetch({
           verb: 'PUT',
           path: `/v2/keys?identity=${identity}`,
           headers: [['content-type', 'application/json']],
           body,
           timeoutMillis: 120_000,
         });
+      await chat.resource();
       const started = now();
       const aciKeys = preKeys('aci');
       const pniKeys = preKeys('pni');
@@ -214,12 +270,14 @@ async function setUp() {
           Array.from({ length: 4 }, (_, n) => put('aci', new Uint8Array(256 * 1024).map((_b, i) => (i * 31 + n) & 0xff)))
         );
         bulkMs = now() - bulkStarted;
-        after = await keepalive(connection);
+        after = await keepalive(await chat.resource());
       } catch (error) {
-        return { failed: describe(error), afterMs: now() - started, interruptions };
+        return { failed: describe(error), afterMs: now() - started, interruptions: chat.interruptions, failures: chat.failures };
       }
-      const interruptedBeforeDisconnect = interruptions.length;
-      await connection.disconnect();
+      const interruptions = [...chat.interruptions];
+      const failures = [...chat.failures];
+      const { connections } = chat;
+      await chat.disconnect();
       return {
         prekeyBytes: [aciKeys.length, pniKeys.length],
         prekeyStatuses: prekeys.map(r => r.status),
@@ -227,7 +285,9 @@ async function setUp() {
         bulkStatuses: bulk.map(r => r.status),
         bulkMs,
         keepaliveAfter: after.status,
-        interruptedBeforeDisconnect,
+        interruptions: interruptions.map(i => ({ ...i, afterMs: i.atMs - started })),
+        failures: failures.map(f => ({ ...f, afterMs: f.atMs - started })),
+        connections,
       };
     },
 
@@ -299,6 +359,59 @@ async function setUp() {
         interruptions: interrupted,
         reconnects,
         torLost,
+      };
+    },
+
+    /**
+     * Uploads on a chat connection whose bridge connection stops delivering
+     * half way: the runner black-holes it (tunnel proxy) once the first
+     * request is answered. Requests go as Desktop sends them (desktopChat).
+     * Reports what failed on the first connection and whether every request
+     * was answered in the end.
+     */
+    async uploadThroughBlackhole() {
+      const chat = desktopChat();
+      let torLost = 0;
+      const unsubscribe = getTorCarrier().onLost(() => {
+        torLost += 1;
+      });
+      const body = (n: number) => new Uint8Array(256 * 1024).map((_b, i) => (i * 31 + n) & 0xff);
+      const opened = await keepalive(await chat.resource());
+      const started = now();
+      let blackholedAtMs: number | undefined;
+      const requests = Array.from({ length: 8 }, (_, n) =>
+        chat
+          .fetch({
+            verb: 'PUT',
+            path: '/v2/keys?identity=aci',
+            headers: [['content-type', 'application/json']],
+            body: body(n),
+            timeoutMillis: 120_000,
+          })
+          .then(response => {
+            if (blackholedAtMs === undefined) {
+              blackholedAtMs = now();
+              // eslint-disable-next-line no-console
+              console.log('ACTION blackhole');
+            }
+            return { status: response.status, atMs: now() - started };
+          })
+      );
+      const settled = await Promise.allSettled(requests);
+      unsubscribe();
+      const interruptions = [...chat.interruptions];
+      const failures = [...chat.failures];
+      await chat.disconnect();
+      const since = (atMs: number) => (blackholedAtMs === undefined ? null : atMs - blackholedAtMs);
+      return {
+        openKeepalive: opened.status,
+        blackholedAfterMs: blackholedAtMs === undefined ? null : blackholedAtMs - started,
+        answers: settled.map(r => (r.status === 'fulfilled' ? r.value : { error: describe(r.reason) })),
+        failures: failures.map(f => ({ ...f, afterBlackholeMs: since(f.atMs) })),
+        interruptions: interruptions.map(i => ({ ...i, afterBlackholeMs: since(i.atMs) })),
+        connections: chat.connections,
+        torLost,
+        ms: now() - started,
       };
     },
 

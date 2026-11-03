@@ -337,9 +337,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     # Firefox's end-to-end runs are reported, with the failure's artifacts,
-    # but don't hold up the deployment yet: in CI (r) never finishes
-    # downloading the large video (it does locally), and with storage full
-    # (z) a write's rollback fails ("no transaction is active") uncaught.
+    # but don't hold up the deployment yet: with storage full (z) a write's
+    # rollback fails ("no transaction is active") uncaught.
     continue-on-error: ${{ matrix.browser == 'firefox' }}
     strategy:
       fail-fast: false
@@ -398,6 +397,12 @@ jobs:
       - name: Install brotli
         run: command -v brotli || (sudo apt-get update && sudo apt-get install -y --no-install-recommends brotli)
 
+      # Firefox on Linux decodes H.264 (the end-to-end tests' videos) with
+      # the system's FFmpeg, as on users' machines; the runner image has none.
+      - name: Install FFmpeg's libavcodec for Firefox
+        if: matrix.browser == 'firefox'
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libavcodec60
+
       - name: Select the browsers for the tests
         run: |
           echo "CHROMIUM=$(command -v google-chrome || command -v chromium)" >> "$GITHUB_ENV"
@@ -445,6 +450,13 @@ jobs:
           LIVENESS: '1'
           HIDDEN: '1'
         run: bash web/scripts/real-tor.sh node web/transport-test/run.mjs 'suites=ws&only=liveness&hidden&idleSecs=60'
+
+      # 2 MB of chat uploads whose bridge connection is black-holed half
+      # way: the loss is noticed, the requests in flight fail with an error
+      # Desktop retries, and Desktop's retry completes them on a new client.
+      - name: Uploads through a lost bridge connection, local
+        if: matrix.group == 'liveness'
+        run: bash web/scripts/real-tor.sh node web/net/test/run.mjs upload-drop
 
       - name: Parallel ranged downloads (unit tests)
         if: matrix.group == 'app'

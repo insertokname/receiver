@@ -157,11 +157,11 @@ export async function runAttachmentScenarios(ctx) {
    * Starts the download of the message's first attachment unless Desktop
    * already does (it downloads attachments on its own): a click on a
    * download in progress cancels it, and the state can show it as pending a
-   * moment after the button appears.
+   * moment after the button appears (in a slow browser, seconds).
    */
   async function startDownload(timestamp, button) {
     const started = Date.now();
-    while (Date.now() - started < 3000) {
+    while (Date.now() - started < 10_000) {
       // eslint-disable-next-line no-await-in-loop
       const state = (await attachmentsOf(timestamp))[0];
       if (state?.path || state?.pending) return;
@@ -169,6 +169,25 @@ export async function runAttachmentScenarios(ctx) {
       await new Promise(resolve => setTimeout(resolve, 100));
     }
     await page().click(button);
+  }
+
+  /**
+   * The fixture videos are H.264 (avc1.4d001e). A browser without a decoder
+   * for it can neither play them nor take the timeline's screenshot
+   * (Desktop's makeVideoScreenshot decodes a frame with WebCodecs): Firefox
+   * on Linux decodes H.264 with the system's FFmpeg (libavcodec) only.
+   */
+  async function assertCanDecodeVideo() {
+    const support = await page().evaluate(async codec => {
+      const playable = document.createElement('video').canPlayType(`video/mp4; codecs="${codec}"`);
+      const decodable = typeof VideoDecoder === 'undefined' ? undefined : (await VideoDecoder.isConfigSupported({ codec })).supported;
+      return { playable, decodable };
+    }, 'avc1.4d001e');
+    if (!support.playable || support.decodable === false) {
+      throw new Error(
+        `this browser cannot decode H.264 video (canPlayType "${support.playable}", WebCodecs ${support.decodable}): no screenshot or playback is possible${FIREFOX ? "; Firefox on Linux needs FFmpeg's libavcodec" : ''}`
+      );
+    }
   }
 
   async function waitFor(fn, what, timeout = STEP_TIMEOUT_MS) {
@@ -353,10 +372,7 @@ export async function runAttachmentScenarios(ctx) {
       });
     const downloads = await captureDownloads();
     try {
-      if (!(await attachmentsOf(timestamp))[0]?.path) {
-        // Not downloaded automatically: Desktop's button downloads it first.
-        await page().click(button);
-      }
+      await startDownload(timestamp, button);
       await waitFor(async () => (await attachmentsOf(timestamp))[0]?.path, 'the attachment to be downloaded');
       const started = Date.now();
       await page().click(button);
@@ -379,6 +395,7 @@ export async function runAttachmentScenarios(ctx) {
       });
     };
     page().on('response', onResponse);
+    await assertCanDecodeVideo();
     const data = moovAtEnd(await readFile(join(REPO, 'fixtures/ghost-kitty.mp4')), 28 * 1024 * 1024);
     const pointer = await helpers.encryptAttachment(data, 'video/mp4', store);
     const text = `A video ${Date.now()}`;
@@ -388,10 +405,8 @@ export async function runAttachmentScenarios(ctx) {
       .catch(() => {
         throw new Error('the video message did not appear');
       });
-    if (!(await attachmentsOf(timestamp))[0]?.path && !(await attachmentsOf(timestamp))[0]?.pending) {
-      await page().click(`${messageSelector(timestamp)} .module-image`);
-    }
     const downloadStarted = Date.now();
+    await startDownload(timestamp, `${messageSelector(timestamp)} .module-image`);
     await waitFor(async () => (await attachmentsOf(timestamp))[0]?.path, 'the video to be downloaded', 120_000);
     const downloadSeconds = (Date.now() - downloadStarted) / 1000;
     const thumbnail = `${messageSelector(timestamp)} img.module-image__image[data-loaded="true"]`;

@@ -22,7 +22,10 @@
 //   (g) CDSI and SVR2 reject with typed libsignal errors
 //   (h) large uploads on a chat connection: two concurrent ~230 KB
 //       prekey-shaped PUT /v2/keys (what Desktop sends right after linking)
-//       and 1 MB more are all answered, and the connection stays healthy
+//       and 1 MB more are all answered, and the connection is healthy
+//       afterwards. Sent as Desktop sends requests: one whose connection was
+//       interrupted (a Tor circuit that stopped delivering, which no client
+//       can prevent) is sent again on a new connection, and the run says so
 //
 // The test page (net/test/page.ts, bundled here) is served by this runner
 // only. Needs the built site (scripts/build-site.sh).
@@ -34,6 +37,13 @@
 //          after INTENSIVE_AFTER seconds, default its own 5 minutes), one
 //          chat connection kept as Desktop keeps it; fails on a keepalive
 //          that went unanswered, an interruption or a Tor client replaced
+//   node net/test/run.mjs upload-drop   only this: 2 MB of uploads on a chat
+//          connection, sent as Desktop sends requests (WebAPI's retry around
+//          SocketManager); once the first is answered, the connection to the
+//          bridge stops delivering (a local proxy black-holes it, see
+//          scripts/tunnel-proxy.mjs). The loss must be noticed, the requests
+//          in flight must fail with an error Desktop retries, and every
+//          request must be answered on the new Tor client.
 
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -43,6 +53,7 @@ import { build } from 'rolldown';
 import { netAssetsPlugin } from '../../renderer/net-assets.mjs';
 import { webResolvePlugin } from '../../renderer/resolve.mjs';
 import { BASE_PATH, LOCAL_ORIGIN, SITE_DIR, launchBrowser, serveSite, watchPage } from '../../scripts/harness.mjs';
+import { startTunnelProxy } from '../../scripts/tunnel-proxy.mjs';
 
 const HERE = fileURLToPath(new URL('.', import.meta.url));
 const WEB = join(HERE, '../..');
@@ -50,6 +61,13 @@ const REPO = join(WEB, '..');
 
 // libsignal's idle timeout (WS_MAX_IDLE_INTERVAL) plus margin for the check interval.
 const DROP_DETECTION_LIMIT_MS = 47_000;
+// upload-drop: a silent bridge closes the Tor channel after 25 s (webtor's
+// keepalive), checked every 5 s; libsignal's idle timeout would end the
+// connection at 45 s anyway.
+const BLACKHOLE_DETECTION_LIMIT_MS = DROP_DETECTION_LIMIT_MS;
+// upload-drop: from the black hole until every request is answered (loss
+// noticed, a new Tor client bootstrapped, 2 MB sent again).
+const UPLOAD_DROP_LIMIT_MS = 180_000;
 const SECRET_PATTERNS = [/bogus-password-for-tests/, /Authorization: Basic/i];
 
 const appHtml = await readFile(join(SITE_DIR, 'index.html'), 'utf8');
@@ -92,6 +110,8 @@ const server = await serveSite({
   },
 });
 const BACKGROUND = process.argv[2] === 'background';
+const UPLOAD_DROP = process.argv[2] === 'upload-drop';
+const proxy = UPLOAD_DROP ? await startTunnelProxy() : undefined;
 const BACKGROUND_MINUTES = Number(process.env.BACKGROUND_MINUTES ?? 30);
 const INTENSIVE_AFTER = process.env.INTENSIVE_AFTER;
 const browser = await launchBrowser(
@@ -101,7 +121,7 @@ const browser = await launchBrowser(
         ignoreDefaultArgs: ['--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows'],
         args: INTENSIVE_AFTER ? [`--enable-features=IntensiveWakeUpThrottling:grace_period_seconds/${INTENSIVE_AFTER}`] : [],
       }
-    : {}
+    : { proxyPort: proxy?.port }
 );
 const problems = [];
 const logLines = [];
@@ -119,6 +139,10 @@ try {
     const text = m.text();
     logLines.push(text);
     console.log(`  | ${text.slice(0, 300)}`);
+    if (text === 'ACTION blackhole' && proxy) {
+      proxy.blackholeAll();
+      console.log(`proxy: ${proxy.stats.blackholed} tunnel(s) black-holed`);
+    }
   });
   page.on('pageerror', e => problems.push(`uncaught exception: ${e.message}`));
   const cdp = await page.createCDPSession();
@@ -150,6 +174,30 @@ try {
     check(r.longestGapMs < 90_000, `longest time between two answers ${(r.longestGapMs / 1000).toFixed(1)} s`);
     check(r.interruptions.length === 0 && r.reconnects === 0, `${r.interruptions.length} interruptions, ${r.reconnects} reconnects`);
     check(r.torLost === 0, `${r.torLost} Tor clients replaced`);
+    problems.push(...(await watcher.report()));
+    ok = problems.length === 0;
+  } else if (UPLOAD_DROP) {
+    console.log('upload-drop: 8 x 256 KB on a chat connection, the bridge black-holed after the first answer');
+    const r = await run('uploadThroughBlackhole');
+    console.log(`  ${JSON.stringify(r)}`);
+    check(r.openKeepalive === 200 && r.blackholedAfterMs !== null, `connection open, black hole after the first answer (${r.blackholedAfterMs} ms into the upload)`);
+    const lost = r.interruptions.find(i => i.afterBlackholeMs >= 0);
+    check(
+      lost !== undefined && lost.code === 'IoError' && lost.afterBlackholeMs <= BLACKHOLE_DETECTION_LIMIT_MS && r.torLost >= 1,
+      `loss noticed ${lost ? `${(lost.afterBlackholeMs / 1000).toFixed(1)} s` : 'never'} after the black hole (${lost?.code}: ${lost?.message}; ${r.torLost} Tor client(s) replaced)`
+    );
+    const failedInFlight = r.failures.filter(f => f.afterBlackholeMs >= 0);
+    check(
+      failedInFlight.length > 0 && r.failures.every(f => f.error.code === 'IoError' || f.error.code === 'ChatServiceInactive'),
+      `${failedInFlight.length} request(s) in flight failed with errors Desktop retries (${[...new Set(r.failures.map(f => f.error.code))].join(', ')})`
+    );
+    const answered = r.answers.filter(a => a.status === 401).length;
+    const lastAnswerMs = Math.max(...r.answers.map(a => a.atMs ?? Infinity));
+    check(
+      answered === r.answers.length && lastAnswerMs - r.blackholedAfterMs <= UPLOAD_DROP_LIMIT_MS,
+      `${answered} of ${r.answers.length} requests answered, the last ${((lastAnswerMs - r.blackholedAfterMs) / 1000).toFixed(1)} s after the black hole`
+    );
+    console.log(`proxy: ${JSON.stringify(proxy.stats)}`);
     problems.push(...(await watcher.report()));
     ok = problems.length === 0;
   } else {
@@ -197,10 +245,20 @@ try {
     console.log('(h) large uploads (prekey-sized requests, then 1 MB)');
     const h = await run('largeUploads');
     console.log(`  ${JSON.stringify(h)}`);
+    const retried = h.failed
+      ? ''
+      : h.connections > 1
+        ? `; ${h.failures.length} attempt(s) failed (${[...new Set(h.failures.map(f => f.error.code))].join(', ')}) after ${h.interruptions.map(i => `${i.message} at ${(i.afterMs / 1000).toFixed(1)} s`).join(', ')}, sent again on ${h.connections - 1} new connection(s) as Desktop does`
+        : '';
     check(
       !h.failed &&
-      h.prekeyStatuses.every(s => s === 401) && h.bulkStatuses.every(s => s === 401) && h.keepaliveAfter === 200 && h.interruptedBeforeDisconnect === 0,
-      h.failed ? `upload failed after ${h.afterMs} ms: ${h.failed.code} ${h.failed.message}` : `2 x ${Math.round(h.prekeyBytes[0] / 1024)} KB in ${(h.prekeyMs / 1000).toFixed(1)} s, 1 MB in ${(h.bulkMs / 1000).toFixed(1)} s, all answered; connection still healthy`
+        h.prekeyStatuses.every(s => s === 401) &&
+        h.bulkStatuses.every(s => s === 401) &&
+        h.keepaliveAfter === 200 &&
+        h.failures.every(f => f.error.code === 'IoError' || f.error.code === 'ChatServiceInactive'),
+      h.failed
+        ? `upload failed after ${h.afterMs} ms: ${h.failed.code} ${h.failed.message}`
+        : `2 x ${Math.round(h.prekeyBytes[0] / 1024)} KB in ${(h.prekeyMs / 1000).toFixed(1)} s, 1 MB in ${(h.bulkMs / 1000).toFixed(1)} s, all answered; connection healthy afterwards${retried}`
     );
 
     console.log('(d) forced transport drop');
@@ -232,5 +290,6 @@ try {
   console.log(problems.length === 0 && ok ? 'NET PASS' : 'NET FAIL');
   await browser.close();
   server.close();
+  await proxy?.close();
 }
 process.exit(ok ? 0 : 1);
