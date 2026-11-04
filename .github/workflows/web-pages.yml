@@ -267,6 +267,9 @@ jobs:
       - name: node:buffer shim against Node's Buffer (base64url)
         run: node web/renderer/test/buffer-shim.mjs
 
+      - name: SQL transactions, storage full surfaces as SQLITE_FULL
+        run: node web/sql/test/transaction.mjs
+
       - name: Wait for the Tor directory snapshot
         timeout-minutes: 20
         run: |
@@ -336,10 +339,6 @@ jobs:
     needs: build
     runs-on: ubuntu-24.04
     timeout-minutes: 40
-    # Firefox's end-to-end runs are reported, with the failure's artifacts,
-    # but don't hold up the deployment yet: with storage full (z) a write's
-    # rollback fails ("no transaction is active") uncaught.
-    continue-on-error: ${{ matrix.browser == 'firefox' }}
     strategy:
       fail-fast: false
       matrix:

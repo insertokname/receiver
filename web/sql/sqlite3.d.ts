@@ -44,6 +44,7 @@ export type Sqlite3Capi = {
   sqlite3_close_v2(pDb: Pointer): number;
   sqlite3_extended_result_codes(pDb: Pointer, onoff: number): number;
   sqlite3_exec(pDb: Pointer, sql: string, cb: 0, arg: 0, errmsg: 0): number;
+  sqlite3_get_autocommit(pDb: Pointer): number;
   sqlite3_errmsg(pDb: Pointer): string;
   sqlite3_errstr(rc: number): string;
   sqlite3_error_offset(pDb: Pointer): number;

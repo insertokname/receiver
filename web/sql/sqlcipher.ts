@@ -890,6 +890,15 @@ export default class Database {
         commit.run();
         return result;
       } catch (error) {
+        // After some errors (SQLITE_FULL, SQLITE_IOERR, SQLITE_NOMEM) SQLite
+        // has already rolled the whole transaction back; a ROLLBACK then
+        // fails with "no transaction is active" and would hide the error
+        // (the page tells a full storage by its message). better-sqlite3
+        // checks the same.
+        const { sqlite3, pDb } = this.#open();
+        if (sqlite3.capi.sqlite3_get_autocommit(pDb) !== 0) {
+          throw error;
+        }
         try {
           rollback.run();
         } catch (rollbackError) {
