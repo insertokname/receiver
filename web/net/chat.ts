@@ -449,6 +449,8 @@ export class ChatSocket {
 export class WebConnectionInfo implements ConnectionInfo {
   readonly localPort = 0;
   readonly ipVersion = 'IPv4' as const;
+  // Through Tor, never straight to Signal.
+  readonly isDirect = false;
   constructor(readonly description: string) {}
   toString(): string {
     return this.description;

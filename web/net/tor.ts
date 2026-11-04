@@ -21,6 +21,8 @@
 // implementation (e.g. TLS over a WebSocket to a local relay in front of
 // Desktop's mock server) without touching the chat or HTTP layers.
 
+/// <reference path="../renderer/modules.d.ts" />
+
 import {
   connectTor,
   errorReason,
